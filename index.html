@@ -102,7 +102,6 @@ body { background: var(--night); color: var(--ink); font-family: var(--body); ov
 <div class="hud chip" id="roster">
 <h2>On the floor</h2>
 <ul id="rosterList"></ul>
-<button id="botToggle" type="button">Hide bots</button>
 </div>
 <div class="hud chip" id="nearby" hidden><span class="g" id="nearGame"></span><span id="nearScore"></span><span class="go" id="nearGo"></span></div>
 <div class="hud chip" id="help"><b>WASD</b> move · <b>Shift</b> run · <b>Space</b> jump · <b>Q</b> wave · <b>E</b> play a machine · <b>drag</b> to look</div>
@@ -506,19 +505,17 @@ const joyEnd = e => { if (joy.id === e.pointerId) { joy = { x: 0, y: 0, id: null
 stickEl.addEventListener("pointerup", joyEnd); stickEl.addEventListener("pointercancel", joyEnd);
 document.getElementById("jumpBtn").onclick = jump;
 document.getElementById("waveBtn").onclick = wave;
-let botsOn = store("sa_bots") !== "off";
-const botBtn = document.getElementById("botToggle");
+let botsOn = false;
 const bots = ["Pixel Bot", "Turbo Bot", "Bleep Bot"].map((n, i) => ({ name: n, color: COLORS[(i * 2 + 1) % 6], x: -8 + i * 8, z: 6, y: 0, ry: 0, tx: 0, tz: 0, wait: i, speed: 0, waveUntil: 0, av: null, tag: null }));
 function freeSpot() { for (let k = 0; k < 40; k++) { const x = (Math.random() - 0.5) * (RW - 4), z = (Math.random() - 0.5) * (RD - 4); if (!blocked(x, z)) return [x, z]; } return [0, 6]; }
 function setBots(on) {
-botsOn = on; store("sa_bots", on ? "on" : "off"); botBtn.textContent = on ? "Hide bots" : "Show bots";
+botsOn = on;
 bots.forEach(b => {
 if (on && !b.av) { b.av = makeAvatar(b.color); b.tag = makeTag("bot"); [b.tx, b.tz] = freeSpot(); }
 if (!on && b.av) { removeAvatar(b.av); b.tag.el.remove(); b.av = b.tag = null; }
 });
 renderRoster();
 }
-botBtn.onclick = () => setBots(!botsOn);
 function updateBots(dt) {
 for (const b of bots) {
 if (!b.av) continue;
