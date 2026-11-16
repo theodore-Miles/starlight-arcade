@@ -492,11 +492,11 @@ const MY_GAMES={
   blockhaven:{t:'🧱 BLOCK HAVEN',c:'#3ddc84',u:'https://block-haven-taupe.vercel.app/',d:'Block survival on an island of hills, sea and caves. Dig, craft, farm and build with friends.'}
 };
 const linkp=document.getElementById('linkp');let linkOpen=false;
-function openLink(keys,title,desc){unlockMouse();const lt=document.getElementById('lt');lt.textContent=title;lt.style.color='#46f3ff';
+function openLink(keys,title,desc,onPick){unlockMouse();const lt=document.getElementById('lt');lt.textContent=title;lt.style.color='#46f3ff';
   document.getElementById('ld').textContent=desc;const bx=document.getElementById('lbtns');bx.textContent='';
   for(const k of keys){const g=MY_GAMES[k];const a=document.createElement('a');a.className='gamebtn';a.href=g.u;a.target='_blank';a.rel='noopener';a.style.borderColor=g.c;
     const h=document.createElement('b');h.textContent='▶ '+g.t;h.style.color=g.c;const p=document.createElement('span');p.textContent=g.d;a.append(h,p);
-    a.addEventListener('click',()=>setTimeout(closeLink,300));bx.append(a);}
+    a.addEventListener('click',()=>{if(onPick)onPick(k);setTimeout(closeLink,300);});bx.append(a);}
   linkp.style.display='block';linkOpen=true;}
 function closeLink(){linkp.style.display='none';linkOpen=false;boardMenu=false;}
 let boardMenu=false;
@@ -1241,7 +1241,7 @@ let lastSent='',lastSendT=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1273,6 +1273,7 @@ function upsertPeer(p){
   if(Array.isArray(pr.cl)&&pr.cl.length===2&&typeof pr.cl[1]==='number'&&isFinite(pr.cl[1])&&pr.cl[1]>closet.t){closet.t=pr.cl[1];closet.open=!!pr.cl[0];}
   if(Array.isArray(pr.lt)&&pr.lt.length===2&&typeof pr.lt[1]==='number'&&isFinite(pr.lt[1])&&pr.lt[1]>lights.t){lights.t=pr.lt[1];const on=!!pr.lt[0];if(on!==lights.on){lights.on=on;applyLights(true);}}
   e.sc=Math.max(0,num(pr.sc,0)|0);e.ds=Math.max(0,num(pr.ds,0)|0);
+  e.tv=(Array.isArray(pr.tv)&&TV_GAMES.includes(pr.tv[0])&&typeof pr.tv[1]==='number')?pr.tv:null;
   if(Array.isArray(pr.gv)&&pr.gv.length===3&&typeof pr.gv[0]==='string'&&Number.isInteger(pr.gv[1])&&typeof pr.gv[2]==='number'){
     if(e.gvT===undefined)e.gvT=pr.gv[2];
     else if(pr.gv[2]!==e.gvT){e.gvT=pr.gv[2];
@@ -2141,7 +2142,10 @@ addEventListener('pagehide',()=>{saveNow();});
 // ======================================================================
 // TV + CONTROLLERS (in front of the couch)
 // ======================================================================
-const TV={x:-3,z:6.3};let tvCanvas=null,tvTex=null,tvT=0;
+const TV={x:-3,z:6.3};const TV_GAMES=['islandsettlers','pocketgenesis','chickenlasso'];let tvPickAt=0;
+// when you come back from the game tab, you're not on the TV any more
+function tvBack(){if(me.tv&&performance.now()-tvPickAt>2500){me.tv=null;sendPresence(true);}}
+addEventListener('focus',tvBack);document.addEventListener('visibilitychange',()=>{if(!document.hidden)tvBack();});let tvCanvas=null,tvTex=null,tvT=0;
 (function buildTV(){
   const dark=std(0x1a1a24,{roughness:.6});
   box(2.4,.6,.6,dark,TV.x,.3,TV.z,house);
@@ -2161,12 +2165,15 @@ const TV={x:-3,z:6.3};let tvCanvas=null,tvTex=null,tvT=0;
   });
   houseCols.push({x:TV.x,z:TV.z,hw:1.2,hd:.3,top:.6});
   houseInter.push({x:TV.x,z:TV.z+1,cond:()=>me.y<.7,verb:'Play on the TV 🎮',
-    act:()=>openLink(['islandsettlers','pocketgenesis','chickenlasso'],'📺 TV — pick a game','Grab a controller and choose a game:')});
+    act:()=>openLink(TV_GAMES,'📺 TV — pick a game','Grab a controller and choose a game:',k=>{me.tv=[k,Date.now()];tvPickAt=performance.now();sendPresence(true);})});
 })();
 function updateTV(){
   if(!tvCanvas||level!==0||T%3)return;
   const g=tvCanvas.getContext('2d'),W2=512,H2=288,t=T;
-  const k=Math.floor(t/240)%3,f=t%240;
+  let live=null;
+  if(me.tv)live={k:TV_GAMES.indexOf(me.tv[0]),who:(me.name||'You')};
+  else for(const e of peers.values())if(e.tv){live={k:TV_GAMES.indexOf(e.tv[0]),who:(e.nm||names.get(e.by)||'Player')};break;}
+  const k=live?live.k:Math.floor(t/240)%3,f=t%240;
   if(k===0){ // islands
     g.fillStyle='#1e6fd0';g.fillRect(0,0,W2,H2);
     g.strokeStyle='rgba(255,255,255,.25)';g.lineWidth=2;for(let i=0;i<6;i++){g.beginPath();g.arc((i*97+f)%560-24,60+i*40,18,0,Math.PI);g.stroke();}
@@ -2189,8 +2196,11 @@ function updateTV(){
     g.strokeStyle='#c49a6c';g.lineWidth=3;g.beginPath();g.ellipse(120+Math.sin(f/15)*40,225,30,10,0,0,7);g.stroke();
   }
   const names=['ISLAND SETTLERS','POCKET GENESIS','CHICKEN LASSO RODEO'];
-  g.fillStyle='rgba(0,0,0,.55)';g.fillRect(0,0,W2,40);g.fillStyle='#fff';g.font='bold 24px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(names[k],W2/2,21);
-  if((T/30|0)%2){g.fillStyle='rgba(0,0,0,.55)';g.fillRect(156,250,200,30);g.fillStyle='#ffd36e';g.font='bold 16px system-ui';g.fillText('🎮 PRESS E TO PLAY',W2/2,266);}
+  g.fillStyle='rgba(0,0,0,.55)';g.fillRect(0,0,W2,40);g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';
+  if(live){g.font='bold 20px system-ui';g.fillText('🎮 '+live.who.slice(0,16)+' is playing '+names[k],W2/2,21,W2-16);
+    g.fillStyle='#ff3b3b';g.beginPath();g.arc(28,62,8,0,7);g.fill();if((T/30|0)%2){g.fillStyle='#fff';g.font='bold 16px system-ui';g.textAlign='left';g.fillText('LIVE',42,63);}}
+  else{g.font='bold 24px system-ui';g.fillText(names[k],W2/2,21);
+    if((T/30|0)%2){g.fillStyle='rgba(0,0,0,.55)';g.fillRect(156,250,200,30);g.fillStyle='#ffd36e';g.font='bold 16px system-ui';g.fillText('🎮 PRESS E TO PLAY',W2/2,266);}}
   tvTex.needsUpdate=true;
 }
 // no floating words over things: hide every label sprite in the arcade (player name tags live outside it)
