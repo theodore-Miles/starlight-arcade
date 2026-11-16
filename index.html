@@ -263,7 +263,8 @@ function Pong(){
     init(){a=b=300;sa=sb=0;win=null;reset(1);},
     update(){
       if(win){if(P.has('Space'))this.init();return;}
-      if(K.KeyW)a-=8;if(K.KeyS)a+=8;if(K.ArrowUp)b-=8;if(K.ArrowDown)b+=8;
+      if(K.KeyW||K.ArrowUp)a-=8;if(K.KeyS||K.ArrowDown)a+=8;
+      {const target=(ball.vx>0?ball.y:H/2+20)-50;b+=clamp(target-b,-5.6,5.6);} // computer paddle
       a=clamp(a,60,H-104);b=clamp(b,60,H-104);
       ball.x+=ball.vx;ball.y+=ball.vy;
       if(ball.y<66){ball.y=66;ball.vy=Math.abs(ball.vy);}
@@ -271,10 +272,10 @@ function Pong(){
       if(ball.vx<0&&ball.x<54&&ball.x>24&&ball.y>a-8&&ball.y<a+108){ball.vx=Math.min(14,-ball.vx*1.06);ball.vy+=(ball.y-(a+50))/10;}
       if(ball.vx>0&&ball.x>W-54&&ball.x<W-24&&ball.y>b-8&&ball.y<b+108){ball.vx=-Math.min(14,ball.vx*1.06);ball.vy+=(ball.y-(b+50))/10;}
       if(ball.x<-10){sb++;reset(1);}if(ball.x>W+10){sa++;reset(-1);}
-      if(sa>=7)win='Left player wins!';if(sb>=7)win='Right player wins!';
+      if(sa>=7)win='You win! 🎉';if(sb>=7)win='The computer wins!';
     },
     draw(){
-      gbg('🏓 SKY PONG    '+sa+' : '+sb,'Left: W/S · Right: ↑/↓ · first to 7','#ff9f43');
+      gbg('🏓 SKY PONG    You '+sa+' : '+sb+' CPU','W/S or ↑/↓ · first to 7','#ff9f43');
       ctx.fillStyle='#22305e';for(let y=64;y<H;y+=28)ctx.fillRect(W/2-3,y,6,16);
       rr(30,a,14,100,6,'#ff5d73');rr(W-44,b,14,100,6,'#4fc3ff');
       ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ball.x,ball.y,9,0,7);ctx.fill();
@@ -311,10 +312,11 @@ function Bricks(){
     }
   };
 }
+let meteorBest=0;
 function Meteor(){
   let ships,ms,t,over,bg;
   return{
-    init(){ships=[{x:W/3,c:'#ff5d73',l:'KeyA',r:'KeyD',alive:true,time:0},{x:2*W/3,c:'#4fc3ff',l:'ArrowLeft',r:'ArrowRight',alive:true,time:0}];
+    init(){ships=[{x:W/2,c:me.color||'#4fc3ff',alive:true,time:0}];
       ms=[];t=0;over=false;bg=Array.from({length:80},()=>[Math.random()*W,Math.random()*H,Math.random()*2]);},
     update(){
       if(over){if(P.has('Space'))this.init();return;}
@@ -323,7 +325,7 @@ function Meteor(){
       if(t%rate===0)ms.push({x:Math.random()*W,y:40,r:12+Math.random()*20,v:3+Math.random()*3+t/900,a:Math.random()*6});
       for(const m of ms){m.y+=m.v;m.a+=.03;}ms=ms.filter(m=>m.y<H+40);
       for(const s of ships){if(!s.alive)continue;
-        if(K[s.l])s.x-=7;if(K[s.r])s.x+=7;s.x=clamp(s.x,20,W-20);s.time=t;
+        if(K.KeyA||K.ArrowLeft)s.x-=7;if(K.KeyD||K.ArrowRight)s.x+=7;s.x=clamp(s.x,20,W-20);s.time=t;
         for(const m of ms)if(Math.hypot(m.x-s.x,m.y-(H-50))<m.r+12)s.alive=false;}
       if(!ships.some(s=>s.alive))over=true;
     },
@@ -337,9 +339,9 @@ function Meteor(){
         ctx.fillStyle=s.c;ctx.beginPath();ctx.moveTo(s.x,H-70);ctx.lineTo(s.x+16,H-36);ctx.lineTo(s.x-16,H-36);ctx.fill();
         ctx.fillStyle='#ffd36e';ctx.beginPath();ctx.moveTo(s.x-7,H-36);ctx.lineTo(s.x,H-24-Math.random()*8);ctx.lineTo(s.x+7,H-36);ctx.fill();}
       ctx.fillStyle='#141c3d';ctx.fillRect(0,0,W,56);
-      txt('☄ METEOR DODGE   Red '+(ships[0].time/60).toFixed(1)+'s   Blue '+(ships[1].time/60).toFixed(1)+'s',20,37,22,'#b06bff');
-      txt('Red: A/D · Blue: ←/→ · Esc = back',W-20,35,14,'#9fb0e0','right',false);
-      if(over){const w=ships[0].time===ships[1].time?"It's a tie!":(ships[0].time>ships[1].time?'Red':'Blue')+' survived longest!';overMsg(w);}
+      txt('☄ METEOR DODGE   Time: '+(ships[0].time/60).toFixed(1)+'s   Best: '+(meteorBest/60).toFixed(1)+'s',20,37,22,'#b06bff');
+      txt('A/D or ←/→ · Esc = back',W-20,35,14,'#9fb0e0','right',false);
+      if(over){if(ships[0].time>meteorBest)meteorBest=ships[0].time;overMsg('You survived '+(ships[0].time/60).toFixed(1)+' seconds!');}
     }
   };
 }
