@@ -484,6 +484,9 @@ function closeGame(){game=null;mini.style.display='none';}
 // LINK PANEL (your real games)
 // ======================================================================
 const MY_GAMES={
+  islandsettlers:{t:'🏝 ISLAND SETTLERS',c:'#3ddc84',u:'https://island-settlers-three.vercel.app/',d:'Fly around a map of islands, chop trees, build and invent new buildings, and trade with other players and kingdoms.'},
+  pocketgenesis:{t:'🌍 POCKET GENESIS',c:'#7fd8ff',u:'https://pocket-genesis.vercel.app/',d:'A tiny world that grows over time. Speed up the years, look at the land and watch the kingdoms.'},
+  chickenlasso:{t:'🐔 CHICKEN LASSO RODEO',c:'#ffd36e',u:'https://chicken-lasso-rodeo.vercel.app/',d:'Lasso as many chickens as you can before time runs out. Watch out for the pig and the sneaky fox!'},
   skybound:{t:'✈ SKY BOUND',c:'#7fd8ff',u:'https://skybound-sage.vercel.app/',d:'Your 3D flight game! Fly planes, helicopters, gliders, an airship and rockets — all the way to the Moon.'},
   reddust:{t:'🚀 RED DUST',c:'#ff7a4a',u:'https://red-dust.vercel.app/',d:'Mars Mining Colony. Stranded in Jezero Crater — dig, build, keep breathing, and power the colony beacon.'},
   blockhaven:{t:'🧱 BLOCK HAVEN',c:'#3ddc84',u:'https://block-haven-taupe.vercel.app/',d:'Block survival on an island of hills, sea and caves. Dig, craft, farm and build with friends.'}
@@ -2135,6 +2138,61 @@ async function saveNow(){
 }
 setInterval(saveNow,3000);
 addEventListener('pagehide',()=>{saveNow();});
+// ======================================================================
+// TV + CONTROLLERS (in front of the couch)
+// ======================================================================
+const TV={x:-3,z:6.3};let tvCanvas=null,tvTex=null,tvT=0;
+(function buildTV(){
+  const dark=std(0x1a1a24,{roughness:.6});
+  box(2.4,.6,.6,dark,TV.x,.3,TV.z,house);
+  box(2.3,1.35,.08,std(0x0b0b0f,{roughness:.3}),TV.x,1.4,TV.z-.1,house);
+  box(.3,.25,.1,dark,TV.x,.72,TV.z-.1,house);
+  tvCanvas=document.createElement('canvas');tvCanvas.width=512;tvCanvas.height=288;
+  tvTex=new THREE.CanvasTexture(tvCanvas);tvTex.encoding=THREE.sRGBEncoding;
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(2.16,1.22),new THREE.MeshBasicMaterial({map:tvTex}));scr.position.set(TV.x,1.4,TV.z-.055);house.add(scr);
+  // two controllers on the stand
+  [['#ff5d73',-.45],['#4fc3ff',.45]].forEach(([c,dx])=>{
+    const g=new THREE.Group();const m=std(c,{roughness:.4});
+    const b=new THREE.Mesh(new THREE.BoxGeometry(.24,.05,.11),m);g.add(b);
+    for(const hx of [-.1,.1]){const h=new THREE.Mesh(new THREE.SphereGeometry(.06,10,8),m);h.scale.set(1,.6,1.2);h.position.set(hx,0,.04);g.add(h);}
+    const st=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.03,10),std(0x222222));st.position.set(-.06,.035,-.01);g.add(st);
+    for(let k=0;k<3;k++){const bt=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.02,8),std([0xffd36e,0x3ddc84,0xffffff][k]));bt.position.set(.05+k*.025,.03,(k%2)*.02-.01);g.add(bt);}
+    g.position.set(TV.x+dx,.64,TV.z+.12);g.rotation.y=dx>0?-.3:.25;g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);
+  });
+  houseCols.push({x:TV.x,z:TV.z,hw:1.2,hd:.3,top:.6});
+  houseInter.push({x:TV.x,z:TV.z+1,cond:()=>me.y<.7,verb:'Play on the TV 🎮',
+    act:()=>openLink(['islandsettlers','pocketgenesis','chickenlasso'],'📺 TV — pick a game','Grab a controller and choose a game:')});
+})();
+function updateTV(){
+  if(!tvCanvas||level!==0||T%3)return;
+  const g=tvCanvas.getContext('2d'),W2=512,H2=288,t=T;
+  const k=Math.floor(t/240)%3,f=t%240;
+  if(k===0){ // islands
+    g.fillStyle='#1e6fd0';g.fillRect(0,0,W2,H2);
+    g.strokeStyle='rgba(255,255,255,.25)';g.lineWidth=2;for(let i=0;i<6;i++){g.beginPath();g.arc((i*97+f)%560-24,60+i*40,18,0,Math.PI);g.stroke();}
+    [[130,170,60],[330,120,48],[420,220,34]].forEach(([x,y,r])=>{g.fillStyle='#f0d890';g.beginPath();g.ellipse(x,y,r*1.2,r*.75,0,0,7);g.fill();g.fillStyle='#3ddc84';g.beginPath();g.ellipse(x,y-4,r,r*.58,0,0,7);g.fill();
+      for(let j=0;j<3;j++){g.fillStyle='#1f8a3a';g.beginPath();g.arc(x-r*.4+j*r*.4,y-10-(j%2)*6,8,0,7);g.fill();}});
+    g.fillStyle='#fff';g.beginPath();g.arc(200+Math.sin(f/20)*30,90,6,0,7);g.fill();
+  }else if(k===1){ // a little world
+    g.fillStyle='#070b22';g.fillRect(0,0,W2,H2);g.fillStyle='#fff';for(let i=0;i<40;i++)g.fillRect((i*53)%W2,(i*97)%H2,2,2);
+    const cx=256,cy=150,r=80;g.fillStyle='#2a7fff';g.beginPath();g.arc(cx,cy,r,0,7);g.fill();
+    g.save();g.beginPath();g.arc(cx,cy,r,0,7);g.clip();g.fillStyle='#3ddc84';
+    for(let i=0;i<5;i++){const x=((i*70+f*1.2)%(2*r+120))+cx-r-60;g.beginPath();g.ellipse(x,cy-40+i*20,26,14,i,0,7);g.fill();}g.restore();
+    g.fillStyle='#ffd36e';g.font='bold 18px monospace';g.textAlign='center';g.fillText('YEAR '+(1000+Math.floor(t/4)),cx,268);
+  }else{ // barnyard
+    g.fillStyle='#8fd3ff';g.fillRect(0,0,W2,H2);g.fillStyle='#5fc06a';g.fillRect(0,170,W2,118);
+    g.fillStyle='#b0201e';g.fillRect(380,90,100,80);g.fillStyle='#fff';g.fillRect(420,130,22,40);
+    g.fillStyle='#8a5c2e';for(let x=0;x<W2;x+=40)g.fillRect(x,190,6,30);g.fillRect(0,196,W2,5);
+    for(let i=0;i<3;i++){const x=((i*170+f*2.5)%(W2+60))-30,y=245+Math.sin(f/6+i)*4;
+      g.fillStyle='#fff';g.beginPath();g.ellipse(x,y,18,13,0,0,7);g.fill();g.beginPath();g.arc(x+14,y-12,8,0,7);g.fill();
+      g.fillStyle='#ff3b3b';g.beginPath();g.arc(x+15,y-21,4,0,7);g.fill();g.fillStyle='#ffa500';g.beginPath();g.moveTo(x+21,y-12);g.lineTo(x+28,y-10);g.lineTo(x+21,y-8);g.fill();}
+    g.strokeStyle='#c49a6c';g.lineWidth=3;g.beginPath();g.ellipse(120+Math.sin(f/15)*40,225,30,10,0,0,7);g.stroke();
+  }
+  const names=['ISLAND SETTLERS','POCKET GENESIS','CHICKEN LASSO RODEO'];
+  g.fillStyle='rgba(0,0,0,.55)';g.fillRect(0,0,W2,40);g.fillStyle='#fff';g.font='bold 24px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(names[k],W2/2,21);
+  if((T/30|0)%2){g.fillStyle='rgba(0,0,0,.55)';g.fillRect(156,250,200,30);g.fillStyle='#ffd36e';g.font='bold 16px system-ui';g.fillText('🎮 PRESS E TO PLAY',W2/2,266);}
+  tvTex.needsUpdate=true;
+}
 // no floating words over things: hide every label sprite in the arcade (player name tags live outside it)
 [house,sky].forEach(g=>g.traverse(o=>{if(o.isSprite&&o.userData&&'text' in o.userData)o.visible=false;}));
 // ======================================================================
@@ -2224,6 +2282,7 @@ function loop(){
   updateSpray(dt);
   updateTools(dt);
   updateHelp();
+  updateTV();
   sendPresence(false);
   renderer.render(scene,camera);
   P.clear();mouse.clicked=false;
