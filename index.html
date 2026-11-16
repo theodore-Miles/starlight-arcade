@@ -5,6 +5,107 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Starlight Arcade</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ======================================================================
+// ONLINE ON THE WEB (Vercel): when the game isn't inside Claude, use Supabase
+// for players (room), saved stuff (db) and a player id (user).
+// ======================================================================
+(function(){
+  if(window.claude)return;
+  var host=location.hostname;
+  if(!/(^|\.)vercel\.app$/.test(host)&&host!=='localhost'&&host!=='127.0.0.1')return;
+  var SB_URL='https://ruahkhqwmdmetnjfzzrv.supabase.co';
+  var SB_KEY='sb_publishable_QMnxy6LH4U9VFhcgBlAdXQ_E5DTMrhU';
+  var TABLE='starlight_kv';
+  var sbP=null;
+  function loadSb(){
+    if(sbP)return sbP;
+    sbP=new Promise(function(res){
+      var s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+      s.onload=function(){try{res(window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false},realtime:{params:{eventsPerSecond:20}}}));}catch(e){res(null);}};
+      s.onerror=function(){res(null);};
+      document.head.appendChild(s);
+    });
+    return sbP;
+  }
+  var uid=null;try{uid=localStorage.getItem('starlight_uid');}catch(e){}
+  if(!uid){uid='p'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('starlight_uid',uid);}catch(e){}}
+  var user={id:async function(){return uid;},me:async function(){return{id:uid};},
+    profiles:async function(ids){var o={};(ids||[]).forEach(function(i){o[i]={name:''};});return o;},
+    isOwner:function(){return false;},canEdit:function(){return false;},can:function(){return null;}};
+
+  // ---------- room: who's here + where they are ----------
+  function makeRoom(sb){
+    var me=Math.random().toString(36).slice(2,12);
+    var mine={},dirty=true,lastSend=0,handlers=[],peers=new Map(),connected=false;
+    var ch=sb.channel('starlight-arcade-room',{config:{broadcast:{self:false},presence:{key:me}}});
+    function list(){var self={peer:me,by:uid,isMe:true,sameTab:true,kind:'viewer',guest:false,presence:mine,updatedAt:Date.now()};return [self].concat(Array.from(peers.values()));}
+    function emitChange(joined,left,updated){var ps=list();handlers.forEach(function(h){try{h({peers:ps,joined:joined||[],left:left||[],updated:updated||[]});}catch(e){}});}
+    function send(){if(!connected)return;lastSend=Date.now();dirty=false;ch.send({type:'broadcast',event:'st',payload:{peer:me,by:uid,s:mine}});}
+    ch.on('broadcast',{event:'st'},function(m){var p=m.payload||{};if(!p.peer||p.peer===me||typeof p.s!=='object')return;
+      var was=peers.has(p.peer);var e={peer:String(p.peer),by:typeof p.by==='string'?p.by:null,isMe:false,sameTab:false,kind:'viewer',guest:false,presence:p.s,updatedAt:Date.now()};
+      peers.set(e.peer,e);emitChange(was?[]:[e],[],was?[e]:[]);});
+    ch.on('presence',{event:'join'},function(){dirty=true;});
+    ch.on('presence',{event:'leave'},function(m){var gone=[];(m.leftPresences||[]).forEach(function(lp){});var k=m.key;if(k&&peers.has(k)){gone.push(peers.get(k));peers.delete(k);}if(gone.length)emitChange([],gone,[]);});
+    ch.subscribe(function(status){if(status==='SUBSCRIBED'){connected=true;ch.track({t:Date.now()});dirty=true;send();}else if(status==='CLOSED'||status==='CHANNEL_ERROR'||status==='TIMED_OUT'){connected=false;}});
+    setInterval(function(){
+      var now=Date.now();
+      if(dirty&&now-lastSend>100)send();else if(now-lastSend>2500)send();
+      var gone=[];peers.forEach(function(e,k){if(now-e.updatedAt>9000){gone.push(e);peers.delete(k);}});if(gone.length)emitChange([],gone,[]);
+    },100);
+    return{
+      presence:async function(patch){for(var k in patch){if(patch[k]===null)delete mine[k];else mine[k]=patch[k];}dirty=true;},
+      onPeers:function(h){handlers.push(h);setTimeout(function(){h({peers:list(),joined:list(),left:[],updated:[]});},0);return function(){handlers=handlers.filter(function(x){return x!==h;});};},
+      peers:function(){return list();},
+      connected:function(){return connected;},
+      emit:async function(){},on:function(){return function(){};}
+    };
+  }
+
+  // ---------- db: a tiny document store on one table ----------
+  function makeDb(sb){
+    function split(path){var p=String(path).split('/');return{col:p[0],id:p.slice(1).join('/')};}
+    function snapDoc(id,data){return{id:id,exists:!!data,data:function(){return data||undefined;},metadata:{fromCache:false,hasPendingWrites:false}};}
+    function watch(col,cb){var c=sb.channel('kv-'+col+'-'+Math.random().toString(36).slice(2,8)).on('postgres_changes',{event:'*',schema:'public',table:TABLE,filter:'col=eq.'+col},function(){cb();}).subscribe();return function(){sb.removeChannel(c);};}
+    function docRef(path){
+      var k=split(path);
+      async function get(){var r=await sb.from(TABLE).select('data').eq('col',k.col).eq('id',k.id).maybeSingle();if(r.error)throw{code:'unavailable',message:r.error.message};return snapDoc(k.id,r.data?r.data.data:null);}
+      return{id:k.id,path:path,get:get,
+        set:async function(data){var r=await sb.from(TABLE).upsert({col:k.col,id:k.id,data:data,updated_at:new Date().toISOString()});if(r.error)throw{code:'invalid_argument',message:r.error.message};},
+        update:async function(data){var cur=await get();var d=Object.assign({},cur.data()||{},data);return this.set(d);},
+        delete:async function(){},
+        onSnapshot:function(next,err){var stop=false;function load(){get().then(function(s){if(!stop)next(s);}).catch(function(){});}load();var un=watch(k.col,load);return function(){stop=true;un();};}
+      };
+    }
+    function query(col,ord,lim){
+      async function get(){var r=await sb.from(TABLE).select('id,data').eq('col',col);if(r.error)throw{code:'unavailable',message:r.error.message};
+        var docs=(r.data||[]).map(function(x){return snapDoc(x.id,x.data);});
+        if(ord){docs.sort(function(a,b){var va=(a.data()||{})[ord.f],vb=(b.data()||{})[ord.f];va=typeof va==='number'?va:-Infinity;vb=typeof vb==='number'?vb:-Infinity;return ord.d==='desc'?vb-va:va-vb;});}
+        if(lim)docs=docs.slice(0,lim);
+        return{docs:docs,size:docs.length,empty:!docs.length,docChanges:function(){return[];},metadata:{fromCache:false,hasPendingWrites:false}};}
+      return{get:get,
+        orderBy:function(f,d){return query(col,{f:f,d:d||'asc'},lim);},
+        limit:function(n){return query(col,ord,n);},
+        where:function(){return query(col,ord,lim);},
+        doc:function(id){return docRef(col+'/'+(id||Math.random().toString(36).slice(2)));},
+        onSnapshot:function(next,err){var stop=false,t=null;function load(){get().then(function(s){if(!stop)next(s);}).catch(function(){});}
+          load();var un=watch(col,function(){clearTimeout(t);t=setTimeout(load,150);});return function(){stop=true;un();};}
+      };
+    }
+    return{doc:docRef,collection:function(col){return query(col,null,0);}};
+  }
+
+  var roomObj=null,dbObj=null;
+  window.claude={use:async function(name){
+    var sb=await loadSb();if(!sb)return null;
+    if(name==='user')return user;
+    if(name==='room')return roomObj||(roomObj=makeRoom(sb));
+    if(name==='db')return dbObj||(dbObj=makeDb(sb));
+    return null;
+  }};
+})();
+</script>
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;overflow:hidden;background:#0b1430;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#fff}
@@ -79,7 +180,7 @@
 <div id="dartaim"></div>
 <div id="start"><div class="box panel">
   <h1>STARLIGHT ARCADE</h1>
-  <div class="sub">The arcade in the sky 🕹 Play with your friends online!<br><span style="font-size:13px;opacity:.8">💾 Your points are saved to your Claude account</span></div>
+  <div class="sub">The arcade in the sky 🕹 Play with your friends online!<br><span style="font-size:13px;opacity:.8">💾 Your points are saved</span></div>
   <div>Your username:</div>
   <input id="uname" maxlength="16" placeholder="Type a username" autocomplete="off">
   <div>Pick your colour:</div>
