@@ -874,7 +874,7 @@ function makeClaw(x,col){
     houseCols.push(col);houseInter.push(it);
     PLANTS.push({g,col,it,x,y:0,z,t:0,held:false,kind:'plant',name:'plant',icon:'🪴'});
   });
-  {const i=PLANTS.length,x=7,z=3.2,g=new THREE.Group();
+  {const i=PLANTS.length,x=9.4,z=-8.2,g=new THREE.Group();
    const metal=std(0x8a93a8,{metalness:.7,roughness:.35,side:THREE.DoubleSide});
    const body=new THREE.Mesh(new THREE.CylinderGeometry(.36,.3,.9,20,1,true),metal);body.position.y=.45;body.castShadow=true;g.add(body);
    const bottom=new THREE.Mesh(new THREE.CircleGeometry(.3,20),std(0x4a5060));bottom.rotation.x=-Math.PI/2;bottom.position.y=.02;g.add(bottom);
