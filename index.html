@@ -2120,7 +2120,7 @@ async function connectSaves(){
     else{me.score+=10;startDone=true;toast('✨ New player! You get 🪙 10 starting points');}
     saveState='loaded';updInv();sendPresence(true);saveNow();
   }catch(e){saveState='none';startBonusCheck();}
-  try{notesDb.collection('leaderboard').orderBy('total','desc').limit(5).onSnapshot(snap=>{
+  try{notesDb.collection('leaderboard').orderBy('total','desc').limit(3).onSnapshot(snap=>{
     topList=snap.docs.map(d=>{const v=d.data()||{};return{name:cleanName(v.name)||'Player',total:Math.max(0,Math.floor(num(v.total,0)))};});renderOnline();
   },()=>{});}catch(e){}
 }
