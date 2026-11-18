@@ -395,7 +395,7 @@ function Pool(){
             if(d<2*r&&d>0){const nx=dx/d,ny=dy/d,ov=(2*r-d)/2;a.x-=nx*ov;a.y-=ny*ov;c.x+=nx*ov;c.y+=ny*ov;
               const p=(a.vx-c.vx)*nx+(a.vy-c.vy)*ny;if(p>0){a.vx-=p*nx;a.vy-=p*ny;c.vx+=p*nx;c.vy+=p*ny;}}}
           for(const o of poolPlants())for(const b of balls){const dx=b.x-o.x,dy=b.y-o.y,d=Math.hypot(dx,dy);
-            if(d<o.r+r&&d>0){const nx=dx/d,ny=dy/d;b.x=o.x+nx*(o.r+r);b.y=o.y+ny*(o.r+r);const vn=b.vx*nx+b.vy*ny;if(vn<0){b.vx-=2*vn*nx;b.vy-=2*vn*ny;}}}
+            if(d<o.r+r&&d>0){if(o.kind==='duck')squeak();const nx=dx/d,ny=dy/d;b.x=o.x+nx*(o.r+r);b.y=o.y+ny*(o.r+r);const vn=b.vx*nx+b.vy*ny;if(vn<0){b.vx-=2*vn*nx;b.vy-=2*vn*ny;}}}
           balls=balls.filter(b=>{
             if(!pockets.some(([px,py])=>Math.hypot(b.x-px,b.y-py)<22))return true;
             if(b.cue)cueIn=true;else{sc[turn]++;potted=true;}return false;});
@@ -782,7 +782,7 @@ function makeClaw(x,col){
   // dark walls + ceiling
   const wallM=std(0x1a1238,{roughness:.9});
   box(33.5,5.4,.5,wallM,0,2.7,-11.75,house);
-  box(18.3,5.4,.5,wallM,-7.6,2.7,11.75,house);box(14.3,5.4,.5,wallM,9.6,2.7,11.75,house);box(.9,1.75,.5,wallM,2,.875,11.75,house);box(.9,2.75,.5,wallM,2,4.025,11.75,house);
+  box(18.3,5.4,.5,wallM,-7.6,2.7,11.75,house);box(3.55,5.4,.5,wallM,4.225,2.7,11.75,house);box(1.6,2.8,.5,wallM,6.8,4.0,11.75,house);box(9.15,5.4,.5,wallM,12.175,2.7,11.75,house);box(.9,1.75,.5,wallM,2,.875,11.75,house);box(.9,2.75,.5,wallM,2,4.025,11.75,house);
   box(.5,5.4,24,wallM,-16.75,2.7,0,house);
   box(.5,5.4,8.2,wallM,16.75,2.7,-7.9,house);box(.5,5.4,14.2,wallM,16.75,2.7,4.9,house);box(.5,3,1.6,wallM,16.75,3.9,-3,house);
   const ceil=new THREE.Mesh(new THREE.PlaneGeometry(33.5,24),std(0x0a0618,{roughness:1}));ceil.rotation.x=Math.PI/2;ceil.position.y=5.4;house.add(ceil);
@@ -1128,12 +1128,16 @@ function goLevel(n){
 function groundAt(x,z){let gy=0,b=false;if(level!==0)return{gy,b};
   for(const c of houseCols){if(c.top===undefined||c.off)continue;
     const on=c.r!==undefined?Math.hypot(x-c.x,z-c.z)<c.r+.15:(Math.abs(x-c.x)<c.hw+.2&&Math.abs(z-c.z)<c.hd+.2);
-    if(on&&c.top<=me.y+.31&&c.top>gy){gy=c.top;b=!!c.bouncy;}}
+    if(on&&c.top<=me.y+.31&&c.top>gy){gy=c.top;b=c.bouncy||0;}}
   return{gy,b};}
 function blocked(x,z){
   const R=.45;
   if(level===0){
-    if(x<-16+R||z<-11+R||z>11-R)return true;
+    if(x<-16+R||z<-11+R)return true;
+    if(z>11-R){
+      if(z<12+R){if(x<6+R||x>7.6-R)return true;}          // squeezing through the party room door
+      else if(x<4+R||x>16-R||z>22-R)return true;          // inside the party room
+    }
     if(x>16-R){
       if(!closet.open)return true;
       if(x<17+R){if(Math.abs(z+3)>.8-R)return true;}      // squeezing through the doorway
@@ -1188,7 +1192,7 @@ function updateWorld(dt){
   me.crouch=(!!K.KeyC&&me.y<.1)||(wasCrouch&&underSomething);
   if(wasCrouch&&!K.KeyC&&underSomething&&!me.bumpTip){me.bumpTip=1;toast("🙃 Ouch! You can't stand up under the table");}
   if(!underSomething)me.bumpTip=0;
-  const run=(K.ShiftLeft||K.ShiftRight)&&!me.crouch,sp=(me.crouch?2.4:run?8.5:5)*dt;
+  const run=(K.ShiftLeft||K.ShiftRight)&&!me.crouch,sp=(me.crouch?2.4:run?8.5:5)*dt*(performance.now()<(me.boostUntil||0)?1.6:1);
   const turn=(K.ArrowLeft?1:0)-(K.ArrowRight?1:0);
   me.ry+=turn*2.7*dt;
   const mv=((K.KeyW||K.ArrowUp)?1:0)-((K.KeyS||K.ArrowDown)?1:0);
@@ -1202,13 +1206,11 @@ function updateWorld(dt){
   if(level===0&&me.y<.5&&len&&Math.abs(me.x+15.5)<1.25){const rel=me.z-pushArc.col.z;
     if(rel>.9&&rel<1.45&&dz<-.5)me.push=-1;else if(rel<-.9&&rel>-1.45&&dz>.5)me.push=1;}
   const gr=groundAt(me.x,me.z),onG=me.y<=gr.gy+.001;
-  if(P.has('Space')&&onG&&!me.crouch){me.vy=gr.b?10.5:7.5;if(gr.b&&!me.boinged){me.boinged=1;toast('🛋️ Boing! Bouncy couch!');}}
+  if(P.has('Space')&&onG&&!me.crouch){me.vy=gr.b>1?14:gr.b?10.5:7.5;if(gr.b===1&&!me.boinged){me.boinged=1;toast('🛋️ Boing! Bouncy couch!');}if(gr.b>1)toast('🤸 BOING!!');}
   me.vy-=22*dt;me.y+=me.vy*dt;if(me.y<=gr.gy){me.y=gr.gy;me.vy=0;}
   me.onGround=me.y<=gr.gy+.001;
   // head reaches the ceiling: go up into a vent if you're under one, otherwise bonk
-  if(level===0&&me.y+1.75>5.35){
-    me.y=5.35-1.75;if(me.vy>0)me.vy=0;
-  }
+  {const ceil=me.z>11.6?6.45:5.35;if(level===0&&me.y+1.75>ceil){me.y=ceil-1.75;if(me.vy>0)me.vy=0;}}
   if(level===0&&me.x>16.2&&me.y+1.75>3.2){me.y=3.2-1.75;if(me.vy>0)me.vy=0;}
   if(level===0&&Math.abs(me.x)<1.6&&Math.abs(me.z)<.55&&me.y<3.6&&me.y+1.75>3.55){me.y=3.55-1.75;if(me.vy>0)me.vy=0;}
   // stars
@@ -1229,7 +1231,7 @@ function updateWorld(dt){
   if(P.has('KeyT'))openChat();
   if(P.has('KeyR'))scrunch();
   if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='phone')toast(PHONE_LINES[Math.random()*PHONE_LINES.length|0]);
-  if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='duck')toast(['🦆 Squeak!','🦆 Squeak squeak!','🦆 SQUEEEAK!'][Math.random()*3|0]);
+  if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='duck')squeak(true);
 }
 
 // camera
@@ -1245,7 +1247,7 @@ function updateCamera(dt){
     // third person: camera floats behind you
     const tx=me.x,ty=me.y+me.eye*.85,tz=me.z;
     let cx=tx-fx*4.2,cy=ty-fy*4.2+.7,cz=tz-fz*4.2;
-    if(level===0){if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
+    if(level===0){if(me.z>11.6){cx=clamp(cx,4.3,15.7);cz=clamp(cz,12.3,21.7);cy=clamp(cy,.3,6.2);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
     camPos.set(cx,cy,cz);camLook.set(tx+fx*3,ty+fy*3,tz+fz*3);
   }else{
     camPos.set(me.x,me.y+me.eye+bob,me.z);
@@ -1637,7 +1639,9 @@ function updateBalls(dt){
       b.vy-=14*h;b.x+=b.vx*h;b.y+=b.vy*h;b.z+=b.vz*h;
       if(b.hitTool&&b.mine&&!b.goalDone&&b.y<1.2)checkGoal(b,px,pz);
       if(b.x<-16.4){b.x=-16.4;b.vx=Math.abs(b.vx)*.5;}if(b.x>16.4){b.x=16.4;b.vx=-Math.abs(b.vx)*.5;}
-      if(b.z<-11.4){b.z=-11.4;b.vz=Math.abs(b.vz)*.5;}if(b.z>11.4){b.z=11.4;b.vz=-Math.abs(b.vz)*.5;}
+      if(b.z<-11.4){b.z=-11.4;b.vz=Math.abs(b.vz)*.5;}
+      if(inParty(b.x,b.z)){if(b.x<4.1){b.x=4.1;b.vx=Math.abs(b.vx)*.5;}if(b.x>15.9){b.x=15.9;b.vx=-Math.abs(b.vx)*.5;}if(b.z>21.9){b.z=21.9;b.vz=-Math.abs(b.vz)*.5;}if(b.y>6.4){b.y=6.4;b.vy=-Math.abs(b.vy)*.4;}}
+      else if(b.z>11.4){b.z=11.4;b.vz=-Math.abs(b.vz)*.5;}
       if(b.y>5.3){b.y=5.3;b.vy=-Math.abs(b.vy)*.4;}
       if(can&&!can.held&&level===0){
         const top=can.y+.9,d=Math.hypot(b.x-can.x,b.z-can.z);
@@ -1905,7 +1909,7 @@ function updateDarts(dt){
       if(d.mine)toast('🎯 Missed the board!');
     }
     if(d.x<-16.4||d.x>16.4){d.x=clamp(d.x,-16.4,16.4);d.vx=0;}
-    if(d.z>11.4){d.z=11.4;d.vz=0;}if(d.z<-11.4){d.z=-11.4;d.vz=0;}
+    if(d.z>11.4&&!inParty(d.x,d.z)){d.z=11.4;d.vz=0;}if(inParty(d.x,d.z)&&d.z>21.9){d.z=21.9;d.vz=0;}if(d.z<-11.4){d.z=-11.4;d.vz=0;}
     if(d.y>5.3){d.y=5.3;d.vy=-Math.abs(d.vy)*.3;}
     if(d.y<.03){d.y=.03;d.rest=true;d.life=0;d.m.rotation.set(0,Math.random()*6,0);d.m.rotateX(Math.PI/2);d.m.position.set(d.x,d.y,d.z);continue;}
     d.m.position.set(d.x,d.y,d.z);d.m.lookAt(d.x+d.vx,d.y+d.vy,d.z+d.vz);
@@ -2376,6 +2380,82 @@ function renderDeskMenu(){
     row.append(b,info);box2.append(row);
   });
 }
+// ======================================================================
+// SQUEAK (a real little sound)
+// ======================================================================
+let audioCtx=null,lastSqueak=0;
+function squeak(force){
+  const now=performance.now();if(!force&&now-lastSqueak<250)return;lastSqueak=now;
+  toast(['🦆 Squeak!','🦆 Squeak squeak!','🦆 SQUEEEAK!'][Math.random()*3|0]);
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();
+    const t=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type='square';o.frequency.setValueAtTime(1300,t);o.frequency.exponentialRampToValueAtTime(650,t+.16);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.12,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.18);
+    o.connect(g).connect(audioCtx.destination);o.start(t);o.stop(t+.2);
+  }catch(e){}
+}
+// ======================================================================
+// 🎉 PARTY ROOM (through the door in the front wall)
+// ======================================================================
+const inParty=(x,z)=>x>4&&x<16&&z>11.9&&z<22.1;
+const PARTY={tiles:[],balloons:[],disco:null,lights:[]};
+(function buildParty(){
+  const noShadow=m=>{m.castShadow=false;return m;};
+  const wm=std(0x2a0f45,{roughness:.9});
+  // floor, walls, ceiling
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(12.5,10.5),std(0x140a26,{roughness:.8}));fl.rotation.x=-Math.PI/2;fl.position.set(10,.004,17);fl.receiveShadow=true;house.add(fl);
+  noShadow(box(12.5,6.5,.3,wm,10,3.25,22.15,house));noShadow(box(.3,6.5,10.6,wm,3.85,3.25,17,house));noShadow(box(.3,6.5,10.6,wm,16.15,3.25,17,house));
+  noShadow(box(12.5,1.1,.3,wm,10,5.95,11.85,house));   // above the main wall, so you can't see out
+  const ceil=new THREE.Mesh(new THREE.PlaneGeometry(12.5,10.6),std(0x0d0618));ceil.rotation.x=Math.PI/2;ceil.position.set(10,6.5,17);house.add(ceil);
+  // door frame + signs
+  const neonM=c=>new THREE.MeshBasicMaterial({color:c});
+  noShadow(box(.08,2.6,.08,neonM(0xff3df2),5.98,1.3,11.47,house));noShadow(box(.08,2.6,.08,neonM(0xff3df2),7.62,1.3,11.47,house));noShadow(box(1.72,.08,.08,neonM(0xff3df2),6.8,2.62,11.47,house));
+  const sgn=(x,z,ry)=>{const p=new THREE.Mesh(new THREE.PlaneGeometry(1.8,.42),new THREE.MeshBasicMaterial({map:labelTex('🎉 PARTY ROOM','#2a0a3a','#ff8cf6')}));p.position.set(x,2.95,z);p.rotation.y=ry;house.add(p);};
+  sgn(6.8,11.48,Math.PI);sgn(6.8,12.02,0);
+  // light-up dance floor
+  for(let i=0;i<6;i++)for(let j=0;j<6;j++){const t=new THREE.Mesh(new THREE.PlaneGeometry(.94,.94),new THREE.MeshBasicMaterial({color:0x000000}));t.rotation.x=-Math.PI/2;t.position.set(8+i,.012,15+j);house.add(t);PARTY.tiles.push({m:t,i,j});}
+  // disco ball
+  const disco=new THREE.Mesh(new THREE.IcosahedronGeometry(.45,1),std(0xdde3ff,{metalness:1,roughness:.15,flatShading:true}));disco.position.set(10.5,5.6,17.5);house.add(disco);PARTY.disco=disco;
+  const cord=new THREE.Mesh(new THREE.CylinderGeometry(.01,.01,.5),std(0x888888));cord.position.set(10.5,6.25,17.5);house.add(cord);
+  [0xff3df2,0x46f3ff,0xffd36e].forEach((c,k)=>{const l=new THREE.PointLight(c,1.1,12);l.position.set(10,4.5,17);house.add(l);PARTY.lights.push(l);});
+  const wl=new THREE.PointLight(0xffffff,.5,16);wl.position.set(10,5.8,15);house.add(wl);
+  // trampoline (super bouncy!)
+  const tr=new THREE.Group();
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(1.15,.09,10,32),std(0x46b4ff,{roughness:.4}));rim.rotation.x=Math.PI/2;rim.position.y=.5;tr.add(rim);
+  const mat=new THREE.Mesh(new THREE.CircleGeometry(1.1,32),std(0x111111,{roughness:.9}));mat.rotation.x=-Math.PI/2;mat.position.y=.49;tr.add(mat);
+  for(let k=0;k<6;k++){const a=k/6*Math.PI*2;const leg=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.5),std(0x888888));leg.position.set(Math.cos(a)*1.1,.25,Math.sin(a)*1.1);tr.add(leg);}
+  tr.position.set(5.8,0,20);house.add(tr);
+  houseCols.push({x:5.8,z:20,r:1.1,top:.5,bouncy:2});
+  // balloons
+  [0xff5d73,0x4fc3ff,0x3ddc84,0xffd36e,0xb06bff,0xff9f43,0xff69b4].forEach((c,k)=>{
+    const g=new THREE.Group();const b=new THREE.Mesh(new THREE.SphereGeometry(.28,16,12),std(c,{roughness:.25}));b.scale.y=1.2;g.add(b);
+    const st=new THREE.Mesh(new THREE.CylinderGeometry(.005,.005,1.6),std(0xffffff));st.position.y=-1.1;g.add(st);
+    const x=4.6+((k*3.3)%11),z=12.8+((k*2.7)%8.6);g.position.set(x,5.2+(k%3)*.25,z);house.add(g);PARTY.balloons.push({g,y:g.position.y,k});});
+  // vending machine (soda = speed boost)
+  const vm=new THREE.Group();
+  box(1.1,2.1,.8,std(0xd42a2a,{roughness:.5}),0,1.05,0,vm);
+  const win=new THREE.Mesh(new THREE.PlaneGeometry(.75,1.1),new THREE.MeshBasicMaterial({map:canvasTex(150,220,(g,w,h)=>{g.fillStyle='#0b1430';g.fillRect(0,0,w,h);
+    const cols=['#ff5d73','#4fc3ff','#3ddc84','#ffd36e'];for(let r=0;r<4;r++)for(let c=0;c<3;c++){g.fillStyle=cols[(r+c)%4];g.fillRect(14+c*44,14+r*52,26,40);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(18+c*44,18+r*52,5,30);}})}));
+  win.position.set(-.12,1.3,.41);vm.add(win);
+  const vs=new THREE.Mesh(new THREE.PlaneGeometry(1,.25),new THREE.MeshBasicMaterial({map:labelTex('🥤 SODA 🪙1','#d42a2a','#fff')}));vs.position.set(0,1.95,.41);vm.add(vs);
+  box(.15,.4,.05,std(0x222222),.38,1.2,.42,vm);
+  vm.position.set(15.5,0,14.5);vm.rotation.y=-Math.PI/2;house.add(vm);
+  houseCols.push({x:15.5,z:14.5,hw:.42,hd:.58});
+  houseInter.push({x:14.6,z:14.5,verb:'Buy a soda 🥤 (🪙 1)',act:()=>pay(1,()=>{me.boostUntil=performance.now()+20000;toast('🥤 Fizz! Super speed for 20 seconds! ⚡');})});
+  // a few party tables
+  [[13,20],[13,13.5]].forEach(([x,z])=>{box(.9,.06,.9,std(0xffd36e),x,.85,z,house);box(.1,.85,.1,std(0x888888),x,.42,z,house);houseCols.push({x,z,hw:.45,hd:.45,top:.88,surf:.88});});
+})();
+let partyHello=false;
+function updateParty(dt){
+  if(level!==0)return;
+  const now=performance.now();
+  if(me.z>12.3&&!partyHello){partyHello=true;toast('🎉 Welcome to the Party Room! Try the trampoline 🤸');}
+  if(T%4===0)for(const t of PARTY.tiles){const h=((t.i*37+t.j*61+Math.floor(now/450)*53)%360);const on=((t.i+t.j+Math.floor(now/450))%3)!==0;t.m.material.color.setHSL(h/360,1,on&&lights.on?.5:on?.18:.04);}
+  PARTY.disco.rotation.y+=dt*.8;
+  PARTY.lights.forEach((l,k)=>{const a=now/900+k*2.1;l.position.set(10+Math.cos(a)*3.5,4.2,17+Math.sin(a)*3);});
+  for(const b of PARTY.balloons)b.g.position.y=b.y+Math.sin(now/800+b.k)*.08;
+}
 // no floating words over things: hide every label sprite in the arcade (player name tags live outside it)
 [house,sky].forEach(g=>g.traverse(o=>{if(o.isSprite&&o.userData&&'text' in o.userData)o.visible=false;}));
 // ======================================================================
@@ -2468,6 +2548,7 @@ function loop(){
   updateSpray(dt);
   updateTools(dt);
   updateHelp();
+  updateParty(dt);
   updateTV();
   sendPresence(false);
   renderer.render(scene,camera);
