@@ -2478,15 +2478,53 @@ const MOTO_LEN=2500;
   const mq=new THREE.Mesh(new THREE.PlaneGeometry(4.6,.45),new THREE.MeshBasicMaterial({map:labelTex('🏍 MOTO RACER','#ff9f43','#111')}));mq.position.set(4,3.0,25.24);mq.rotation.y=Math.PI;house.add(mq);
   houseCols.push({x:4,z:25.6,hw:2.6,hd:.4});
   MOTO.bikes.forEach((bk,k)=>{
-    const g=new THREE.Group(),col=k?0x4fc3ff:0xff5d73,body=std(col,{roughness:.3,metalness:.3}),blk=std(0x111111,{roughness:.6}),chrome=std(0xc8cde0,{metalness:.9,roughness:.2});
-    for(const wz of [-.62,.62]){const w=new THREE.Mesh(new THREE.TorusGeometry(.3,.1,10,24),blk);w.rotation.y=Math.PI/2;w.position.set(0,.4,wz);g.add(w);
-      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.16,12),chrome);hub.rotation.z=Math.PI/2;hub.position.set(0,.4,wz);g.add(hub);}
-    box(.32,.32,1.1,body,0,.72,0,g);
-    box(.34,.14,.55,blk,0,.94,-.2,g);
-    box(.36,.3,.4,body,0,.98,.38,g);
-    const bar=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.8,8),chrome);bar.rotation.z=Math.PI/2;bar.position.set(0,1.25,.55);g.add(bar);
-    const fork=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.7,8),chrome);fork.position.set(0,.85,.62);fork.rotation.x=-.3;g.add(fork);
-    const stand=new THREE.Mesh(new THREE.BoxGeometry(.5,.12,1.6),std(0x333344));stand.position.y=.06;g.add(stand);
+    const g=new THREE.Group(),col=k?0x4fc3ff:0xff5d73,body=std(col,{roughness:.25,metalness:.4}),blk=std(0x111111,{roughness:.7}),chrome=std(0xd8dde8,{metalness:.95,roughness:.15}),eng=std(0x55596a,{metalness:.7,roughness:.35});
+    const cyl=(r1,r2,h,m,x,y,z,rx,rz)=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,12),m);c.position.set(x,y,z);c.rotation.x=rx||0;c.rotation.z=rz||0;g.add(c);return c;};
+    // wheels: tire + chrome rim + spokes + hub
+    for(const wz of [-.6,.66]){
+      const tire=new THREE.Mesh(new THREE.TorusGeometry(.3,.085,12,28),blk);tire.rotation.y=Math.PI/2;tire.position.set(0,.39,wz);g.add(tire);
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(.21,.022,8,24),chrome);rim.rotation.y=Math.PI/2;rim.position.set(0,.39,wz);g.add(rim);
+      for(let s=0;s<6;s++){const sp=new THREE.Mesh(new THREE.BoxGeometry(.02,.42,.02),chrome);sp.position.set(0,.39,wz);sp.rotation.x=s*Math.PI/6;g.add(sp);}
+      cyl(.06,.06,.2,chrome,0,.39,wz,0,Math.PI/2);
+      const disc=cyl(.12,.12,.012,eng,.09,.39,wz,0,Math.PI/2);
+      // fender arc over the wheel
+      const fen=new THREE.Mesh(new THREE.TorusGeometry(.36,.05,6,16,Math.PI*.8),body);fen.rotation.y=Math.PI/2;fen.rotation.x=0;fen.position.set(0,.39,wz);fen.rotation.z=0;
+      fen.geometry.rotateZ(Math.PI*.1);g.add(fen);
+    }
+    // engine block with cooling fins
+    box(.3,.3,.42,eng,0,.55,.02,g);
+    for(let f=0;f<4;f++)box(.36,.025,.36,chrome,0,.47+f*.06,.04,g);
+    // swingarm to back wheel
+    box(.06,.06,.6,eng,.12,.42,-.3,g);box(.06,.06,.6,eng,-.12,.42,-.3,g);
+    // frame tube from steering head down to engine
+    cyl(.035,.035,.62,eng,0,.78,.32,-.85);
+    // fuel tank (rounded)
+    const tank=new THREE.Mesh(new THREE.SphereGeometry(.2,16,12),body);tank.scale.set(1.05,.75,1.6);tank.position.set(0,.88,.2);g.add(tank);
+    const strip=new THREE.Mesh(new THREE.SphereGeometry(.2,16,12),std(0xffffff,{roughness:.3}));strip.scale.set(.25,.77,1.62);strip.position.set(0,.885,.2);g.add(strip);
+    // seat
+    box(.28,.09,.5,blk,0,.86,-.22,g);box(.24,.08,.22,blk,0,.92,-.4,g);
+    // tail section + tail light
+    box(.24,.12,.3,body,0,.84,-.58,g);
+    box(.16,.06,.04,new THREE.MeshBasicMaterial({color:0xff2030}),0,.85,-.74,g);
+    // side panel under seat
+    box(.26,.18,.32,body,0,.66,-.3,g);
+    // exhaust pipe
+    cyl(.05,.05,.7,chrome,.2,.42,-.38,Math.PI/2);cyl(.065,.05,.14,eng,.2,.42,-.76,Math.PI/2);
+    cyl(.035,.035,.3,chrome,.17,.5,.12,-.9);
+    // front forks
+    for(const fx of [-.1,.1])cyl(.03,.03,.76,chrome,fx,.76,.58,-.25);
+    // headlight + front fairing + windscreen
+    box(.3,.26,.14,body,0,1.05,.56,g);
+    const hl=cyl(.085,.085,.06,new THREE.MeshBasicMaterial({color:0xfff3b0}),0,1.02,.64,Math.PI/2);
+    const ws=new THREE.Mesh(new THREE.PlaneGeometry(.3,.22),new THREE.MeshStandardMaterial({color:0x9fd8ff,transparent:true,opacity:.45,roughness:.1}));ws.position.set(0,1.27,.55);ws.rotation.x=-.45;g.add(ws);
+    // handlebars, grips and mirrors
+    cyl(.022,.022,.72,chrome,0,1.16,.44,0,Math.PI/2);
+    for(const sx of [-1,1]){cyl(.032,.032,.12,blk,sx*.33,1.16,.44,0,Math.PI/2);
+      cyl(.01,.01,.16,chrome,sx*.26,1.25,.46);const mir=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.02,12),chrome);mir.rotation.x=Math.PI/2;mir.position.set(sx*.26,1.34,.46);g.add(mir);}
+    // foot pegs
+    box(.56,.03,.04,chrome,0,.36,-.08,g);
+    // low black display stand
+    const stand=new THREE.Mesh(new THREE.BoxGeometry(.6,.06,1.8),std(0x22222e));stand.position.y=.03;g.add(stand);
     g.position.set(bk.x,0,bk.z);g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);
     houseCols.push({x:bk.x,z:bk.z,hw:.28,hd:.85,top:1.0});
     houseInter.push({x:bk.x,z:bk.z-1.3,cond:()=>!motoSeatTaken(k),verb:'Ride motorcycle '+(k+1)+' 🏍 (🪙 2)',act:()=>pay(2,()=>startGame(MotoRace(k)))});
@@ -2498,13 +2536,39 @@ function motoRiders(){const r=[null,null];
   return r;}
 function motoSeatTaken(k){for(const e of peers.values())if(e.mr&&e.mr[0]===k)return true;return false;}
 function peersMotoX(k){for(const e of peers.values())if(e.mr&&e.mr[0]===k)return e.mr[2];return 0;}
+// ---- track shape (same for every player) ----
+const MOTO_BRIDGES=[[480,620],[1150,1300],[1850,1990]];
+function motoBridge(z){for(const b of MOTO_BRIDGES)if(z>=b[0]&&z<=b[1])return b;return null;}
+function motoH(z){const b=motoBridge(z);if(!b)return 0;const u=(z-b[0])/(b[1]-b[0]);return 1.15*Math.sin(Math.PI*u);}
+function motoCurv(z){
+  if(z<100||z>MOTO_LEN-60)return 0;
+  let c=Math.sin(z/150)*(.7+.3*Math.sin(z/47+1.3));
+  for(const b of MOTO_BRIDGES){const m=Math.min(Math.abs(z-b[0]+40),Math.abs(z-b[1]-40));if(z>b[0]-40&&z<b[1]+40)return 0;if(m<60)c*=m/60;}
+  return c;}
+function drawBikeBack(cx,cy,sz,col,rider,lean,name){
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(lean*.2);ctx.scale(sz/100,sz/100);
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,2,40,9,0,0,7);ctx.fill();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.ellipse(0,-20,15,22,0,0,7);ctx.fill();          // rear tire
+  ctx.fillStyle='#888';ctx.fillRect(14,-34,12,8);                                              // exhaust
+  ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(-22,-38);ctx.lineTo(22,-38);ctx.lineTo(16,-60);ctx.lineTo(-16,-60);ctx.fill(); // tail
+  ctx.fillStyle='#ff2030';ctx.fillRect(-10,-46,20,6);                                          // tail light
+  ctx.fillStyle='#ccd';ctx.fillRect(-46,-92,92,5);ctx.fillStyle='#111';ctx.fillRect(-52,-94,12,9);ctx.fillRect(40,-94,12,9); // bars
+  ctx.fillStyle='#ccd';ctx.beginPath();ctx.arc(-38,-106,6,0,7);ctx.arc(38,-106,6,0,7);ctx.fill();
+  ctx.fillStyle=rider;ctx.beginPath();ctx.moveTo(-26,-58);ctx.lineTo(26,-58);ctx.lineTo(20,-112);ctx.lineTo(-20,-112);ctx.fill(); // rider body
+  ctx.fillStyle='#223';ctx.fillRect(-26,-62,14,22);ctx.fillRect(12,-62,14,22);                // legs
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,-126,19,0,7);ctx.fill();                         // helmet
+  ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.arc(-6,-132,6,0,7);ctx.fill();
+  ctx.restore();
+  if(name)txt(name,cx,cy-sz*1.55,Math.max(10,sz*.16),'#fff','center');
+}
 function MotoRace(seat){
-  let d,x,v,t,obs,over,count,place,flash;
+  let d,x,v,t,obs,over,count,place,flash,bg,steerNow;
   const bike=MOTO.bikes[seat];
   return{
     isMoto:true,
-    init(){d=0;x=0;v=0;t=0;over=false;count=180;place=0;flash=0;
-      obs=[];for(let i=1;i<70;i++)obs.push({z:60+i*34+Math.random()*20,x:(Math.random()*2-1)*.75,k:Math.random()<.55?'cone':'car',c:['#ff5d73','#3ddc84','#ffd36e','#b06bff'][i%4]});
+    init(){d=0;x=0;v=0;t=0;over=false;count=180;place=0;flash=0;bg=0;steerNow=0;
+      obs=[];for(let i=1;i<75;i++){const z=60+i*32+Math.random()*18;if(z>MOTO_LEN-20)break;const b=MOTO_BRIDGES.find(b=>z>b[0]-25&&z<b[1]+25);if(b)continue;
+        obs.push({z,x:(Math.random()*2-1)*.75,k:Math.random()<.55?'cone':'car',c:['#ff5d73','#3ddc84','#ffd36e','#b06bff'][i%4]});}
       me.x=bike.x;me.z=bike.z-.15;me.y=.95;me.ry=0;me.moto=[seat,0,0,0];sendPresence(true);},
     onClose(){me.moto=null;me.x=bike.x;me.z=bike.z-1.4;me.y=0;me.vy=0;me.ry=Math.PI;sendPresence(true);},
     update(){
@@ -2512,10 +2576,16 @@ function MotoRace(seat){
       if(count>0){count--;return;}
       t++;
       const gas=K.KeyW||K.ArrowUp,brk=K.KeyS||K.ArrowDown;
-      v=clamp(v+(gas?.16:0)-(brk?.35:0)-.025,0,14);
-      const steer=(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0);
-      x=clamp(x+steer*.03*(.35+v/14),-1.25,1.25);
-      if(Math.abs(x)>1)v=Math.max(0,v-.12);
+      const slope=(motoH(d+2)-motoH(d-2))/4;
+      v=clamp(v+(gas?.16:0)-(brk?.35:0)-.025-slope*1.2,0,14);
+      steerNow=(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0);
+      x+=steerNow*.03*(.35+v/14);
+      x-=motoCurv(d)*v*.0019;                 // curves push you to the outside
+      bg+=motoCurv(d)*v*.6;
+      const br=motoBridge(d);
+      if(br){if(Math.abs(x)>1.02){x=Math.sign(x)*1.02;v*=.9;if(flash<6)flash=6;}}  // bridge rails
+      else x=clamp(x,-1.4,1.4);
+      if(!br&&Math.abs(x)>1)v=Math.max(0,v-.12);
       d+=v*.1;
       for(const o of obs)if(!o.hit&&Math.abs(o.z-d)<1.3&&Math.abs(o.x-x)<.23){o.hit=true;v*=.25;flash=20;}
       if(flash>0)flash--;
@@ -2523,43 +2593,62 @@ function MotoRace(seat){
       me.moto=[seat,Math.round(d),+x.toFixed(2),over?1:0];
     },
     draw(){
-      const HZ=250;
-      let gr=ctx.createLinearGradient(0,0,0,HZ);gr.addColorStop(0,'#2a0f5e');gr.addColorStop(1,'#ff7a4a');ctx.fillStyle=gr;ctx.fillRect(0,0,W,HZ);
-      ctx.fillStyle='#ffd36e';ctx.beginPath();ctx.arc(700,HZ-20,60,0,7);ctx.fill();
-      ctx.fillStyle='#3a1a5e';ctx.beginPath();ctx.moveTo(0,HZ);for(let k=0;k<=12;k++)ctx.lineTo(k*80,HZ-40-Math.sin(k*1.7+d*.002)*30);ctx.lineTo(W,HZ);ctx.fill();
+      const HZ=250,RW=480*1.1,HK=RW*.9;
+      let gr=ctx.createLinearGradient(0,0,0,HZ);gr.addColorStop(0,'#2a0f5e');gr.addColorStop(1,'#ff7a4a');ctx.fillStyle=gr;ctx.fillRect(0,0,W,HZ+40);
+      const sunX=((700-bg*.05)%1200+1200)%1200-120;
+      ctx.fillStyle='#ffd36e';ctx.beginPath();ctx.arc(sunX,HZ-20,60,0,7);ctx.fill();
+      ctx.fillStyle='#3a1a5e';ctx.beginPath();ctx.moveTo(0,HZ+40);for(let px=0;px<=W;px+=40)ctx.lineTo(px,HZ-40-Math.sin((px+bg*.25)*.021)*30-Math.sin((px+bg*.25)*.007)*20);ctx.lineTo(W,HZ+40);ctx.fill();
       ctx.fillStyle='#1f6b3a';ctx.fillRect(0,HZ,W,H-HZ);
       const proj=r=>1/(1+Math.max(r,0)/8);
-      const seg=5,first=Math.floor(d/seg)*seg;
-      for(let k=40;k>=0;k--){
-        const z0=first+k*seg,z1=z0+seg,s0=proj(z0-d),s1=proj(z1-d);
-        const y0=HZ+(H-HZ)*s0,y1=HZ+(H-HZ)*s1,w0=480*s0*1.1,w1=480*s1*1.1;
-        const alt=Math.floor(z0/seg)%2;
-        ctx.fillStyle=alt?'#2a8a4a':'#237a40';ctx.fillRect(0,y1,W,y0-y1+1);
-        ctx.fillStyle=alt?'#ff3b3b':'#ffffff';ctx.beginPath();ctx.moveTo(480-w0*1.12,y0);ctx.lineTo(480-w1*1.12,y1);ctx.lineTo(480+w1*1.12,y1);ctx.lineTo(480+w0*1.12,y0);ctx.fill();
-        ctx.fillStyle=alt?'#555':'#5d5d66';ctx.beginPath();ctx.moveTo(480-w0,y0);ctx.lineTo(480-w1,y1);ctx.lineTo(480+w1,y1);ctx.lineTo(480+w0,y0);ctx.fill();
-        if(alt){ctx.fillStyle='#ffd36e';ctx.fillRect(480-w0*.02,y1,w0*.04,y0-y1);}
-        if(z0>=MOTO_LEN&&z0<MOTO_LEN+seg){for(let q=0;q<8;q++){ctx.fillStyle=q%2?'#000':'#fff';ctx.fillRect(480-w0+q*w0/4,y1,w0/4,Math.max(3,y0-y1));}}
+      const seg=5,first=Math.floor(d/seg)*seg,N=44,camH=motoH(d);
+      // project every road point (curves bend sideways, bridges rise up)
+      const pts=[];let ox=0,dx=0;
+      for(let k=0;k<=N;k++){const z=first+k*seg,r=z-d,s=proj(r);
+        pts.push({z,s,cx:480+ox*RW*s,y:HZ+(H-HZ)*s-(motoH(z)-camH)*HK*s,w:RW*s});
+        dx+=motoCurv(z)*.016;ox+=dx;}
+      for(let k=N-1;k>=0;k--){
+        const a=pts[k],b=pts[k+1],z0=a.z,alt=Math.floor(z0/seg)%2,br=motoBridge(z0),water=MOTO_BRIDGES.some(q=>z0>=q[0]+12&&z0<=q[1]-12);
+        const yt=Math.min(a.y,b.y),yb=Math.max(a.y,b.y);
+        ctx.fillStyle=water?(alt?'#2f7be0':'#2a6fd0'):(alt?'#2a8a4a':'#237a40');ctx.fillRect(0,yt,W,yb-yt+1);
+        if(water&&alt){ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect((z0*37)%W,yt,40*a.s+4,2);ctx.fillRect((z0*91+300)%W,yt,30*a.s+3,2);}
+        const quad=(f0,f1,col)=>{ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(a.cx-a.w*f0,a.y);ctx.lineTo(b.cx-b.w*f1,b.y);ctx.lineTo(b.cx+b.w*f1,b.y);ctx.lineTo(a.cx+a.w*f0,a.y);ctx.fill();};
+        if(br){ // bridge deck: concrete edge, then road
+          quad(1.12,1.12,alt?'#8a8f9e':'#9aa0ae');
+          if(water){ctx.fillStyle='#6a6f7e';ctx.fillRect(a.cx-a.w*1.12,a.y,a.w*2.24,Math.max(2,a.s*60));}
+        } else quad(1.12,1.12,alt?'#ff3b3b':'#ffffff');
+        quad(1,1,alt?'#555':'#5d5d66');
+        if(alt){ctx.fillStyle='#ffd36e';ctx.beginPath();ctx.moveTo(a.cx-a.w*.02,a.y);ctx.lineTo(b.cx-b.w*.02,b.y);ctx.lineTo(b.cx+b.w*.02,b.y);ctx.lineTo(a.cx+a.w*.02,a.y);ctx.fill();}
+        if(br){ // side rails with posts
+          for(const sd of [-1,1]){const xa=a.cx+sd*a.w*1.1,xb=b.cx+sd*b.w*1.1,ha=a.s*70,hb=b.s*70;
+            ctx.fillStyle='#c9ced9';ctx.beginPath();ctx.moveTo(xa,a.y-ha*.75);ctx.lineTo(xb,b.y-hb*.75);ctx.lineTo(xb,b.y-hb);ctx.lineTo(xa,a.y-ha);ctx.fill();
+            ctx.beginPath();ctx.moveTo(xa,a.y-ha*.35);ctx.lineTo(xb,b.y-hb*.35);ctx.lineTo(xb,b.y-hb*.5);ctx.lineTo(xa,a.y-ha*.5);ctx.fill();
+            if(alt){ctx.fillStyle='#ff9f43';ctx.fillRect(xa-a.s*4,a.y-ha,a.s*8+1,ha);}}
+          if(z0===Math.floor(br[0]/seg)*seg){ctx.fillStyle='#ffd36e';ctx.font='bold '+Math.max(8,a.s*40|0)+'px system-ui';ctx.textAlign='center';ctx.fillText('🌉 BRIDGE',a.cx,a.y-a.s*90);ctx.textAlign='left';}
+        }
+        if(z0>=MOTO_LEN&&z0<MOTO_LEN+seg){for(let q=0;q<8;q++){ctx.fillStyle=q%2?'#000':'#fff';ctx.fillRect(a.cx-a.w+q*a.w/4,b.y,a.w/4,Math.max(3,a.y-b.y));}}
       }
-      const things=obs.filter(o=>!o.hit&&o.z-d>.5&&o.z-d<160).map(o=>({r:o.z-d,x:o.x,k:o.k,c:o.c}));
+      const at=r=>{const f=(d+r-first)/seg,k=clamp(Math.floor(f),0,N-1),u=f-k,a=pts[k],b=pts[k+1];return{cx:a.cx+(b.cx-a.cx)*u,y:a.y+(b.y-a.y)*u,s:a.s+(b.s-a.s)*u};};
+      const things=obs.filter(o=>!o.hit&&o.z-d>.5&&o.z-d<200).map(o=>({r:o.z-d,x:o.x,k:o.k,c:o.c}));
       const other=motoRiders()[1-seat];
-      if(other&&other.d-d>.5&&other.d-d<160)things.push({r:other.d-d,x:peersMotoX(1-seat),k:'bike',c:other.col,name:other.name});
+      if(other&&other.d-d>.5&&other.d-d<200)things.push({r:other.d-d,x:peersMotoX(1-seat),k:'bike',c:other.col,name:other.name});
       things.sort((a,b)=>b.r-a.r);
-      for(const o of things){const s=proj(o.r),sx=480+o.x*480*1.1*s,sy=HZ+(H-HZ)*s,sz=s*120;
+      for(const o of things){const p=at(o.r),s=p.s,sx=p.cx+o.x*RW*s,sy=p.y,sz=s*120;
         if(o.k==='cone'){ctx.fillStyle='#ff8a00';ctx.beginPath();ctx.moveTo(sx,sy-sz*.6);ctx.lineTo(sx+sz*.22,sy);ctx.lineTo(sx-sz*.22,sy);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(sx-sz*.12,sy-sz*.3,sz*.24,sz*.07);}
         else if(o.k==='car'){ctx.fillStyle=o.c;ctx.fillRect(sx-sz*.45,sy-sz*.45,sz*.9,sz*.35);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(sx-sz*.3,sy-sz*.6,sz*.6,sz*.18);ctx.fillStyle='#111';ctx.fillRect(sx-sz*.45,sy-sz*.12,sz*.2,sz*.12);ctx.fillRect(sx+sz*.25,sy-sz*.12,sz*.2,sz*.12);}
-        else{ctx.fillStyle=o.c;ctx.fillRect(sx-sz*.12,sy-sz*.55,sz*.24,sz*.5);ctx.fillStyle='#111';ctx.beginPath();ctx.arc(sx,sy-sz*.06,sz*.1,0,7);ctx.fill();txt(o.name,sx,sy-sz*.65,Math.max(10,sz*.18),'#fff','center');}
+        else drawBikeBack(sx,sy,sz*.55,seat?'#ff5d73':'#4fc3ff',o.c||'#fff',0,o.name);
       }
-      const bx=480+x*480*1.1*.92,by=H-40,lean=((K.KeyD||K.ArrowRight)?1:0)-((K.KeyA||K.ArrowLeft)?1:0);
-      ctx.save();ctx.translate(bx,by);ctx.rotate(lean*.18);
-      ctx.fillStyle='#111';ctx.fillRect(-22,-30,44,30);ctx.fillStyle=seat?'#4fc3ff':'#ff5d73';ctx.fillRect(-30,-80,60,55);ctx.fillStyle=me.color;ctx.beginPath();ctx.arc(0,-100,22,0,7);ctx.fill();
-      ctx.fillStyle='#c8cde0';ctx.fillRect(-55,-78,110,8);ctx.restore();
+      drawBikeBack(480+x*RW*.92,H-18,105,seat?'#4fc3ff':'#ff5d73',me.color,steerNow,'');
+      // curve warning sign
+      const ahead=motoCurv(d+60);
+      if(Math.abs(ahead)>.45&&(t/15|0)%2){ctx.fillStyle='#ffd36e';ctx.fillRect(430,100,100,44);ctx.fillStyle='#111';ctx.font='bold 30px system-ui';ctx.textAlign='center';ctx.fillText(ahead>0?'➡ ➡':'⬅ ⬅',480,133);ctx.textAlign='left';}
       if(flash>0){ctx.fillStyle='rgba(255,60,60,'+(flash/40)+')';ctx.fillRect(0,0,W,H);}
       ctx.fillStyle='#141c3d';ctx.fillRect(0,0,W,56);
       txt('🏍 MOTO RACER   '+Math.round(v*20)+' km/h   '+Math.round(d)+' / '+MOTO_LEN+' m',20,37,22,'#ff9f43');
       txt('W gas · S brake · A/D steer · Esc = get off',W-20,35,14,'#9fb0e0','right',false);
       if(other)txt('🆚 '+other.name+': '+Math.round(other.d)+' m'+(other.done?' 🏁':''),20,82,18,'#fff');
       else txt('Racing alone: a friend can ride the other motorcycle!',20,82,16,'#9fb0e0',undefined,false);
-      if(count>0)overMsg(count>120?'3':count>60?'2':'1','Get ready! Hold W to go');
+      if(motoBridge(d))txt('🌉 On the bridge!',W-20,82,18,'#ffd36e','right');
+      if(count>0)overMsg(count>120?'3':count>60?'2':'1','Get ready! Hold W to go. Lean into the turns!');
       if(over)overMsg(place===1?'🏁 1st place! 🏆':'🏁 2nd place!','Press Space to race again');
     }
   };
@@ -2569,17 +2658,19 @@ function updateMotoScreen(){
   const g=MOTO.canvas.getContext('2d'),Wc=1024,Hc=420,riders=motoRiders();
   g.fillStyle='#0a0f24';g.fillRect(0,0,Wc,Hc);
   for(let k=0;k<2;k++){
-    const x0=k*Wc/2,r=riders[k];
-    const gr=g.createLinearGradient(0,0,0,Hc);gr.addColorStop(0,'#2a0f5e');gr.addColorStop(.55,'#ff7a4a');gr.addColorStop(.56,'#1f6b3a');g.fillStyle=gr;g.fillRect(x0+6,6,Wc/2-12,Hc-12);
-    g.fillStyle='#555';g.beginPath();g.moveTo(x0+Wc/4-20,Hc*.56);g.lineTo(x0+Wc/4+20,Hc*.56);g.lineTo(x0+Wc/2-40,Hc-6);g.lineTo(x0+40,Hc-6);g.fill();
-    g.fillStyle='#ffd36e';for(let q=0;q<5;q++){const yy=Hc*.56+((q*40+(r?r.d*4:T*2))%(Hc*.44));g.fillRect(x0+Wc/4-3,yy,6,14);}
-    g.fillStyle=k?'#4fc3ff':'#ff5d73';g.fillRect(x0+Wc/4-18,Hc-90,36,50);
+    const x0=k*Wc/2,r=riders[k],dd=r?r.d:0,bend=motoCurv(dd+50)*110,onBr=!!motoBridge(dd+20);
+    const gr=g.createLinearGradient(0,0,0,Hc);gr.addColorStop(0,'#2a0f5e');gr.addColorStop(.55,'#ff7a4a');gr.addColorStop(.56,onBr?'#2a6fd0':'#1f6b3a');g.fillStyle=gr;g.fillRect(x0+6,6,Wc/2-12,Hc-12);
+    const top=Hc*.56,cx=x0+Wc/4;
+    g.fillStyle=onBr?'#9aa0ae':'#555';g.beginPath();g.moveTo(cx-14+bend,top);g.lineTo(cx+14+bend,top);g.quadraticCurveTo(cx+bend*.3+90,Hc*.8,x0+Wc/2-40,Hc-6);g.lineTo(x0+40,Hc-6);g.quadraticCurveTo(cx+bend*.3-90,Hc*.8,cx-14+bend,top);g.fill();
+    if(onBr){g.strokeStyle='#c9ced9';g.lineWidth=5;g.beginPath();g.moveTo(cx-16+bend,top-8);g.quadraticCurveTo(cx+bend*.3-96,Hc*.8-20,x0+34,Hc-40);g.moveTo(cx+16+bend,top-8);g.quadraticCurveTo(cx+bend*.3+96,Hc*.8-20,x0+Wc/2-34,Hc-40);g.stroke();}
+    g.fillStyle='#ffd36e';for(let q=0;q<5;q++){const u=((q*.2+(r?r.d*.01:T*.005))%1),yy=top+u*u*(Hc-top-10),xx=cx+bend*(1-u)*(1-u)*.9;g.fillRect(xx-2-u*3,yy,4+u*6,6+u*12);}
+    g.fillStyle=k?'#4fc3ff':'#ff5d73';g.beginPath();g.ellipse(cx,Hc-60,12,18,0,0,7);g.fill();g.fillStyle='#111';g.beginPath();g.ellipse(cx,Hc-38,10,16,0,0,7);g.fill();
     g.textAlign='center';g.textBaseline='middle';
     g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x0+6,6,Wc/2-12,46);
     g.fillStyle='#fff';g.font='bold 26px system-ui';
     g.fillText(r?('🏍 '+r.name.slice(0,14)+(r.done?' 🏁':'')):'🏍 PLAYER '+(k+1),x0+Wc/4,30);
     if(r){g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x0+40,64,Wc/2-80,22);g.fillStyle=k?'#4fc3ff':'#ff5d73';g.fillRect(x0+40,64,(Wc/2-80)*Math.min(1,r.d/MOTO_LEN),22);
-      g.fillStyle='#fff';g.font='bold 18px system-ui';g.fillText(Math.round(r.d)+' m',x0+Wc/4,76);}
+      g.fillStyle='#fff';g.font='bold 18px system-ui';g.fillText(Math.round(r.d)+' m'+(onBr?'  🌉':''),x0+Wc/4,76);}
     else if((T/30|0)%2){g.fillStyle='#ffd36e';g.font='bold 22px system-ui';g.fillText('SIT ON THE BIKE TO RACE',x0+Wc/4,90);}
   }
   g.fillStyle='#ff9f43';g.fillRect(Wc/2-4,0,8,Hc);
