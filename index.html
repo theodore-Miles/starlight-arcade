@@ -216,7 +216,8 @@ const W=960,H=640;
 const mouse={x:W/2,y:H/2,clicked:false};
 function mpos(e){const r=mini.getBoundingClientRect();mouse.x=(e.clientX-r.left)*W/r.width;mouse.y=(e.clientY-r.top)*H/r.height;}
 mini.addEventListener('mousemove',mpos);
-mini.addEventListener('mouseup',e=>{mpos(e);mouse.clicked=true;});
+let ignoreClickUntil=0;
+mini.addEventListener('mouseup',e=>{mpos(e);if(performance.now()<ignoreClickUntil)return;mouse.clicked=true;});
 function rr(x,y,w,h,r,fill){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();}
 function txt(s,x,y,size,col,align,bold){ctx.font=(bold===false?'':'bold ')+size+'px system-ui,sans-serif';ctx.fillStyle=col;ctx.textAlign=align||'left';ctx.fillText(s,x,y);ctx.textAlign='left';}
 function gbg(title,sub,col){
@@ -352,7 +353,7 @@ const pool3D=(x,y)=>({x:(x-480)/POOL_SX,z:(y-330)/POOL_SY});
 function poolRack(){const b=[[280,330,0]];let k=1;for(let col=0;col<4;col++)for(let j=0;j<=col;j++)b.push([620+col*21,330-col*12+j*24,k++]);return b;}
 // plants sitting on the pool table become obstacles in the pool game
 function poolPlants(){const out=[];
-  for(const p of PLANTS)if(!p.held&&p.y>1&&Math.abs(p.x)<2.3&&Math.abs(p.z)<1.3){const q=pool2D(p.x,p.z);out.push({x:q.x,y:q.y,r:{spray:16,mop:24,bucket:32,vacuum:34}[p.kind]||40,kind:p.kind});}
+  for(const p of PLANTS)if(!p.held&&p.y>1&&Math.abs(p.x)<2.3&&Math.abs(p.z)<1.3){const q=pool2D(p.x,p.z);out.push({x:q.x,y:q.y,r:{spray:16,mop:24,bucket:32,vacuum:34,phone:22,duck:18}[p.kind]||40,kind:p.kind});}
   if(typeof flying!=='undefined')for(const b of flying)if(b.rest&&!b.dead&&b.y>1.1&&b.y<1.5&&Math.abs(b.x)<2.3&&Math.abs(b.z)<1.3){const q=pool2D(b.x,b.z);out.push({x:q.x,y:q.y,r:17,kind:'ball'});}
   return out;}
 function Pool(){
@@ -430,10 +431,10 @@ function Pool(){
           ctx.fillStyle='#f4f1e6';ctx.beginPath();ctx.arc(o.x-8,o.y+6,7,0,7);ctx.fill();
           txt('🗑',o.x,o.y-o.r-6,16,'#fff','center',false);
         }else if(o.kind&&o.kind!=='plant'){
-          const c={mop:'#d8d4c4',spray:'#46b4ff',bucket:'#ffd36e',vacuum:'#b06bff',phone:'#ff5d73'}[o.kind]||'#cccccc';
+          const c={mop:'#d8d4c4',spray:'#46b4ff',bucket:'#ffd36e',vacuum:'#b06bff',phone:'#ff5d73',duck:'#ffd400'}[o.kind]||'#cccccc';
           ctx.fillStyle=c;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,7);ctx.fill();
           ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(o.x,o.y,o.r-4,0,7);ctx.stroke();
-          txt({mop:'🧹',spray:'🧴',bucket:'🪣',vacuum:'🌀',phone:'📞'}[o.kind]||'❓',o.x,o.y+7,20,'#fff','center',false);
+          txt({mop:'🧹',spray:'🧴',bucket:'🪣',vacuum:'🌀',phone:'📞',duck:'🦆'}[o.kind]||'❓',o.x,o.y+7,20,'#fff','center',false);
         }else if(o.kind==='ball'){
           ctx.fillStyle='#f4f1e6';ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,7);ctx.fill();
           ctx.strokeStyle='#b9b4a2';ctx.lineWidth=2;for(let k=0;k<4;k++){ctx.beginPath();ctx.moveTo(o.x-o.r*.6,o.y-o.r*.5+k*6);ctx.lineTo(o.x+o.r*.5,o.y-o.r*.3+k*5);ctx.stroke();}
@@ -497,7 +498,7 @@ function Info(){
   };
 }
 let game=null;
-function startGame(g){unlockMouse();game=g;g.init();mini.style.display='block';}
+function startGame(g){unlockMouse();ignoreClickUntil=performance.now()+450;mouse.clicked=false;game=g;g.init();mini.style.display='block';}
 function closeGame(){game=null;mini.style.display='none';}
 
 // ======================================================================
@@ -1222,11 +1223,13 @@ function updateWorld(dt){
   {const v=level===0&&me.y>=2.4?VENTS.find(v=>Math.hypot(v.x-me.x,v.z-me.z)<1.1):null;
    if(v)near={verb:me.holding!=null?'Climb into the vent with the '+PLANTS[me.holding].name+' 🕳':'Climb into the vent 🕳',act:()=>enterVent(v)};
    else if(me.holding!=null)near={verb:'Put the '+PLANTS[me.holding].name+' down '+PLANTS[me.holding].icon,act:dropPlant};}
+  {const lk=drawerLook();if(lk)near=lk;}
   if(near){promptEl.innerHTML='<kbd>E</kbd><kbd>🖱 click</kbd>';promptEl.append(near.verb);promptEl.style.display='block';}else promptEl.style.display='none';
   if(near&&(anyPress('KeyE','Enter')||clickUse)){clickUse=false;promptEl.style.display='none';near.act();}
   if(P.has('KeyT'))openChat();
   if(P.has('KeyR'))scrunch();
   if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='phone')toast(PHONE_LINES[Math.random()*PHONE_LINES.length|0]);
+  if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='duck')toast(['🦆 Squeak!','🦆 Squeak squeak!','🦆 SQUEEEAK!'][Math.random()*3|0]);
 }
 
 // camera
@@ -1453,7 +1456,7 @@ function updatePlants(){
     }else{
       p.g.position.set(p.x,p.y,p.z);p.g.scale.setScalar(p.y>.05?.7:1);if(p.kind==='spray')p.g.rotation.set(0,0,0);if(p.kind==='mop'||p.kind==='vacuum')p.g.rotation.set(0,0,p.kind==='mop'?.12:0);
     }
-    if(p.kind==='phone'&&p.t===0&&!holder){const d=DRAWERS[1].g.position;p.g.position.set(d.x,d.y-.06,d.z+.14);p.g.scale.setScalar(1);}
+    if((p.kind==='phone'||p.kind==='duck')&&p.t===0&&!holder){const d=DRAWERS[p.kind==='phone'?1:3].g.position;p.g.position.set(d.x,d.y-(p.kind==='duck'?.12:.06),d.z+.14);p.g.scale.setScalar(1);}
     p.col.x=p.x;p.col.z=p.z;p.it.x=p.x;p.it.z=p.z;
   });
 }
@@ -2263,7 +2266,7 @@ function updateTV(){
 // ======================================================================
 // DESK DRAWERS (4) — one has a telephone in it
 // ======================================================================
-let drawerT=0,gotCoin=false,PHONE=-1;
+let drawerT=0,gotCoin=false,PHONE=-1,DUCK=-1;
 const PHONE_LINES=['📞 Hello? … Hello?? Nobody\'s there.','📞 "Starlight Arcade, how can I help you?"','📞 Ring ring! Ring ring!','📞 Brrring… it\'s for you!','📞 "Is your refrigerator running?" 😄','📞 Beep boop… wrong number!'];
 const DRAWERS=[
   {name:'Drawer 1',x:10.625,y:.72,w:.6,h:.3},
@@ -2283,9 +2286,6 @@ const DRAWERS=[
   });
   // a little pen and pins live in drawer 1 (just for looks)
   const coin=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.012,20),std(0xffd36e,{metalness:.8,roughness:.25}));coin.position.set(.15,-.11,.22);DRAWERS[2].g.add(coin);DRAWERS[2].coin=coin;
-  {const duck=new THREE.Group(),yel=std(0xffd400,{roughness:.4});const b=new THREE.Mesh(new THREE.SphereGeometry(.06,12,10),yel);b.scale.set(1.2,.8,1);duck.add(b);
-   const h=new THREE.Mesh(new THREE.SphereGeometry(.04,12,10),yel);h.position.set(.05,.06,0);duck.add(h);const bk=new THREE.Mesh(new THREE.ConeGeometry(.018,.04,8),std(0xff8a00));bk.rotation.z=-Math.PI/2;bk.position.set(.1,.055,0);duck.add(bk);
-   duck.position.set(-.15,-.08,.2);duck.rotation.y=-Math.PI/2;DRAWERS[3].g.add(duck);}
   const pen=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.18,8),std(0x1e5bff));pen.rotation.z=Math.PI/2;pen.position.set(0,-.1,.18);DRAWERS[0].g.add(pen);
   // the telephone (you can carry it once it's out of the drawer)
   const i=PLANTS.length,g=new THREE.Group(),red=std(0xff3b3b,{roughness:.35});
@@ -2299,39 +2299,58 @@ const DRAWERS=[
   const col={x:d.x,z:-8.83,r:.15},it={x:d.x,z:-8.83,verb:'Pick up the telephone 📞',cond:()=>me.holding==null&&!PLANTS[i].held&&PLANTS[i].t>0&&Math.abs(PLANTS[i].y-me.y)<2.2,act:()=>pickPlant(i)};
   houseCols.push(col);houseInter.push(it);
   PLANTS.push({g,col,it,x:d.x,y:.81,z:-8.83,t:0,held:false,kind:'phone',name:'telephone',icon:'📞'});PHONE=i;
+  {const j=PLANTS.length,dg=new THREE.Group(),yel=std(0xffd400,{roughness:.4});
+   const b=new THREE.Mesh(new THREE.SphereGeometry(.07,14,10),yel);b.scale.set(1.25,.8,1);b.position.y=.06;dg.add(b);
+   const h=new THREE.Mesh(new THREE.SphereGeometry(.045,12,10),yel);h.position.set(.06,.13,0);dg.add(h);
+   const bk=new THREE.Mesh(new THREE.ConeGeometry(.02,.045,8),std(0xff8a00));bk.rotation.z=-Math.PI/2;bk.position.set(.12,.125,0);dg.add(bk);
+   for(const ez of [-.022,.022]){const ey=new THREE.Mesh(new THREE.SphereGeometry(.008,6,5),new THREE.MeshBasicMaterial({color:0x111111}));ey.position.set(.09,.145,ez);dg.add(ey);}
+   dg.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+   const d4=DRAWERS[3];dg.position.set(d4.x,d4.y-.1,-8.83);house.add(dg);
+   const col2={x:d4.x,z:-8.83,r:.12},it2={x:d4.x,z:-8.83,verb:'Pick up the rubber duck 🦆',cond:()=>me.holding==null&&!PLANTS[j].held&&PLANTS[j].t>0&&Math.abs(PLANTS[j].y-me.y)<2.2,act:()=>pickPlant(j)};
+   houseCols.push(col2);houseInter.push(it2);
+   PLANTS.push({g:dg,col:col2,it:it2,x:d4.x,y:.26,z:-8.83,t:0,held:false,kind:'duck',name:'rubber duck',icon:'🦆'});DUCK=j;}
 })();
-houseInter.push({x:12.6,z:-9.8,cond:()=>me.z<-9.05,verb:'Look in the desk drawers 🗄',act:()=>openDeskMenu()});
-function takePhone(){
-  const p=PLANTS[PHONE];
-  if(!(p.t===0&&!p.held)){toast('📞 The telephone isn\'t in the drawer any more');return false;}
+const inDrawer=p=>p&&p.t===0&&!p.held;
+function takeItem(p){
+  if(!inDrawer(p)){toast(p.icon+' The '+p.name+' isn\'t in the drawer any more');return false;}
   if(me.holding!=null){toast('🙌 Your hands are full — put down what you\'re holding first');return false;}
-  p.t=Date.now();pickPlant(PHONE);return true;}
+  p.t=Date.now();pickPlant(PLANTS.indexOf(p));return true;}
+function takePhone(){return takeItem(PLANTS[PHONE]);}
 function takeCoin(){if(gotCoin){toast('📎 Just paper clips now');return;}gotCoin=true;DRAWERS[2].coin.visible=false;me.score+=1;updInv();sendPresence(true);toast('🪙 +1 point! Lucky!');}
-const DRAWER_SAYS=['🖊 A pen and 📌 pins — click them to take them','📞 A telephone! Click it to take it','🪙 A shiny coin! Click it to take it','🦆 A rubber duck!'];
+function drawerSays(i){
+  if(i===0)return '🖊 A pen and 📌 pins';
+  if(i===1)return inDrawer(PLANTS[PHONE])?'📞 A telephone!':'Empty — someone took the telephone';
+  if(i===2)return gotCoin?'📎 Just paper clips':'🪙 A shiny coin!';
+  return inDrawer(PLANTS[DUCK])?'🦆 A rubber duck!':'Empty — someone took the duck';
+}
+function takeVerb(i){
+  if(i===0)return 'Take the pen and pins 🖊';
+  if(i===1)return inDrawer(PLANTS[PHONE])?'Take the telephone 📞':'Close the empty drawer 🗄';
+  if(i===2)return gotCoin?'Close the drawer 🗄':'Take the coin 🪙';
+  return inDrawer(PLANTS[DUCK])?'Take the rubber duck 🦆':'Close the empty drawer 🗄';
+}
 function takeFromDrawer(i){
   if(i===0)openDrawer();
-  else if(i===1)takePhone();
-  else if(i===2)takeCoin();
-  else toast('🦆 Squeak! Squeak!');
+  else if(i===1){if(inDrawer(PLANTS[PHONE]))takePhone();else setDrawer(1,false);}
+  else if(i===2){if(!gotCoin)takeCoin();else setDrawer(2,false);}
+  else{if(inDrawer(PLANTS[DUCK]))takeItem(PLANTS[DUCK]);else setDrawer(3,false);}
 }
-// clicking straight on a drawer (or what's inside it)
+// what the crosshair is pointing at in the desk (a drawer, or something inside one)
 const clickRay=new THREE.Raycaster();clickRay.far=3.2;
 function isInside(o,root){for(;o;o=o.parent)if(o===root)return true;return false;}
-function clickWorld(){
-  if(level!==0||me.inVent)return false;
+function drawerLook(){
+  if(level!==0||me.inVent||!DRAWERS[0].g)return null;
   clickRay.setFromCamera({x:0,y:0},camera);
-  const ph=PLANTS[PHONE],targets=DRAWERS.map(d=>d.g);
-  if(ph&&ph.t===0&&!ph.held)targets.push(ph.g);
-  const hit=clickRay.intersectObjects(targets,true)[0];if(!hit)return false;
-  if(ph&&isInside(hit.object,ph.g)){if(DRAWERS[1].open)takePhone();else{setDrawer(1,true);toast(DRAWER_SAYS[1]);}return true;}
-  const i=DRAWERS.findIndex(d=>isInside(hit.object,d.g));if(i<0)return false;
-  if(hit.object.userData.part==='front'||!DRAWERS[i].open){
-    const open=!DRAWERS[i].open;setDrawer(i,open);
-    toast(open?(i===1&&!(ph.t===0&&!ph.held)?'Empty — someone took the telephone 📞':i===2&&gotCoin?'📎 Just paper clips':DRAWER_SAYS[i]):'🗄 Drawer closed');
-  }else takeFromDrawer(i);
-  if(deskMenu)renderDeskMenu();
-  return true;
+  const items=[PLANTS[PHONE],PLANTS[DUCK]].filter(inDrawer);
+  const hit=clickRay.intersectObjects(DRAWERS.map(d=>d.g).concat(items.map(p=>p.g)),true)[0];if(!hit)return null;
+  for(const p of items)if(isInside(hit.object,p.g)){const di=p.kind==='phone'?1:3;
+    return DRAWERS[di].open?{verb:'Take the '+p.name+' '+p.icon,act:()=>takeItem(p)}:{verb:'Open the drawer 🗄',act:()=>{setDrawer(di,true);toast(drawerSays(di));}};}
+  const i=DRAWERS.findIndex(d=>isInside(hit.object,d.g));if(i<0)return null;
+  if(hit.object.userData.part==='front'||!DRAWERS[i].open)
+    return{verb:DRAWERS[i].open?'Close the drawer 🗄':'Open the drawer 🗄',act:()=>{const o=!DRAWERS[i].open;setDrawer(i,o);if(o)toast(drawerSays(i));}};
+  return{verb:takeVerb(i),act:()=>takeFromDrawer(i)};
 }
+function clickWorld(){const r=drawerLook();if(!r)return false;r.act();return true;}
 function setDrawer(i,open){DRAWERS[i].open=open;drawerT=Date.now();sendPresence(true);}
 function openDeskMenu(){unlockMouse();deskMenu=true;renderDeskMenu();linkp.style.display='block';linkOpen=true;}
 function renderDeskMenu(){
@@ -2381,6 +2400,7 @@ function updateHelp(){
       if(near)k('E / click',near.verb.replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu,'').trim().toLowerCase());
       if(held&&held.kind==='spray')k('F','spray');
       if(held&&held.kind==='phone')k('F','talk on the phone');
+      if(held&&held.kind==='duck')k('F','squeak');
       if(held&&(held.kind==='mop'||held.kind==='vacuum'))k('hold F / click','power up & swing');
       if(me.ball)k('hold Q / click','throw paper ball');
       else if(me.darts>0)k('hold Q / click','throw dart');
