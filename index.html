@@ -834,7 +834,6 @@ function makeClaw(x,col){
   const lampGlow=new THREE.Mesh(new THREE.PlaneGeometry(2.8,.6),new THREE.MeshBasicMaterial({color:0xfff1c9}));lampMeshes.push(lampGlow);lampGlow.rotation.x=Math.PI/2;lampGlow.position.y=3.57;pool.add(lampGlow);
   for(const x of [-1.2,1.2]){const cb=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,1.6),std(0x222222));cb.position.set(x,4.6,0);pool.add(cb);}
   const pl=new THREE.PointLight(0xfff1c9,1.1,8);pl.position.y=3.3;pool.add(pl);
-  floorGlow(0,0,7,'#46f3ff',pool);
   // the 6 pockets (same spots as in the pool game)
   {const pm=new THREE.MeshStandardMaterial({color:0x050505,roughness:1}),rm=std(0x3a2414,{roughness:.6});
    for(const [px,pz] of [[-2.25,-1.22],[0,-1.27],[2.25,-1.22],[-2.25,1.22],[0,1.27],[2.25,1.22]]){
