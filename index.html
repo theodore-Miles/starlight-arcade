@@ -174,7 +174,7 @@
 <canvas id="mini" width="960" height="640"></canvas>
 <div id="linkp" class="panel"><h2 id="lt"></h2><p id="ld"></p><div id="lbtns"></div><button id="lc" class="btn ghost" style="margin:6px 0 0">Close</button></div>
 <div id="chatlog" class="panel"></div>
-<div id="chat" class="panel"><input id="chatin" maxlength="80" placeholder="Chat… (try /give 10 all)"></div>
+<div id="chat" class="panel"><input id="chatin" maxlength="80" placeholder="Chat… (try /whisper Name hi)"></div>
 <div id="notebox" class="panel"><div style="font-size:13px;opacity:.85;margin-bottom:6px">📝 Write your note — Enter to pin it, Esc to cancel</div><input id="notein" maxlength="60" placeholder="Hi everyone!"></div>
 <div id="power" class="panel"><div id="powbar"></div></div>
 <div id="dartaim"></div>
@@ -1220,8 +1220,9 @@ function updateWorld(dt){
   near=null;let bd=2.4;
   for(const it of (level===0?houseInter:skyInter)){if(it.cond&&!it.cond())continue;const d=Math.hypot(it.x-me.x,it.z-me.z);if(d<bd){bd=d;near=it;}}
   if(!me.ball&&me.holding==null)for(const b of flying)if(b.rest&&!b.dead){const d=Math.hypot(b.x-me.x,b.z-me.z);if(d<Math.min(bd,1.4)&&Math.abs(b.y-me.y)<2){bd=d;near={verb:'Pick up the paper ball 🗞',act:()=>{scene.remove(b.m);b.dead=true;me.ball=true;updInv();}};}}
-  if(me.holding!=null)near={verb:'Put the '+PLANTS[me.holding].name+' down '+PLANTS[me.holding].icon,act:dropPlant};
-  else if(level===0&&me.y>=2.4){const v=VENTS.find(v=>Math.hypot(v.x-me.x,v.z-me.z)<1.1);if(v)near={verb:'Climb into the vent 🕳',act:()=>enterVent(v)};}
+  {const v=level===0&&me.y>=2.4?VENTS.find(v=>Math.hypot(v.x-me.x,v.z-me.z)<1.1):null;
+   if(v)near={verb:me.holding!=null?'Climb into the vent with the '+PLANTS[me.holding].name+' 🕳':'Climb into the vent 🕳',act:()=>enterVent(v)};
+   else if(me.holding!=null)near={verb:'Put the '+PLANTS[me.holding].name+' down '+PLANTS[me.holding].icon,act:dropPlant};}
   if(near){promptEl.innerHTML='<kbd>E</kbd>';promptEl.append(near.verb);promptEl.style.display='block';}else promptEl.style.display='none';
   if(near&&anyPress('KeyE','Enter')){promptEl.style.display='none';near.act();}
   if(P.has('KeyT'))openChat();
@@ -1266,7 +1267,7 @@ let lastSent='',lastSendT=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1298,6 +1299,12 @@ function upsertPeer(p){
   if(Array.isArray(pr.cl)&&pr.cl.length===2&&typeof pr.cl[1]==='number'&&isFinite(pr.cl[1])&&pr.cl[1]>closet.t){closet.t=pr.cl[1];closet.open=!!pr.cl[0];}
   if(Array.isArray(pr.lt)&&pr.lt.length===2&&typeof pr.lt[1]==='number'&&isFinite(pr.lt[1])&&pr.lt[1]>lights.t){lights.t=pr.lt[1];const on=!!pr.lt[0];if(on!==lights.on){lights.on=on;applyLights(true);}}
   e.sc=Math.max(0,num(pr.sc,0)|0);e.ds=Math.max(0,num(pr.ds,0)|0);
+  if(Array.isArray(pr.wh)&&pr.wh.length===3&&typeof pr.wh[0]==='string'&&typeof pr.wh[1]==='string'&&typeof pr.wh[2]==='number'){
+    if(e.whT===undefined)e.whT=pr.wh[2];
+    else if(pr.wh[2]!==e.whT){e.whT=pr.wh[2];
+      if(myPeer&&pr.wh[0]===myPeer){const t=pr.wh[1].replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu,'').slice(0,80);
+        if(t){const who=(e.nm||names.get(e.by)||'Someone');addWhisper('🤫 '+who+' whispers: ',t);toast('🤫 '+who+' whispered to you');}}}
+  }else if(e.whT===undefined)e.whT=0;
   {const g=pr.pg;let ok=g&&typeof g==='object'&&typeof g.v==='number'&&(g.t===0||g.t===1)&&Array.isArray(g.s)&&g.s.length===2&&Array.isArray(g.b)&&g.b.length<=11&&Array.isArray(g.st)&&g.st.length===2;
    if(ok)ok=g.b.every(q=>Array.isArray(q)&&q.length===3&&typeof q[0]==='number'&&typeof q[1]==='number'&&Number.isInteger(q[2])&&q[2]>=0&&q[2]<11)&&g.st.every(x=>x===null||typeof x==='string');
    e.pg=ok?{v:g.v,t:g.t,s:[num(g.s[0],0)|0,num(g.s[1],0)|0],b:g.b.map(q=>[clamp(q[0],100,860),clamp(q[1],120,540),q[2]]),m:g.m?1:0,g:(typeof g.g==='string'&&/^(tie|win[01])$/.test(g.g))?g.g:'',st:g.st.slice()}:null;}
@@ -2084,6 +2091,7 @@ function renderBoardMenu(){
 // ======================================================================
 let myPeer=null;const chatLines=[];const chatLog=document.getElementById('chatlog');let chatSig='';
 function addChat(who,col,text){chatLines.push({who,col,text,t:performance.now()});if(chatLines.length>40)chatLines.shift();renderChatLog(true);}
+function addWhisper(head,text){chatLines.push({wh:true,head,text,t:performance.now()});if(chatLines.length>40)chatLines.shift();renderChatLog(true);}
 function addSys(text){chatLines.push({sys:true,text,t:performance.now()});if(chatLines.length>40)chatLines.shift();renderChatLog(true);}
 function renderChatLog(force){
   const now=performance.now(),open=chatting;
@@ -2097,6 +2105,7 @@ function renderChatLog(force){
   for(const l of show){const d=document.createElement('div');
     d.style.opacity=open?1:Math.min(1,Math.max(0,(20000-(now-l.t))/5000));
     if(l.sys){d.className='sys';d.textContent=l.text;}
+    else if(l.wh){d.style.color='#e1b5ff';d.style.fontStyle='italic';d.textContent=l.head+l.text;}
     else{const w=document.createElement('span');w.className='who';w.style.color=l.col;w.textContent=l.who+':';const t=document.createElement('span');t.textContent=l.text;d.append(w,t);}
     chatLog.append(d);}
 }
@@ -2128,7 +2137,24 @@ function runCommand(cmd){
     me.score-=n;updInv();me.lastGive=[p.id,n,Date.now()];sendPresence(true);
     const nm=p.e.nm||names.get(p.e.by)||'Player';addSys('🎁 You gave '+n+' points to '+nm+'!');toast('🎁 Gave '+n+' points to '+nm+' (-'+n+')');return;
   }
-  if(c==='/help'){addSys('Commands: /give 10 PlayerName · /give 10 all');return;}
+  if(c==='/whisper'||c==='/w'){
+    const rest=parts.slice(1);
+    if(rest.length<2){addSys('Try: /whisper PlayerName your secret message');return;}
+    // the name can have spaces: try the longest name that matches a player exactly, then a name start
+    let p=null,used=0;
+    for(let n=rest.length-1;n>=1&&!p;n--){const nm=rest.slice(0,n).join(' ').toLowerCase();
+      for(const [id,e] of peers){const en=(e.nm||names.get(e.by)||'').toLowerCase();if(en&&en===nm){p={id,e};used=n;break;}}}
+    if(!p){const f=findPlayer(rest[0]);if(f){p=f;used=1;}}
+    if(!p){addSys('🤔 No player named "'+rest[0]+'" is here right now');return;}
+    const text=rest.slice(used).join(' ').slice(0,80);
+    if(!text){addSys('🤫 Write a message after the name');return;}
+    const e=p.e,nm=e.nm||names.get(e.by)||'Player';
+    const d=Math.hypot(e.tx-me.x,e.tz-me.z);
+    if(e.lv!==level||!!e.v!==!!me.inVent||d>4||Math.abs(e.ty-me.y)>3){addSys('🤫 You have to be close to '+nm+' to whisper ('+d.toFixed(1)+' m away — get within 4 m)');return;}
+    me.lastWhisper=[p.id,text,Date.now()];sendPresence(true);
+    addWhisper('🤫 You whisper to '+nm+': ',text);return;
+  }
+  if(c==='/help'){addSys('Commands: /give 10 PlayerName · /give 10 all · /whisper PlayerName message');return;}
   addSys('Unknown command. Try /help');
 }
 // ======================================================================
