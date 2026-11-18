@@ -430,10 +430,10 @@ function Pool(){
           ctx.fillStyle='#f4f1e6';ctx.beginPath();ctx.arc(o.x-8,o.y+6,7,0,7);ctx.fill();
           txt('🗑',o.x,o.y-o.r-6,16,'#fff','center',false);
         }else if(o.kind&&o.kind!=='plant'){
-          const c={mop:'#d8d4c4',spray:'#46b4ff',bucket:'#ffd36e',vacuum:'#b06bff'}[o.kind]||'#cccccc';
+          const c={mop:'#d8d4c4',spray:'#46b4ff',bucket:'#ffd36e',vacuum:'#b06bff',phone:'#ff5d73'}[o.kind]||'#cccccc';
           ctx.fillStyle=c;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,7);ctx.fill();
           ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(o.x,o.y,o.r-4,0,7);ctx.stroke();
-          txt({mop:'🧹',spray:'🧴',bucket:'🪣',vacuum:'🌀'}[o.kind]||'❓',o.x,o.y+7,20,'#fff','center',false);
+          txt({mop:'🧹',spray:'🧴',bucket:'🪣',vacuum:'🌀',phone:'📞'}[o.kind]||'❓',o.x,o.y+7,20,'#fff','center',false);
         }else if(o.kind==='ball'){
           ctx.fillStyle='#f4f1e6';ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,7);ctx.fill();
           ctx.strokeStyle='#b9b4a2';ctx.lineWidth=2;for(let k=0;k<4;k++){ctx.beginPath();ctx.moveTo(o.x-o.r*.6,o.y-o.r*.5+k*6);ctx.lineTo(o.x+o.r*.5,o.y-o.r*.3+k*5);ctx.stroke();}
@@ -518,7 +518,8 @@ function openLink(keys,title,desc,onPick){unlockMouse();const lt=document.getEle
     const h=document.createElement('b');h.textContent='▶ '+g.t;h.style.color=g.c;const p=document.createElement('span');p.textContent=g.d;a.append(h,p);
     a.addEventListener('click',()=>{if(onPick)onPick(k);setTimeout(closeLink,300);});bx.append(a);}
   linkp.style.display='block';linkOpen=true;}
-function closeLink(){linkp.style.display='none';linkOpen=false;boardMenu=false;}
+function closeLink(){linkp.style.display='none';linkOpen=false;boardMenu=false;deskMenu=false;}
+let deskMenu=false;
 let boardMenu=false;
 document.getElementById('lc').onclick=closeLink;
 
@@ -855,7 +856,7 @@ function makeClaw(x,col){
   for(let k=0;k<6;k++){const sh=new THREE.Mesh(new THREE.BoxGeometry(.42,.012,.3),std(k%2?0xffffff:0xf2f2ea));sh.position.set(10.9+(k%3-1)*.01,1.11+k*.014,-7.95);sh.rotation.y=(k%3-1)*.06;house.add(sh);}
   {const pl=makeLabel('📄 FREE PAPER','#222','rgba(255,255,255,.9)',.55);pl.position.set(10.9,1.5,-7.95);house.add(pl);}
   // drawer on the back of the counter
-  box(.95,.3,.05,std(0x3a2470),13.2,.72,-8.98,house);box(.3,.05,.05,std(0xc8cde0,{metalness:.8,roughness:.2}),13.2,.72,-9.02,house);
+
   // prize shelves on the wall behind the counter
   const shelfM=std(0x3a2a6a);
   for(const y of [2.2,3.1]){box(5,.1,.5,shelfM,12,y,-11.25,house);
@@ -871,7 +872,6 @@ function makeClaw(x,col){
   houseCols.push({x:12,z:-8.3,hw:1.75,hd:.65,top:1.1,surf:1.1,under:1});
   houseCols.push({x:10.625,z:-8.3,hw:.375,hd:.65,leg:1},{x:13.075,z:-8.3,hw:.675,hd:.65,leg:1},{x:11.7,z:-7.69,hw:.7,hd:.05,leg:1});
   houseInter.push({x:11.2,z:-9.8,cond:()=>me.z<-9.05,verb:'Use the Info Computer 💻',act:()=>startGame(Info())});
-  houseInter.push({x:13.3,z:-9.8,cond:()=>me.z<-9.05,verb:'Open the drawer 🗄 (pen + pins)',act:()=>openDrawer()});
   houseInter.push({x:11.2,z:-6.9,cond:()=>me.z>-8,verb:'Take a sheet of paper 📄',act:()=>takePaper()});
 
   // ---- VR zone (front right) ----
@@ -1227,6 +1227,7 @@ function updateWorld(dt){
   if(near&&anyPress('KeyE','Enter')){promptEl.style.display='none';near.act();}
   if(P.has('KeyT'))openChat();
   if(P.has('KeyR'))scrunch();
+  if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='phone')toast(PHONE_LINES[Math.random()*PHONE_LINES.length|0]);
 }
 
 // camera
@@ -1267,7 +1268,7 @@ let lastSent='',lastSendT=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1296,6 +1297,7 @@ function upsertPeer(p){
   e.lv=num(pr.lv,0)|0;e.v=!!pr.v;e.hid=(pr.hid==='pit'||pr.hid==='booth'||pr.hid==='box')?pr.hid:'';e.cr=!!pr.cr;e.pu=(pr.pu===1||pr.pu===-1)?pr.pu:0;e.hp=(Number.isInteger(pr.hp)&&pr.hp>=0&&pr.hp<PLANTS.length)?pr.hp:-1;
   if(Array.isArray(pr.bb)&&pr.bb.length===2&&typeof pr.bb[1]==='number'&&isFinite(pr.bb[1])&&pr.bb[1]>bbState.t){bbState.t=pr.bb[1];bbState.open=!!pr.bb[0];}
   if(Array.isArray(pr.sf)&&pr.sf.length===2&&typeof pr.sf[1]==='number'&&isFinite(pr.sf[1])&&pr.sf[1]>safe.t){safe.t=pr.sf[1];safe.open=!!pr.sf[0];}
+  if(Array.isArray(pr.dw)&&pr.dw.length===2&&Number.isInteger(pr.dw[0])&&typeof pr.dw[1]==='number'&&isFinite(pr.dw[1])&&pr.dw[1]>drawerT){drawerT=pr.dw[1];DRAWERS.forEach((d,i)=>d.open=!!(pr.dw[0]&(1<<i)));if(deskMenu)renderDeskMenu();}
   if(Array.isArray(pr.cl)&&pr.cl.length===2&&typeof pr.cl[1]==='number'&&isFinite(pr.cl[1])&&pr.cl[1]>closet.t){closet.t=pr.cl[1];closet.open=!!pr.cl[0];}
   if(Array.isArray(pr.lt)&&pr.lt.length===2&&typeof pr.lt[1]==='number'&&isFinite(pr.lt[1])&&pr.lt[1]>lights.t){lights.t=pr.lt[1];const on=!!pr.lt[0];if(on!==lights.on){lights.on=on;applyLights(true);}}
   e.sc=Math.max(0,num(pr.sc,0)|0);e.ds=Math.max(0,num(pr.ds,0)|0);
@@ -1452,6 +1454,7 @@ function updatePlants(){
     }else{
       p.g.position.set(p.x,p.y,p.z);p.g.scale.setScalar(p.y>.05?.7:1);if(p.kind==='spray')p.g.rotation.set(0,0,0);if(p.kind==='mop'||p.kind==='vacuum')p.g.rotation.set(0,0,p.kind==='mop'?.12:0);
     }
+    if(p.kind==='phone'&&p.t===0&&!holder){const d=DRAWERS[1].g.position;p.g.position.set(d.x,d.y-.06,d.z+.14);p.g.scale.setScalar(1);}
     p.col.x=p.x;p.col.z=p.z;p.it.x=p.x;p.it.z=p.z;
   });
 }
@@ -2257,6 +2260,68 @@ function updateTV(){
     if((T/30|0)%2){g.fillStyle='rgba(0,0,0,.55)';g.fillRect(156,250,200,30);g.fillStyle='#ffd36e';g.font='bold 16px system-ui';g.fillText('🎮 PRESS E TO PLAY',W2/2,266);}}
   tvTex.needsUpdate=true;
 }
+// ======================================================================
+// DESK DRAWERS (4) — one has a telephone in it
+// ======================================================================
+let drawerT=0,gotCoin=false,PHONE=-1;
+const PHONE_LINES=['📞 Hello? … Hello?? Nobody\'s there.','📞 "Starlight Arcade, how can I help you?"','📞 Ring ring! Ring ring!','📞 Brrring… it\'s for you!','📞 "Is your refrigerator running?" 😄','📞 Beep boop… wrong number!'];
+const DRAWERS=[
+  {name:'Drawer 1',x:10.625,y:.72,w:.6,h:.3},
+  {name:'Drawer 2',x:11.7,y:.875,w:1.2,h:.2},
+  {name:'Drawer 3',x:13.075,y:.78,w:1.15,h:.3},
+  {name:'Drawer 4',x:13.075,y:.36,w:1.15,h:.3},
+];
+(function buildDrawers(){
+  const front=std(0x3a2470,{roughness:.6}),tray=std(0x2a1a4a),knob=std(0xc8cde0,{metalness:.8,roughness:.2});
+  DRAWERS.forEach(d=>{
+    const g=new THREE.Group();
+    box(d.w-.04,d.h-.04,.04,front,0,0,0,g);
+    box(.22,.035,.035,knob,0,0,-.035,g);
+    box(d.w-.1,.02,.38,tray,0,-d.h/2+.04,.2,g);
+    box(.02,d.h-.1,.38,tray,-(d.w/2-.06),-.02,.2,g);box(.02,d.h-.1,.38,tray,d.w/2-.06,-.02,.2,g);
+    g.position.set(d.x,d.y,-8.97);house.add(g);d.g=g;d.open=false;
+  });
+  // a little pen and pins live in drawer 1 (just for looks)
+  const pen=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.18,8),std(0x1e5bff));pen.rotation.z=Math.PI/2;pen.position.set(0,-.1,.18);DRAWERS[0].g.add(pen);
+  // the telephone (you can carry it once it's out of the drawer)
+  const i=PLANTS.length,g=new THREE.Group(),red=std(0xff3b3b,{roughness:.35});
+  const base=new THREE.Mesh(new THREE.BoxGeometry(.26,.08,.2),red);base.position.y=.04;g.add(base);
+  const dial=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.015,20),std(0xffffff));dial.position.set(0,.085,.02);g.add(dial);
+  const hand=new THREE.Group();hand.position.set(0,.12,-.02);
+  const bar=new THREE.Mesh(new THREE.BoxGeometry(.26,.035,.05),red);hand.add(bar);
+  for(const sx of [-.12,.12]){const cup=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.04,12),red);cup.position.set(sx,-.025,0);hand.add(cup);}
+  g.add(hand);g.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+  const d=DRAWERS[1];g.position.set(d.x,d.y-.06,-8.83);house.add(g);
+  const col={x:d.x,z:-8.83,r:.15},it={x:d.x,z:-8.83,verb:'Pick up the telephone 📞',cond:()=>me.holding==null&&!PLANTS[i].held&&PLANTS[i].t>0&&Math.abs(PLANTS[i].y-me.y)<2.2,act:()=>pickPlant(i)};
+  houseCols.push(col);houseInter.push(it);
+  PLANTS.push({g,col,it,x:d.x,y:.81,z:-8.83,t:0,held:false,kind:'phone',name:'telephone',icon:'📞'});PHONE=i;
+})();
+houseInter.push({x:12.6,z:-9.8,cond:()=>me.z<-9.05,verb:'Look in the desk drawers 🗄',act:()=>openDeskMenu()});
+function setDrawer(i,open){DRAWERS[i].open=open;drawerT=Date.now();sendPresence(true);}
+function openDeskMenu(){unlockMouse();deskMenu=true;renderDeskMenu();linkp.style.display='block';linkOpen=true;}
+function renderDeskMenu(){
+  if(!deskMenu)return;
+  const lt=document.getElementById('lt'),ld=document.getElementById('ld'),box2=document.getElementById('lbtns');
+  lt.textContent='🗄 DESK DRAWERS';lt.style.color='#ffd36e';ld.textContent='Click a drawer to open or close it.';box2.textContent='';
+  const mk=(tag,css,text)=>{const e=document.createElement(tag);if(css)e.style.cssText=css;if(text!=null)e.textContent=text;return e;};
+  const phoneIn=PHONE>=0&&PLANTS[PHONE].t===0&&!PLANTS[PHONE].held;
+  DRAWERS.forEach((d,i)=>{
+    const row=mk('div','display:flex;gap:8px;align-items:center;margin:6px 0');
+    const b=mk('button','flex:none;width:150px;padding:10px;border-radius:10px;border:2px solid '+(d.open?'#ffd36e':'#7fd8ff')+';background:rgba(127,216,255,.12);color:#fff;font-weight:800;cursor:pointer;font-family:inherit',(d.open?'📂 ':'🗄 ')+d.name);
+    b.onclick=()=>{setDrawer(i,!d.open);renderDeskMenu();};
+    const info=mk('div','flex:1;text-align:left;font-size:14px;opacity:.9');
+    if(!d.open)info.textContent='(closed)';
+    else if(i===0){info.textContent='🖊 A pen and 📌 pins ';const t=mk('button','margin-left:6px','Take them');t.className='btn ghost';t.style.padding='6px 12px';t.style.fontSize='14px';t.onclick=()=>{openDrawer();renderDeskMenu();};info.append(t);}
+    else if(i===1){if(phoneIn){info.textContent='📞 A telephone! ';const t=mk('button','margin-left:6px','Take it');t.className='btn ghost';t.style.padding='6px 12px';t.style.fontSize='14px';
+        t.onclick=()=>{if(me.holding!=null){toast('🙌 Your hands are full — put down what you\'re holding first');return;}PLANTS[PHONE].t=Date.now();pickPlant(PHONE);closeLink();};info.append(t);}
+      else info.textContent='Empty — someone took the telephone 📞';}
+    else if(i===2){if(!gotCoin){info.textContent='🪙 A shiny coin! ';const t=mk('button','margin-left:6px','Take it');t.className='btn ghost';t.style.padding='6px 12px';t.style.fontSize='14px';
+        t.onclick=()=>{gotCoin=true;me.score+=1;updInv();sendPresence(true);toast('🪙 +1 point! Lucky!');renderDeskMenu();};info.append(t);}
+      else info.textContent='Just some paper clips 📎';}
+    else info.textContent='🦆 A rubber duck. Squeak!';
+    row.append(b,info);box2.append(row);
+  });
+}
 // no floating words over things: hide every label sprite in the arcade (player name tags live outside it)
 [house,sky].forEach(g=>g.traverse(o=>{if(o.isSprite&&o.userData&&'text' in o.userData)o.visible=false;}));
 // ======================================================================
@@ -2280,6 +2345,7 @@ function updateHelp(){
       k('C','crouch');
       if(near)k('E',near.verb.replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu,'').trim().toLowerCase());
       if(held&&held.kind==='spray')k('F','spray');
+      if(held&&held.kind==='phone')k('F','talk on the phone');
       if(held&&(held.kind==='mop'||held.kind==='vacuum'))k('hold F / click','power up & swing');
       if(me.ball)k('hold Q / click','throw paper ball');
       else if(me.darts>0)k('hold Q / click','throw dart');
@@ -2329,6 +2395,7 @@ function loop(){
     {let pb=null;if(game&&game.isPool)pb=game.balls().map(b=>[b.x,b.y,b.ci|0]);else for(const e of peers.values())if(e.lv===0&&e.pb){pb=e.pb;break;}
      if(pb){lastPB=pb;setPoolBalls(pb);}}
     closet.hinge.rotation.y+=((closet.open?Math.PI/2:0)-closet.hinge.rotation.y)*.12;
+    for(const d of DRAWERS)d.g.position.z+=((d.open?-9.32:-8.97)-d.g.position.z)*.15;
     bbState.hinge.rotation.y+=((bbState.open?-1.25:0)-bbState.hinge.rotation.y)*.1;
     safe.door.rotation.y+=((safe.open?1.45:0)-safe.door.rotation.y)*.1;
     safe.dialG.rotation.z=-safe.dial*Math.PI*2/40;
