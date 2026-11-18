@@ -1051,8 +1051,8 @@ function updateVent(dt){
   for(const v of VENTS){const d=Math.hypot(v.x-me.x,v.z-me.z);if(d<bd){bd=d;near={verb:'Drop down '+v.label,act:()=>exitVent(v)};}}
   if(me.holding!=null&&!near)near={verb:'(carrying a plant 🪴)',act:dropPlant};
   if(Math.hypot(SECRET.x-me.x,SECRET.z-me.z)<.85)near={verb:'Climb down the secret vent 🤫',act:exitSecret};
-  if(near){promptEl.innerHTML='<kbd>E</kbd>';promptEl.append(near.verb);promptEl.style.display='block';}else promptEl.style.display='none';
-  if(near&&anyPress('KeyE','Enter')){promptEl.style.display='none';near.act();}
+  if(near){promptEl.innerHTML='<kbd>E</kbd><kbd>🖱 click</kbd>';promptEl.append(near.verb);promptEl.style.display='block';}else promptEl.style.display='none';
+  if(near&&(anyPress('KeyE','Enter')||clickUse)){clickUse=false;promptEl.style.display='none';near.act();}
   if(P.has('KeyT'))openChat();
 }
 function openVR(){openLink(['reddust','blockhaven'],'🥽 VR HEADSET','Pick a game to play:');}
@@ -1222,8 +1222,8 @@ function updateWorld(dt){
   {const v=level===0&&me.y>=2.4?VENTS.find(v=>Math.hypot(v.x-me.x,v.z-me.z)<1.1):null;
    if(v)near={verb:me.holding!=null?'Climb into the vent with the '+PLANTS[me.holding].name+' 🕳':'Climb into the vent 🕳',act:()=>enterVent(v)};
    else if(me.holding!=null)near={verb:'Put the '+PLANTS[me.holding].name+' down '+PLANTS[me.holding].icon,act:dropPlant};}
-  if(near){promptEl.innerHTML='<kbd>E</kbd>';promptEl.append(near.verb);promptEl.style.display='block';}else promptEl.style.display='none';
-  if(near&&anyPress('KeyE','Enter')){promptEl.style.display='none';near.act();}
+  if(near){promptEl.innerHTML='<kbd>E</kbd><kbd>🖱 click</kbd>';promptEl.append(near.verb);promptEl.style.display='block';}else promptEl.style.display='none';
+  if(near&&(anyPress('KeyE','Enter')||clickUse)){clickUse=false;promptEl.style.display='none';near.act();}
   if(P.has('KeyT'))openChat();
   if(P.has('KeyR'))scrunch();
   if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='phone')toast(PHONE_LINES[Math.random()*PHONE_LINES.length|0]);
@@ -1590,7 +1590,8 @@ function spawnBall(x,y,z,vx,vy,vz,mine){const m=new THREE.Mesh(ballGeo,ballMat);
 const charge={on:false,t:0,src:''};let mouseHeld=false;
 const powEl=document.getElementById('power'),powBar=document.getElementById('powbar');
 const canThrow=()=>started&&!game&&!linkOpen&&!chatting&&!noteOpen&&(me.ball||me.darts>0)&&!me.inVent;
-renderer.domElement.addEventListener('mousedown',e=>{if(e.button!==0)return;mouseHeld=true;if(locked()&&holdingTool()&&!me.ball)swingReq=true;if(locked()&&canThrow()&&!charge.on){charge.on=true;charge.t=0;charge.src='mouse';}});
+renderer.domElement.addEventListener('mousedown',e=>{if(e.button!==0)return;mouseHeld=true;
+  if(locked()&&!canThrow()&&!holdingTool()&&!(me.holding!=null&&PLANTS[me.holding].kind==='spray'))clickUse=true;if(locked()&&holdingTool()&&!me.ball)swingReq=true;if(locked()&&canThrow()&&!charge.on){charge.on=true;charge.t=0;charge.src='mouse';}});
 addEventListener('mouseup',e=>{if(e.button===0)mouseHeld=false;});
 function throwBall(p){
   if(!me.ball){throwDart(p);return;}
@@ -1720,7 +1721,7 @@ function updateSpray(dt){
 // ======================================================================
 // MOP + VACUUM: whack paper balls through goals made by two things
 // ======================================================================
-let swingReq=false,swingCool=0;const toolCharge={on:false,t:0};me.lastHit=null;
+let clickUse=false;let swingReq=false,swingCool=0;const toolCharge={on:false,t:0};me.lastHit=null;
 const GOAL_KINDS={can:'trash can',plant:'plant',bucket:'bucket'};
 let goals=[];
 const goalMat=new THREE.MeshBasicMaterial({color:0x3ddc84,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false});
@@ -2337,12 +2338,12 @@ function updateHelp(){
   else{
     const held=me.holding!=null?PLANTS[me.holding]:null;
     k('WASD','move');k('mouse','look');
-    if(me.inVent){if(near)k('E',near.verb.replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu,'').trim().toLowerCase());}
+    if(me.inVent){if(near)k('E / click',near.verb.replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu,'').trim().toLowerCase());}
     else{
       if(!me.crouch)k('Shift','run');
       if(!me.crouch)k('Space','jump');
       k('C','crouch');
-      if(near)k('E',near.verb.replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu,'').trim().toLowerCase());
+      if(near)k('E / click',near.verb.replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu,'').trim().toLowerCase());
       if(held&&held.kind==='spray')k('F','spray');
       if(held&&held.kind==='phone')k('F','talk on the phone');
       if(held&&(held.kind==='mop'||held.kind==='vacuum'))k('hold F / click','power up & swing');
@@ -2415,7 +2416,7 @@ function loop(){
   updateTV();
   sendPresence(false);
   renderer.render(scene,camera);
-  P.clear();mouse.clicked=false;
+  P.clear();mouse.clicked=false;clickUse=false;
   
 }
 loop();
