@@ -1591,7 +1591,7 @@ const charge={on:false,t:0,src:''};let mouseHeld=false;
 const powEl=document.getElementById('power'),powBar=document.getElementById('powbar');
 const canThrow=()=>started&&!game&&!linkOpen&&!chatting&&!noteOpen&&(me.ball||me.darts>0)&&!me.inVent;
 renderer.domElement.addEventListener('mousedown',e=>{if(e.button!==0)return;mouseHeld=true;
-  if(locked()&&!canThrow()&&!holdingTool()&&!(me.holding!=null&&PLANTS[me.holding].kind==='spray'))clickUse=true;if(locked()&&holdingTool()&&!me.ball)swingReq=true;if(locked()&&canThrow()&&!charge.on){charge.on=true;charge.t=0;charge.src='mouse';}});
+  if(locked()&&!canThrow()&&!holdingTool()&&!(me.holding!=null&&PLANTS[me.holding].kind==='spray')){if(!clickWorld())clickUse=true;}if(locked()&&holdingTool()&&!me.ball)swingReq=true;if(locked()&&canThrow()&&!charge.on){charge.on=true;charge.t=0;charge.src='mouse';}});
 addEventListener('mouseup',e=>{if(e.button===0)mouseHeld=false;});
 function throwBall(p){
   if(!me.ball){throwDart(p);return;}
@@ -2275,13 +2275,17 @@ const DRAWERS=[
   const front=std(0x3a2470,{roughness:.6}),tray=std(0x2a1a4a),knob=std(0xc8cde0,{metalness:.8,roughness:.2});
   DRAWERS.forEach(d=>{
     const g=new THREE.Group();
-    box(d.w-.04,d.h-.04,.04,front,0,0,0,g);
-    box(.22,.035,.035,knob,0,0,-.035,g);
+    box(d.w-.04,d.h-.04,.04,front,0,0,0,g).userData.part='front';
+    box(.22,.035,.035,knob,0,0,-.035,g).userData.part='front';
     box(d.w-.1,.02,.38,tray,0,-d.h/2+.04,.2,g);
     box(.02,d.h-.1,.38,tray,-(d.w/2-.06),-.02,.2,g);box(.02,d.h-.1,.38,tray,d.w/2-.06,-.02,.2,g);
     g.position.set(d.x,d.y,-8.97);house.add(g);d.g=g;d.open=false;
   });
   // a little pen and pins live in drawer 1 (just for looks)
+  const coin=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.012,20),std(0xffd36e,{metalness:.8,roughness:.25}));coin.position.set(.15,-.11,.22);DRAWERS[2].g.add(coin);DRAWERS[2].coin=coin;
+  {const duck=new THREE.Group(),yel=std(0xffd400,{roughness:.4});const b=new THREE.Mesh(new THREE.SphereGeometry(.06,12,10),yel);b.scale.set(1.2,.8,1);duck.add(b);
+   const h=new THREE.Mesh(new THREE.SphereGeometry(.04,12,10),yel);h.position.set(.05,.06,0);duck.add(h);const bk=new THREE.Mesh(new THREE.ConeGeometry(.018,.04,8),std(0xff8a00));bk.rotation.z=-Math.PI/2;bk.position.set(.1,.055,0);duck.add(bk);
+   duck.position.set(-.15,-.08,.2);duck.rotation.y=-Math.PI/2;DRAWERS[3].g.add(duck);}
   const pen=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.18,8),std(0x1e5bff));pen.rotation.z=Math.PI/2;pen.position.set(0,-.1,.18);DRAWERS[0].g.add(pen);
   // the telephone (you can carry it once it's out of the drawer)
   const i=PLANTS.length,g=new THREE.Group(),red=std(0xff3b3b,{roughness:.35});
@@ -2297,6 +2301,37 @@ const DRAWERS=[
   PLANTS.push({g,col,it,x:d.x,y:.81,z:-8.83,t:0,held:false,kind:'phone',name:'telephone',icon:'📞'});PHONE=i;
 })();
 houseInter.push({x:12.6,z:-9.8,cond:()=>me.z<-9.05,verb:'Look in the desk drawers 🗄',act:()=>openDeskMenu()});
+function takePhone(){
+  const p=PLANTS[PHONE];
+  if(!(p.t===0&&!p.held)){toast('📞 The telephone isn\'t in the drawer any more');return false;}
+  if(me.holding!=null){toast('🙌 Your hands are full — put down what you\'re holding first');return false;}
+  p.t=Date.now();pickPlant(PHONE);return true;}
+function takeCoin(){if(gotCoin){toast('📎 Just paper clips now');return;}gotCoin=true;DRAWERS[2].coin.visible=false;me.score+=1;updInv();sendPresence(true);toast('🪙 +1 point! Lucky!');}
+const DRAWER_SAYS=['🖊 A pen and 📌 pins — click them to take them','📞 A telephone! Click it to take it','🪙 A shiny coin! Click it to take it','🦆 A rubber duck!'];
+function takeFromDrawer(i){
+  if(i===0)openDrawer();
+  else if(i===1)takePhone();
+  else if(i===2)takeCoin();
+  else toast('🦆 Squeak! Squeak!');
+}
+// clicking straight on a drawer (or what's inside it)
+const clickRay=new THREE.Raycaster();clickRay.far=3.2;
+function isInside(o,root){for(;o;o=o.parent)if(o===root)return true;return false;}
+function clickWorld(){
+  if(level!==0||me.inVent)return false;
+  clickRay.setFromCamera({x:0,y:0},camera);
+  const ph=PLANTS[PHONE],targets=DRAWERS.map(d=>d.g);
+  if(ph&&ph.t===0&&!ph.held)targets.push(ph.g);
+  const hit=clickRay.intersectObjects(targets,true)[0];if(!hit)return false;
+  if(ph&&isInside(hit.object,ph.g)){if(DRAWERS[1].open)takePhone();else{setDrawer(1,true);toast(DRAWER_SAYS[1]);}return true;}
+  const i=DRAWERS.findIndex(d=>isInside(hit.object,d.g));if(i<0)return false;
+  if(hit.object.userData.part==='front'||!DRAWERS[i].open){
+    const open=!DRAWERS[i].open;setDrawer(i,open);
+    toast(open?(i===1&&!(ph.t===0&&!ph.held)?'Empty — someone took the telephone 📞':i===2&&gotCoin?'📎 Just paper clips':DRAWER_SAYS[i]):'🗄 Drawer closed');
+  }else takeFromDrawer(i);
+  if(deskMenu)renderDeskMenu();
+  return true;
+}
 function setDrawer(i,open){DRAWERS[i].open=open;drawerT=Date.now();sendPresence(true);}
 function openDeskMenu(){unlockMouse();deskMenu=true;renderDeskMenu();linkp.style.display='block';linkOpen=true;}
 function renderDeskMenu(){
@@ -2313,10 +2348,10 @@ function renderDeskMenu(){
     if(!d.open)info.textContent='(closed)';
     else if(i===0){info.textContent='🖊 A pen and 📌 pins ';const t=mk('button','margin-left:6px','Take them');t.className='btn ghost';t.style.padding='6px 12px';t.style.fontSize='14px';t.onclick=()=>{openDrawer();renderDeskMenu();};info.append(t);}
     else if(i===1){if(phoneIn){info.textContent='📞 A telephone! ';const t=mk('button','margin-left:6px','Take it');t.className='btn ghost';t.style.padding='6px 12px';t.style.fontSize='14px';
-        t.onclick=()=>{if(me.holding!=null){toast('🙌 Your hands are full — put down what you\'re holding first');return;}PLANTS[PHONE].t=Date.now();pickPlant(PHONE);closeLink();};info.append(t);}
+        t.onclick=()=>{if(takePhone())closeLink();};info.append(t);}
       else info.textContent='Empty — someone took the telephone 📞';}
     else if(i===2){if(!gotCoin){info.textContent='🪙 A shiny coin! ';const t=mk('button','margin-left:6px','Take it');t.className='btn ghost';t.style.padding='6px 12px';t.style.fontSize='14px';
-        t.onclick=()=>{gotCoin=true;me.score+=1;updInv();sendPresence(true);toast('🪙 +1 point! Lucky!');renderDeskMenu();};info.append(t);}
+        t.onclick=()=>{takeCoin();renderDeskMenu();};info.append(t);}
       else info.textContent='Just some paper clips 📎';}
     else info.textContent='🦆 A rubber duck. Squeak!';
     row.append(b,info);box2.append(row);
