@@ -1206,8 +1206,8 @@ function updateWorld(dt){
   if(level===0&&me.y<.5&&len&&Math.abs(me.x+15.5)<1.25){const rel=me.z-pushArc.col.z;
     if(rel>.9&&rel<1.45&&dz<-.5)me.push=-1;else if(rel<-.9&&rel>-1.45&&dz>.5)me.push=1;}
   const gr=groundAt(me.x,me.z),onG=me.y<=gr.gy+.001;
-  if(P.has('Space')&&onG&&!me.crouch){me.vy=gr.b>1?14:gr.b?10.5:7.5;if(gr.b===1&&!me.boinged){me.boinged=1;toast('🛋️ Boing! Bouncy couch!');}if(gr.b>1)toast('🤸 BOING!!');}
-  me.vy-=22*dt;me.y+=me.vy*dt;if(me.y<=gr.gy){me.y=gr.gy;me.vy=0;}
+  if(P.has('Space')&&onG&&!me.crouch){me.vy=gr.b>1?14:gr.b?10.5:(performance.now()<(me.jumpUntil||0)?11:7.5);if(gr.b===1&&!me.boinged){me.boinged=1;toast('🛋️ Boing! Bouncy couch!');}if(gr.b>1)toast('🤸 BOING!!');}
+  me.vy-=(performance.now()<(me.floatUntil||0)?8:22)*dt;me.y+=me.vy*dt;if(me.y<=gr.gy){me.y=gr.gy;me.vy=0;}
   me.onGround=me.y<=gr.gy+.001;
   // head reaches the ceiling: go up into a vent if you're under one, otherwise bonk
   {const ceil=me.z>11.6?6.45:5.35;if(level===0&&me.y+1.75>ceil){me.y=ceil-1.75;if(me.vy>0)me.vy=0;}}
@@ -2415,7 +2415,8 @@ const PARTY={tiles:[],balloons:[],disco:null,lights:[]};
   const wm=std(0x1a1238,{roughness:.9});
   noShadow(box(PW+.6,6.5,.3,wm,PX,3.25,26.15,house));noShadow(box(.3,6.5,PD+.3,wm,-.15,3.25,PZ,house));noShadow(box(.3,6.5,PD+.3,wm,16.15,3.25,PZ,house));
   noShadow(box(PW+.6,1.1,.3,wm,PX,5.95,11.85,house));
-  noShadow(box(1.05,1.05,.06,std(0x0a0618),2,2.2,11.97,house)); // back of the safe
+  {const wallPiece=house.children.find(o=>o.isMesh&&Math.abs(o.position.z-11.75)<.01&&Math.abs(o.position.x-4.225)<.01);
+   noShadow(box(.9,.9,.07,wallPiece?wallPiece.material:wm,2,2.2,11.955,house));} // back of the safe, filled in like normal wall
   const ceil=new THREE.Mesh(new THREE.PlaneGeometry(PW+.6,PD+.4),std(0x0a0618,{roughness:1}));ceil.rotation.x=Math.PI/2;ceil.position.set(PX,6.5,PZ);house.add(ceil);
   // neon strips like the arcade
   const pink=new THREE.MeshBasicMaterial({color:0xff3df2}),cyan=new THREE.MeshBasicMaterial({color:0x46f3ff}),yel=new THREE.MeshBasicMaterial({color:0xffd36e});
@@ -2423,26 +2424,17 @@ const PARTY={tiles:[],balloons:[],disco:null,lights:[]};
   for(const [y,m] of [[6.2,pink],[.14,cyan],[3.0,yel]]){strip(m,PW,.06,PX,y,25.97);strip(m,PW,.06,PX,y,12.03);strip(m,.06,PD,.03,y,PZ);strip(m,.06,PD,15.97,y,PZ);}
   [pink,cyan,yel].forEach((m,k)=>{const t=new THREE.Mesh(new THREE.BoxGeometry(13,.1,.1),m);t.position.set(PX,6.42,14+k*5);house.add(t);ceilTubes.push(t);});
   neonSign('PARTY ROOM','#ff3df2',7,10.5,4.6,25.84,Math.PI);
-  neonSign("LET'S DANCE!",'#46f3ff',5,15.84,4.4,19,-Math.PI/2);
+  neonSign("PARTY TIME!",'#46f3ff',5,15.84,4.4,19,-Math.PI/2);
   // door frame + small door signs
   const neonM=c=>new THREE.MeshBasicMaterial({color:c});
   noShadow(box(.08,2.6,.08,neonM(0xff3df2),5.98,1.3,11.47,house));noShadow(box(.08,2.6,.08,neonM(0xff3df2),7.62,1.3,11.47,house));noShadow(box(1.72,.08,.08,neonM(0xff3df2),6.8,2.62,11.47,house));
   const sgn=(x,z,ry)=>{const p=new THREE.Mesh(new THREE.PlaneGeometry(1.8,.42),new THREE.MeshBasicMaterial({map:labelTex('🎉 PARTY ROOM','#2a0a3a','#ff8cf6')}));p.position.set(x,2.95,z);p.rotation.y=ry;house.add(p);};
   sgn(6.8,11.48,Math.PI);sgn(6.8,12.02,0);
-  // light-up dance floor
-  for(let i=0;i<6;i++)for(let j=0;j<6;j++){const t=new THREE.Mesh(new THREE.PlaneGeometry(.94,.94),new THREE.MeshBasicMaterial({color:0x000000}));t.rotation.x=-Math.PI/2;t.position.set(7+i,.012,16+j);house.add(t);PARTY.tiles.push({m:t,i,j});}
   // disco ball
   const disco=new THREE.Mesh(new THREE.IcosahedronGeometry(.45,1),std(0xdde3ff,{metalness:1,roughness:.15,flatShading:true}));disco.position.set(9.5,5.6,18.5);house.add(disco);PARTY.disco=disco;
   const cord=new THREE.Mesh(new THREE.CylinderGeometry(.01,.01,.5),std(0x888888));cord.position.set(9.5,6.25,18.5);house.add(cord);
   [0xff3df2,0x46f3ff,0xffd36e].forEach(c=>{const l=new THREE.PointLight(c,1.1,13);l.position.set(9.5,4.5,18.5);house.add(l);PARTY.lights.push(l);});
   const wl=new THREE.PointLight(0xffffff,.55,18);wl.position.set(8,5.8,17);house.add(wl);
-  // trampoline (super bouncy!)
-  const tr=new THREE.Group();
-  const rim=new THREE.Mesh(new THREE.TorusGeometry(1.15,.09,10,32),std(0x46b4ff,{roughness:.4}));rim.rotation.x=Math.PI/2;rim.position.y=.5;tr.add(rim);
-  const mat=new THREE.Mesh(new THREE.CircleGeometry(1.1,32),std(0x111111,{roughness:.9}));mat.rotation.x=-Math.PI/2;mat.position.y=.49;tr.add(mat);
-  for(let k=0;k<6;k++){const a=k/6*Math.PI*2;const leg=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.5),std(0x888888));leg.position.set(Math.cos(a)*1.1,.25,Math.sin(a)*1.1);tr.add(leg);}
-  tr.position.set(13.8,0,23.6);house.add(tr);
-  houseCols.push({x:13.8,z:23.6,r:1.1,top:.5,bouncy:2});
   // balloons
   [0xff5d73,0x4fc3ff,0x3ddc84,0xffd36e,0xb06bff,0xff9f43,0xff69b4,0x46f3ff,0xffffff].forEach((c,k)=>{
     const g=new THREE.Group();const b=new THREE.Mesh(new THREE.SphereGeometry(.28,16,12),std(c,{roughness:.25}));b.scale.y=1.2;g.add(b);
@@ -2452,13 +2444,13 @@ const PARTY={tiles:[],balloons:[],disco:null,lights:[]};
   const vm=new THREE.Group();
   box(1.1,2.1,.8,std(0xd42a2a,{roughness:.5}),0,1.05,0,vm);
   const win=new THREE.Mesh(new THREE.PlaneGeometry(.75,1.1),new THREE.MeshBasicMaterial({map:canvasTex(150,220,(g,w,h)=>{g.fillStyle='#0b1430';g.fillRect(0,0,w,h);
-    const cols=['#ff5d73','#4fc3ff','#3ddc84','#ffd36e'];for(let r=0;r<4;r++)for(let c=0;c<3;c++){g.fillStyle=cols[(r+c)%4];g.fillRect(14+c*44,14+r*52,26,40);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(18+c*44,18+r*52,5,30);}})}));
+    const cols=['#ff3b3b','#3b8bff','#5ee05e','#a24bff','#ffd36e'];for(let r=0;r<4;r++)for(let c=0;c<3;c++){g.fillStyle=cols[(r*3+c)%5];g.fillRect(14+c*44,14+r*52,26,40);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(18+c*44,18+r*52,5,30);}})}));
   win.position.set(-.12,1.3,.41);vm.add(win);
-  const vs=new THREE.Mesh(new THREE.PlaneGeometry(1,.25),new THREE.MeshBasicMaterial({map:labelTex('🥤 SODA 🪙1','#d42a2a','#fff')}));vs.position.set(0,1.95,.41);vm.add(vs);
+  const vs=new THREE.Mesh(new THREE.PlaneGeometry(1,.25),new THREE.MeshBasicMaterial({map:labelTex('🥤 SODAS 🪙1','#d42a2a','#fff')}));vs.position.set(0,1.95,.41);vm.add(vs);
   box(.15,.4,.05,std(0x222222),.38,1.2,.42,vm);
   vm.position.set(15.5,0,14.5);vm.rotation.y=-Math.PI/2;house.add(vm);
   houseCols.push({x:15.5,z:14.5,hw:.42,hd:.58});
-  houseInter.push({x:14.6,z:14.5,verb:'Buy a soda 🥤 (🪙 1)',act:()=>pay(1,()=>{me.boostUntil=performance.now()+20000;toast('🥤 Fizz! Super speed for 20 seconds! ⚡');})});
+  houseInter.push({x:14.6,z:14.5,verb:'Pick a soda 🥤 (🪙 1 each)',act:()=>startGame(SodaMachine())});
   // party tables
   [[2,13.6],[4.6,13.6]].forEach(([x,z])=>{box(.9,.06,.9,std(0xffd36e),x,.85,z,house);box(.1,.85,.1,std(0x888888),x,.42,z,house);houseCols.push({x,z,hw:.45,hd:.45,top:.88,surf:.88});});
 })();
@@ -2676,12 +2668,55 @@ function updateMotoScreen(){
   g.fillStyle='#ff9f43';g.fillRect(Wc/2-4,0,8,Hc);
   MOTO.tex.needsUpdate=true;
 }
+
+// ----- SODA MACHINE: different kinds of soda, each does something different -----
+const SODAS=[
+  {name:'Cherry Rocket',emo:'🍒',col:'#ff3b3b',what:'Super speed!',go(){me.boostUntil=performance.now()+20000;toast('🍒 Cherry Rocket! Super speed for 20 seconds! ⚡');}},
+  {name:'Blue Bounce',emo:'💙',col:'#3b8bff',what:'Super jump!',go(){me.jumpUntil=performance.now()+20000;toast('💙 Blue Bounce! Super jumps for 20 seconds! 🦘');}},
+  {name:'Moon Apple',emo:'🍏',col:'#5ee05e',what:'Floaty moon jumps!',go(){me.floatUntil=performance.now()+20000;toast('🍏 Moon Apple! You float like on the moon for 20 seconds! 🌙');}},
+  {name:'Grape Burp',emo:'🍇',col:'#a24bff',what:'A HUGE burp!',go(){burp();me.say='BUUUURRRRP! 🍇';me.sayAt=Date.now();addChat(me.name||'You',me.color,'BUUUURRRRP! 🍇');sendPresence(true);toast('🍇 Grape Burp! Everyone heard that… 😆');}},
+  {name:'Lemon Mystery',emo:'🍋',col:'#ffd36e',what:'Surprise! Could be anything',go(){const k=Math.random()*4|0;toast('🍋 Mystery soda…');setTimeout(()=>SODAS[k].go(),700);}},
+];
+function burp(){try{const ac=window._ac||(window._ac=new (window.AudioContext||window.webkitAudioContext)());const o=ac.createOscillator(),g=ac.createGain(),f=ac.createOscillator(),fg=ac.createGain();
+  o.type='sawtooth';o.frequency.setValueAtTime(110,ac.currentTime);o.frequency.linearRampToValueAtTime(70,ac.currentTime+.9);
+  f.frequency.value=23;fg.gain.value=30;f.connect(fg);fg.connect(o.frequency);
+  g.gain.setValueAtTime(.0001,ac.currentTime);g.gain.exponentialRampToValueAtTime(.35,ac.currentTime+.05);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+1);
+  o.connect(g);g.connect(ac.destination);o.start();f.start();o.stop(ac.currentTime+1);f.stop(ac.currentTime+1);}catch(e){}}
+function SodaMachine(){
+  let sel=0;const bw=160,gap=20,x0=(W-(bw*5+gap*4))/2,y0=170;
+  const buy=k=>{closeGame();pay(1,()=>SODAS[k].go());};
+  return{
+    init(){},
+    update(){
+      if(P.has('ArrowLeft')||P.has('KeyA'))sel=(sel+4)%5;
+      if(P.has('ArrowRight')||P.has('KeyD'))sel=(sel+1)%5;
+      for(let k=0;k<5;k++)if(P.has('Digit'+(k+1))){buy(k);return;}
+      if(P.has('Enter')||P.has('Space')){buy(sel);return;}
+      for(let k=0;k<5;k++){const x=x0+k*(bw+gap);if(mouse.x>x&&mouse.x<x+bw&&mouse.y>y0&&mouse.y<y0+330){sel=k;if(mouse.clicked){buy(k);return;}}}
+    },
+    draw(){
+      gbg('🥤 SODA MACHINE','Click a soda (or press 1–5) · 🪙 1 each','#ff5d73');
+      txt('You have 🪙 '+me.score,W/2,140,20,'#ffd36e','center');
+      SODAS.forEach((s,k)=>{const x=x0+k*(bw+gap),on=k===sel;
+        ctx.fillStyle=on?'#2a3466':'#141c3d';ctx.fillRect(x,y0,bw,330);
+        if(on){ctx.strokeStyle=s.col;ctx.lineWidth=4;ctx.strokeRect(x+2,y0+2,bw-4,326);}
+        const cx=x+bw/2,top=y0+30+(on?-6:0);
+        ctx.fillStyle=s.col;ctx.fillRect(cx-36,top+14,72,140);
+        ctx.fillStyle='#c8cde0';ctx.fillRect(cx-32,top,64,16);ctx.fillRect(cx-32,top+152,64,10);
+        ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(cx-28,top+20,10,126);
+        ctx.fillStyle='rgba(255,255,255,.9)';ctx.beginPath();ctx.arc(cx,top+84,26,0,7);ctx.fill();
+        ctx.font='32px system-ui';ctx.textAlign='center';ctx.fillText(s.emo,cx,top+96);
+        txt(s.name,cx,y0+235,17,'#fff','center');
+        txt(s.what,cx,y0+262,13,'#9fb0e0','center',false);
+        txt((k+1)+'  ·  🪙 1',cx,y0+305,15,on?s.col:'#9fb0e0','center');});
+    }
+  };
+}
 let partyHello=false;
 function updateParty(dt){
   if(level!==0)return;
   const now=performance.now();
-  if(me.z>12.3&&!partyHello){partyHello=true;toast('🎉 Welcome to the Party Room! Try the trampoline 🤸');}
-  if(T%4===0)for(const t of PARTY.tiles){const h=((t.i*37+t.j*61+Math.floor(now/450)*53)%360);const on=((t.i+t.j+Math.floor(now/450))%3)!==0;t.m.material.color.setHSL(h/360,1,on&&lights.on?.5:on?.18:.04);}
+  if(me.z>12.3&&!partyHello){partyHello=true;toast('🎉 Welcome to the Party Room! Try the sodas 🥤');}
   PARTY.disco.rotation.y+=dt*.8;
   PARTY.lights.forEach((l,k)=>{const a=now/900+k*2.1;l.position.set(9.5+Math.cos(a)*4,4.2,18.5+Math.sin(a)*3.5);});
   for(const b of PARTY.balloons)b.g.position.y=b.y+Math.sin(now/800+b.k)*.08;
