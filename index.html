@@ -1249,7 +1249,7 @@ function updateCamera(dt){
     // third person: camera floats behind you
     const tx=me.x,ty=me.y+me.eye*.85,tz=me.z;
     let cx=tx-fx*4.2,cy=ty-fy*4.2+.7,cz=tz-fz*4.2;
-    if(level===0){if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(inTiny(me.x,me.z)){cx=clamp(cx,14.3,15.8);cz=clamp(cz,-7.1,-5.9);cy=clamp(cy,.3,2.4);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
+    if(level===0){if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(inTiny(me.x,me.z)){cx=clamp(cx,14.5,15.8);cz=clamp(cz,-7.0,-6.0);cy=clamp(cy,.3,2.4);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
     camPos.set(cx,cy,cz);camLook.set(tx+fx*3,ty+fy*3,tz+fz*3);
   }else{
     camPos.set(me.x,me.y+me.eye+bob,me.z);
@@ -2456,65 +2456,73 @@ function updateVend(){
 // TINY ME: a new machine (still in progress). Unlock it with the key, step inside and shut the door.
 // ======================================================================
 const TINY={unl:false,open:false,t:0,door:null,ang:0,doorCol:null,doorTex:null,drawn:''};
-const inTiny=(x,z)=>x>14.15&&x<16&&z>-7.25&&z<-5.75;
+const inTiny=(x,z)=>x>14.43&&x<16&&z>-7.07&&z<-5.93;
 function setTiny(unl,open,msg){TINY.unl=unl;TINY.open=open;TINY.t=Date.now();sendPresence(true);if(msg)toast(msg);}
 function drawTinyDoor(){
   const key=TINY.unl?'u':'l';if(TINY.drawn===key)return;TINY.drawn=key;
   const c=TINY.doorTex.image,g=c.getContext('2d'),w=c.width,h=c.height;
-  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#1fd1b0');gr.addColorStop(1,'#0b6e7a');g.fillStyle=gr;g.fillRect(0,0,w,h);
-  g.strokeStyle='#ffd36e';g.lineWidth=10;g.strokeRect(8,8,w-16,h-16);
-  g.textAlign='center';g.fillStyle='#fff';g.font='bold 54px system-ui';g.fillText('TINY ME',w/2,90);
-  g.font='90px system-ui';g.fillText('🧍',w/2,230);
-  g.fillStyle='#ffd36e';g.fillRect(20,280,w-40,60);g.fillStyle='#111';g.font='bold 26px system-ui';g.fillText('🚧 STILL IN PROGRESS 🚧',w/2,320);
-  g.font='60px system-ui';g.fillText(TINY.unl?'🔓':'🔒',w/2,440);
-  g.fillStyle='#fff';g.font='bold 22px system-ui';g.fillText(TINY.unl?'unlocked!':'locked — needs a key',w/2,490);
+  g.fillStyle='#14101f';g.fillRect(0,0,w,h);g.strokeStyle='#1fd1b0';g.lineWidth=6;g.strokeRect(4,4,w-8,h-8);
+  g.textAlign='center';g.font='54px system-ui';g.fillText(TINY.unl?'🔓':'🔒',w/2,70);
+  g.fillStyle='#fff';g.font='bold 16px system-ui';g.fillText(TINY.unl?'OPEN':'LOCKED',w/2,110);
   TINY.doorTex.needsUpdate=true;
 }
 (function buildTiny(){
-  const body=std(0x14a89a,{roughness:.45}),dark=std(0x0b2a33,{roughness:.8}),gold=std(0xffd36e,{metalness:.6,roughness:.3});
-  const X0=14.12,X1=15.95,Z0=-7.3,Z1=-5.7,H=2.6;
-  // shell: two sides, back, roof (the room wall is behind it)
-  box(X1-X0,H,.1,body,(X0+X1)/2,H/2,Z0+.05,house);box(X1-X0,H,.1,body,(X0+X1)/2,H/2,Z1-.05,house);
-  box(.1,H,Z1-Z0,body,X1-.05,H/2,(Z0+Z1)/2,house);box(X1-X0,.12,Z1-Z0,body,(X0+X1)/2,H-.06,(Z0+Z1)/2,house);
-  // dark inside
-  box(X1-X0-.2,.02,Z1-Z0-.2,dark,(X0+X1)/2,.01,(Z0+Z1)/2,house);
-  // marquee
-  const mq=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.38),new THREE.MeshBasicMaterial({map:labelTex('🧍 TINY ME','#0b2a33','#46f3ff')}));mq.position.set(X0-.07,H+.25,(Z0+Z1)/2);mq.rotation.y=-Math.PI/2;house.add(mq);
-  box(.12,.5,1.6,body,X0+.05,H+.25,(Z0+Z1)/2,house);
-  // inside screen + little control panel (you only see them from inside)
-  const st=canvasTex(256,200,(g,w,h)=>{g.fillStyle='#061018';g.fillRect(0,0,w,h);g.fillStyle='#46f3ff';g.textAlign='center';g.font='bold 34px system-ui';g.fillText('TINY ME',w/2,56);
-    g.font='60px system-ui';g.fillText('🧍',w/2,125);g.fillStyle='#ffd36e';g.font='bold 18px system-ui';g.fillText('🚧 still in progress 🚧',w/2,170);g.fillStyle='#9fb0e0';g.font='14px system-ui';g.fillText('you found the inside!',w/2,192);});
-  const scr=new THREE.Mesh(new THREE.PlaneGeometry(1.0,.78),new THREE.MeshBasicMaterial({map:st}));scr.position.set(X1-.11,1.6,(Z0+Z1)/2);scr.rotation.y=-Math.PI/2;house.add(scr);
-  box(.4,.12,1.0,dark,X1-.3,1.0,(Z0+Z1)/2,house);
-  const stick=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,.16),std(0x222222));stick.position.set(X1-.32,1.12,(Z0+Z1)/2-.2);house.add(stick);
-  const ball=new THREE.Mesh(new THREE.SphereGeometry(.045,10,8),std(0xff3b3b));ball.position.set(X1-.32,1.21,(Z0+Z1)/2-.2);house.add(ball);
-  for(const [dz,c] of [[.1,0x46f3ff],[.25,0xffd36e],[.4,0x3ddc84]]){const b=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.03,12),std(c,{emissive:c,emissiveIntensity:.6}));b.position.set(X1-.32,1.075,(Z0+Z1)/2+dz-.1);house.add(b);}
-  const il=new THREE.PointLight(0x46f3ff,.4,2.2);il.position.set(15.2,2.1,-6.5);house.add(il);
-  // the door
-  const dc=document.createElement('canvas');dc.width=320;dc.height=540;TINY.doorTex=new THREE.CanvasTexture(dc);TINY.doorTex.encoding=THREE.sRGBEncoding;
-  const hinge=new THREE.Group();hinge.position.set(X0,0,Z0+.1);
-  box(.06,H-.15,Z1-Z0-.2,body,0,(H-.15)/2,(Z1-Z0-.2)/2,hinge);
-  const face=new THREE.Mesh(new THREE.PlaneGeometry(Z1-Z0-.3,H-.35),new THREE.MeshBasicMaterial({map:TINY.doorTex}));face.position.set(-.035,(H-.15)/2,(Z1-Z0-.2)/2);face.rotation.y=-Math.PI/2;hinge.add(face);
-  const knob=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),gold);knob.position.set(-.07,1.2,Z1-Z0-.35);hinge.add(knob);
-  const knob2=knob.clone();knob2.position.x=.07;hinge.add(knob2);
-  hinge.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(hinge);TINY.door=hinge;drawTinyDoor();
-  // walls you bump into
-  houseCols.push({x:(X0+X1)/2,z:Z0+.05,hw:(X1-X0)/2,hd:.06},{x:(X0+X1)/2,z:Z1-.05,hw:(X1-X0)/2,hd:.06});
-  houseCols.push({x:X1-.3,z:(Z0+Z1)/2,hw:.22,hd:.5});
-  TINY.doorCol={x:X0,z:(Z0+Z1)/2,hw:.05,hd:(Z1-Z0)/2};houseCols.push(TINY.doorCol);
-  // using it from outside
-  houseInter.push({x:X0-.6,z:-6.5,cond:()=>me.x<14.1,
+  // looks like the other arcade machines, but a bit deeper so you can fit inside; the door is on its side
+  const a={title:'TINY ME',col:'#1fd1b0',icon:'🧍',sub:'IN PROGRESS'};
+  const col=new THREE.Color(a.col),dark=std(0x14101f,{roughness:.4}),acc=std(col,{emissive:col,emissiveIntensity:.9});
+  const g=new THREE.Group();          // local: front = +z, width along x, depth along z
+  const W=1.3,D=1.6,H=2.5;            // back of the machine touches the wall
+  box(W,H,.06,dark,0,H/2,D/2-.03,g);                     // front panel
+  box(.06,H,D,dark,-W/2+.03,H/2,0,g);                    // solid side
+  box(W,.06,D,dark,0,H-.03,0,g);                         // roof
+  box(W,H,.06,dark,0,H/2,-D/2+.03,g);                    // back
+  const art=new THREE.MeshBasicMaterial({map:sideTex(a),color:0xcccccc});
+  const sp=new THREE.Mesh(new THREE.PlaneGeometry(D*.92,2.0),art);sp.position.set(-W/2-.005,1.3,0);sp.rotation.y=-Math.PI/2;g.add(sp);
+  box(.07,H,D+.04,acc,-W/2-.02,H/2,0,g);box(W+.1,.07,D+.04,acc,0,H+.02,0,g);
+  box(.07,H,.07,acc,W/2+.02,H/2,D/2,g);box(.07,H,.07,acc,W/2+.02,H/2,-D/2,g);
+  const marqTex=canvasTex(256,80,(c)=>{c.fillStyle='#000';c.fillRect(0,0,256,80);c.shadowColor=a.col;c.shadowBlur=18;c.fillStyle=a.col;c.font='900 40px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(a.title,128,42,240);c.fillText(a.title,128,42,240);});
+  const marq=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.4),new THREE.MeshBasicMaterial({map:marqTex}));marq.position.set(0,2.25,D/2+.01);g.add(marq);
+  const c=document.createElement('canvas');c.width=256;c.height=200;
+  const tex=new THREE.CanvasTexture(c);tex.encoding=THREE.sRGBEncoding;
+  const s={g:c.getContext('2d'),tex,col:a.col,title:a.title,kind:'soon',sub:a.sub,seed:Math.random()*10};drawScreen(s);screens.push(s);
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(1.05,.82),new THREE.MeshBasicMaterial({map:tex}));scr.position.set(0,1.58,D/2+.01);g.add(scr);
+  const pnl=box(1.3,.14,.5,dark,0,1.02,D/2+.18,g);pnl.rotation.x=-.25;
+  const stick=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.22),std(0xcccccc));stick.position.set(-.3,1.18,D/2+.2);g.add(stick);
+  const knob=new THREE.Mesh(new THREE.SphereGeometry(.07,12,10),std(0xff3b3b,{emissive:0xff0000,emissiveIntensity:.4}));knob.position.set(-.3,1.3,D/2+.2);g.add(knob);
+  [0xffd36e,0x4fc3ff,0x3ddc84].forEach((cc,j)=>{const b=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.06,14),std(cc,{emissive:cc,emissiveIntensity:.8}));b.position.set(.05+j*.2,1.12,D/2+.2);b.rotation.x=-.25;g.add(b);});
+  floorGlow(0,1.1,2.6,a.col,g);
+  // inside: a secret screen on the back of the front panel + a dim light
+  const st=canvasTex(256,200,(q,w,h)=>{q.fillStyle='#061018';q.fillRect(0,0,w,h);q.fillStyle='#46f3ff';q.textAlign='center';q.font='bold 34px system-ui';q.fillText('TINY ME',w/2,56);
+    q.font='60px system-ui';q.fillText('🧍',w/2,125);q.fillStyle='#ffd36e';q.font='bold 18px system-ui';q.fillText('🚧 still in progress 🚧',w/2,170);q.fillStyle='#9fb0e0';q.font='14px system-ui';q.fillText('you found the inside!',w/2,192);});
+  const is=new THREE.Mesh(new THREE.PlaneGeometry(.9,.7),new THREE.MeshBasicMaterial({map:st}));is.position.set(0,1.55,D/2-.07);is.rotation.y=Math.PI;g.add(is);
+  const il=new THREE.PointLight(0x46f3ff,.4,2);il.position.set(0,2.1,0);g.add(il);
+  // the side door (hinged at the back corner, swings outward)
+  const dc=document.createElement('canvas');dc.width=160;dc.height=130;TINY.doorTex=new THREE.CanvasTexture(dc);TINY.doorTex.encoding=THREE.sRGBEncoding;
+  const hinge=new THREE.Group();hinge.position.set(W/2-.03,0,-D/2+.06);
+  box(.06,H-.1,D-.14,dark,0,(H-.1)/2,(D-.14)/2,hinge);
+  const dart=new THREE.Mesh(new THREE.PlaneGeometry((D-.14)*.92,2.0),art);dart.position.set(.035,1.3,(D-.14)/2);dart.rotation.y=Math.PI/2;hinge.add(dart);
+  const lock=new THREE.Mesh(new THREE.PlaneGeometry(.28,.23),new THREE.MeshBasicMaterial({map:TINY.doorTex}));lock.position.set(.04,1.2,D-.4);lock.rotation.y=Math.PI/2;hinge.add(lock);
+  const handle=box(.05,.3,.05,std(0xcccccc,{metalness:.8,roughness:.2}),.07,1.2,D-.25,hinge);
+  g.add(hinge);TINY.door=hinge;
+  g.position.set(15.15,0,-6.5);g.rotation.y=-Math.PI/2;g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);
+  drawTinyDoor();
+  // world: front at x 14.35, back at x 15.95; solid side at z -7.15, door side at z -5.85
+  houseCols.push({x:14.38,z:-6.5,hw:.05,hd:.65},{x:14.1,z:-6.5,hw:.25,hd:.65},{x:15.15,z:-7.12,hw:.8,hd:.05});
+  TINY.doorCol={x:15.15,z:-5.88,hw:.8,hd:.05};houseCols.push(TINY.doorCol);
+  // using it from outside (stand by its side door)
+  houseInter.push({x:15.15,z:-5.6,cond:()=>me.z>-5.85&&!inTiny(me.x,me.z),
     get verb(){return !TINY.unl?(me.hasKey?'Unlock TINY ME 🔑':'TINY ME 🚧 still in progress (locked 🔒)'):TINY.open?'Close TINY ME 🚪':'Open TINY ME 🚪';},
     act:()=>{
       if(!TINY.unl){if(me.hasKey)setTiny(true,true,'🔑 Click! TINY ME is unlocked… you can go inside!');else toast('🔒 TINY ME is still in progress… and locked! Maybe a key opens it?');return;}
-      if(TINY.open&&me.x>13.5&&Math.abs(me.z+6.5)<.8){toast('🚫 Step back so the door can close');return;}
+      if(TINY.open&&me.z>-5.85&&Math.hypot(me.x-15.92,me.z+5.85)<1.95){toast('🚫 Step back so the door can swing shut');return;}
       setTiny(true,!TINY.open,TINY.open?'🚪 TINY ME is shut':'🚪 TINY ME is open');}});
+  houseInter.push({x:13.7,z:-6.5,cond:()=>me.x<14,verb:'TINY ME 🚧 still in progress! (the door is on the side)',act:()=>toast(TINY.unl?'🚧 Not playable yet… but try the door on the side 😉':'🚧 TINY ME is still in progress!')});
   // and from inside
-  houseInter.push({x:X0+.2,z:-6.5,cond:()=>inTiny(me.x,me.z),get verb(){return TINY.open?'Shut the machine 🚪':'Open the door 🚪';},
+  houseInter.push({x:15.15,z:-5.95,cond:()=>inTiny(me.x,me.z),get verb(){return TINY.open?'Shut the machine 🚪':'Open the door 🚪';},
     act:()=>setTiny(true,!TINY.open,TINY.open?'🚪 You shut yourself inside TINY ME… 🤫':'🚪 The door swings open')});
 })();
 function updateTiny(){
-  TINY.ang+=((TINY.open?-1.5:0)-TINY.ang)*.12;TINY.door.rotation.y=TINY.ang;
+  TINY.ang+=((TINY.open?1.5:0)-TINY.ang)*.12;TINY.door.rotation.y=TINY.ang;
   TINY.doorCol.off=TINY.open;drawTinyDoor();
 }
 // ----- SODA MACHINE: different kinds of soda, each does something different -----
