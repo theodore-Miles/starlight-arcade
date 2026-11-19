@@ -1131,7 +1131,7 @@ function groundAt(x,z){let gy=0,b=false;if(level!==0)return{gy,b};
     if(on&&c.top<=me.y+.31&&c.top>gy){gy=c.top;b=c.bouncy||0;}}
   return{gy,b};}
 function blocked(x,z){
-  const R=.45;
+  const R=me.small?.2:.45;
   if(level===0){
     if(x<-16+R||z<-11+R)return true;
     if(z>11-R){if(!(x>6.25+R&&x<7.35-R&&z<13.4-R))return true;}   // the little nook behind the vending machine
@@ -1144,8 +1144,8 @@ function blocked(x,z){
   else if(Math.hypot(x,z)>16.6)return true;
   for(const c of (level===0?houseCols:skyCols)){
     if(c.off)continue;
-    if(c.under&&me.crouch&&me.y<.1)continue; // crawl under it
-    if(c.leg&&!me.crouch)continue; // legs only matter when you're underneath
+    if(c.under&&(me.crouch||me.small)&&me.y<.1)continue; // crawl under it
+    if(c.leg&&!me.crouch&&!me.small)continue; // legs only matter when you're underneath
     if(c.top!==undefined&&c.top<=me.y+.3)continue; // low enough to step/jump onto
     if(c.r!==undefined){if(Math.hypot(x-c.x,z-c.z)<c.r+R)return true;}
     else if(Math.abs(x-c.x)<c.hw+R&&Math.abs(z-c.z)<c.hd+R)return true;
@@ -1189,7 +1189,7 @@ function updateWorld(dt){
   me.crouch=(!!K.KeyC&&me.y<.1)||(wasCrouch&&underSomething);
   if(wasCrouch&&!K.KeyC&&underSomething&&!me.bumpTip){me.bumpTip=1;toast("🙃 Ouch! You can't stand up under the table");}
   if(!underSomething)me.bumpTip=0;
-  const run=(K.ShiftLeft||K.ShiftRight)&&!me.crouch,sp=(me.crouch?2.4:run?8.5:5)*dt*(performance.now()<(me.boostUntil||0)?1.6:1);
+  const run=(K.ShiftLeft||K.ShiftRight)&&!me.crouch,sp=(me.crouch?2.4:run?8.5:5)*dt*(performance.now()<(me.boostUntil||0)?1.6:1)*(me.small?.6:1);
   const turn=(K.ArrowLeft?1:0)-(K.ArrowRight?1:0);
   me.ry+=turn*2.7*dt;
   const mv=((K.KeyW||K.ArrowUp)?1:0)-((K.KeyS||K.ArrowDown)?1:0);
@@ -1203,13 +1203,13 @@ function updateWorld(dt){
   if(level===0&&me.y<.5&&len&&Math.abs(me.x+15.5)<1.25){const rel=me.z-pushArc.col.z;
     if(rel>.9&&rel<1.45&&dz<-.5)me.push=-1;else if(rel<-.9&&rel>-1.45&&dz>.5)me.push=1;}
   const gr=groundAt(me.x,me.z),onG=me.y<=gr.gy+.001;
-  if(P.has('Space')&&onG&&!me.crouch){me.vy=gr.b>1?14:gr.b?10.5:(performance.now()<(me.jumpUntil||0)?11:7.5);if(gr.b===1&&!me.boinged){me.boinged=1;toast('🛋️ Boing! Bouncy couch!');}if(gr.b>1)toast('🤸 BOING!!');}
+  if(P.has('Space')&&onG&&!me.crouch){me.vy=(gr.b>1?14:gr.b?10.5:(performance.now()<(me.jumpUntil||0)?11:7.5))*(me.small?.7:1);if(gr.b===1&&!me.boinged){me.boinged=1;toast('🛋️ Boing! Bouncy couch!');}if(gr.b>1)toast('🤸 BOING!!');}
   me.vy-=(performance.now()<(me.floatUntil||0)?8:22)*dt;me.y+=me.vy*dt;if(me.y<=gr.gy){me.y=gr.gy;me.vy=0;}
   me.onGround=me.y<=gr.gy+.001;
   // head reaches the ceiling: go up into a vent if you're under one, otherwise bonk
-  {const ceil=me.z>11.6?2.2:inTiny(me.x,me.z)?2.45:5.35;if(level===0&&me.y+1.75>ceil){me.y=ceil-1.75;if(me.vy>0)me.vy=0;}}
-  if(level===0&&me.x>16.2&&me.y+1.75>3.2){me.y=3.2-1.75;if(me.vy>0)me.vy=0;}
-  if(level===0&&Math.abs(me.x)<1.6&&Math.abs(me.z)<.55&&me.y<3.6&&me.y+1.75>3.55){me.y=3.55-1.75;if(me.vy>0)me.vy=0;}
+  {const hh=1.75*mySz(),ceil=me.z>11.6?2.2:inTiny(me.x,me.z)?2.45:5.35;if(level===0&&me.y+hh>ceil){me.y=ceil-hh;if(me.vy>0)me.vy=0;}}
+  if(level===0&&me.x>16.2&&me.y+1.75*mySz()>3.2){me.y=3.2-1.75*mySz();if(me.vy>0)me.vy=0;}
+  if(level===0&&Math.abs(me.x)<1.6&&Math.abs(me.z)<.55&&me.y<3.6&&me.y+1.75*mySz()>3.55){me.y=3.55-1.75*mySz();if(me.vy>0)me.vy=0;}
   // stars
   if(level>0)for(let i=starMeshes.length-1;i>=0;i--){const s=starMeshes[i];
     if(Math.hypot(s.position.x-me.x,s.position.z-me.z)<1.1&&me.y<2.2){sky.remove(s);starMeshes.splice(i,1);me.stars++;
@@ -1242,13 +1242,13 @@ function updateCamera(dt){
   // first person: the camera is your eyes
   snapCam=false;
   const bob=me.moving&&me.onGround?Math.sin(me.bob)*.06:0;
-  me.eye=me.eye??1.62;me.eye+=((me.inVent?.62:me.crouch?(me.hiding==='pit'?.3:.7):1.62)-me.eye)*Math.min(1,dt*12);
+  me.eye=me.eye??1.62;me.eye+=((me.inVent?.62:me.crouch?(me.hiding==='pit'?.3:.7)*mySz():1.62*mySz())-me.eye)*Math.min(1,dt*12);
   const cp=Math.cos(me.pitch),fx=Math.sin(me.ry)*cp,fy=Math.sin(me.pitch),fz=Math.cos(me.ry)*cp;
   const tp=thirdPerson&&!me.inVent;
   if(tp){
     // third person: camera floats behind you
     const tx=me.x,ty=me.y+me.eye*.85,tz=me.z;
-    let cx=tx-fx*4.2,cy=ty-fy*4.2+.7,cz=tz-fz*4.2;
+    const cd=4.2*Math.max(.4,mySz());let cx=tx-fx*cd,cy=ty-fy*cd+.7*mySz(),cz=tz-fz*cd;
     if(level===0){if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(inTiny(me.x,me.z)){cx=clamp(cx,14.5,15.8);cz=clamp(cz,-7.0,-6.0);cy=clamp(cy,.3,2.4);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
     camPos.set(cx,cy,cz);camLook.set(tx+fx*3,ty+fy*3,tz+fz*3);
   }else{
@@ -1258,7 +1258,7 @@ function updateCamera(dt){
   camera.position.copy(camPos);camera.lookAt(camLook);
   hand.visible=!tp;
   if(meAv.userData.shown!==tp){meAv.userData.shown=tp;setMeVisible(tp);}
-  meAv.scale.y=(me.inVent||me.crouch)?.5:1;
+  {const z=mySz();meAv.scale.set(z,z*((me.inVent||me.crouch)?.5:1),z);}
   // your hand + held item swing a little while walking
   hand.position.set(.32,-.3+Math.abs(Math.sin(me.bob))*(me.moving?.03:0),-.55);
 }
@@ -1274,7 +1274,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],tm:[TINY.unl?1:0,TINY.open?1:0,TINY.t],k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],tm:[TINY.unl?1:0,TINY.open?1:0,TINY.t],sm:me.small?1:0,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1301,6 +1301,7 @@ function upsertPeer(p){
   if(e.color!==color){e.color=color;e.av.userData.mat.color.set(color);}
   e.tx=clamp(num(pr.x,0),-40,40);e.ty=clamp(num(pr.y,0),0,10);e.tz=clamp(num(pr.z,0),-40,40);e.try=num(pr.ry,0);
   e.lv=num(pr.lv,0)|0;e.v=!!pr.v;e.hid=(pr.hid==='pit'||pr.hid==='booth'||pr.hid==='box')?pr.hid:'';e.cr=!!pr.cr;e.pu=(pr.pu===1||pr.pu===-1)?pr.pu:0;e.hp=(Number.isInteger(pr.hp)&&pr.hp>=0&&pr.hp<PLANTS.length)?pr.hp:-1;
+  e.sm=pr.sm===1;
   if(Array.isArray(pr.tm)&&pr.tm.length===3&&typeof pr.tm[2]==='number'&&isFinite(pr.tm[2])&&pr.tm[2]>TINY.t){TINY.t=pr.tm[2];TINY.unl=!!pr.tm[0];TINY.open=!!pr.tm[1];}
   if(Array.isArray(pr.vm)&&pr.vm.length===2&&typeof pr.vm[1]==='number'&&isFinite(pr.vm[1])&&pr.vm[1]>VEND.t){VEND.t=pr.vm[1];VEND.open=!!pr.vm[0];}
   if(Array.isArray(pr.bb)&&pr.bb.length===2&&typeof pr.bb[1]==='number'&&isFinite(pr.bb[1])&&pr.bb[1]>bbState.t){bbState.t=pr.bb[1];bbState.open=!!pr.bb[0];}
@@ -2456,6 +2457,7 @@ function updateVend(){
 // TINY ME: a new machine (still in progress). Unlock it with the key, step inside and shut the door.
 // ======================================================================
 const TINY={unl:false,open:false,t:0,door:null,ang:0,doorCol:null,doorTex:null,drawn:''};
+const TINY_SZ=.35;function mySz(){return me.small?TINY_SZ:1;}
 const inTiny=(x,z)=>x>14.43&&x<16&&z>-7.07&&z<-5.93;
 function setTiny(unl,open,msg){TINY.unl=unl;TINY.open=open;TINY.t=Date.now();sendPresence(true);if(msg)toast(msg);}
 function drawTinyDoor(){
@@ -2538,6 +2540,7 @@ function tinySideTex(){return canvasTex(200,420,(g,w,h)=>{
   const metal=std(0x9aa0ae,{metalness:.7,roughness:.35});
   box(.04,.06,2*VZ,metal,0,-.03,0,hinge);box(.04,.06,2*VZ,metal,0,-VH+.03,0,hinge);box(.04,VH,.06,metal,0,-VH/2,-VZ+.03,hinge);box(.04,VH,.06,metal,0,-VH/2,VZ-.03,hinge);
   for(let k=1;k<7;k++){const sl=box(.03,.05,2*VZ-.08,metal,0,-k*VH/7,0,hinge);sl.rotation.z=.5;}
+  box(.02,VH-.04,2*VZ-.04,std(0x0a0814,{roughness:1}),.03,-VH/2,0,hinge);   // solid back: no peeking in
   const lock=new THREE.Mesh(new THREE.PlaneGeometry(.2,.15),new THREE.MeshBasicMaterial({map:TINY.doorTex}));lock.position.set(-.03,-VH/2,0);lock.rotation.y=-Math.PI/2;hinge.add(lock);
   g.add(hinge);TINY.door=hinge;
   g.position.set(15.15,0,-6.5);g.rotation.y=-Math.PI/2;g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);
@@ -2557,6 +2560,10 @@ function tinySideTex(){return canvasTex(200,420,(g,w,h)=>{
     act:()=>setTiny(true,!TINY.open,TINY.open?'🤫 You closed the vent… you\'re hiding in Tiny Me\'s secret home!':'🕳 Vent open — crouch (C) to crawl out')});
 })();
 function updateTiny(){
+  const inside=level===0&&inTiny(me.x,me.z);
+  if(inside&&!TINY.wasIn&&TINY.wasIn!==undefined){me.small=!me.small;sendPresence(true);
+    toast(me.small?'🤏 Whoa! You shrank! You\'re TINY now! (go in again to get big)':'🧍 Poof! You\'re big again!');}
+  TINY.wasIn=inside;
   TINY.ang+=((TINY.open?-1.4:0)-TINY.ang)*.12;TINY.door.rotation.z=TINY.ang;
   TINY.doorCol.under=TINY.open?1:0;drawTinyDoor();
 }
@@ -2697,7 +2704,7 @@ function loop(){
     const k=1-Math.exp(-dt*12);
     e.av.position.x+=(e.tx-e.av.position.x)*k;e.av.position.y+=(e.ty-(e.hid==='pit'?.62:0)-e.av.position.y)*k;e.av.position.z+=(e.tz-e.av.position.z)*k;
     let d=e.try-e.av.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));e.av.rotation.y+=d*k;
-    e.av.scale.y=(e.v||e.cr)?.5:1;
+    {const z=e.sm?TINY_SZ:1;e.av.scale.set(z,z*((e.v||e.cr)?.5:1),z);}
     e.av.userData.label.visible=!e.hid&&!e.cr;
     animAvatar(e.av,e.mv,dt);
   }
