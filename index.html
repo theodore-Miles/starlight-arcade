@@ -479,7 +479,7 @@ function Info(){
         ['ARCADE MACHINES (left wall):','#fff'],
         ['  * SKY BOUND - your 3D flight game','#9fe'],
         ['  * Snake  * Sky Pong  * Brick Bash  * Meteor Dodge','#9fe'],
-        ['VR ZONE: both headsets play Red Dust or Block Haven','#9fe'],
+        ['VR ZONE: both headsets play Red Dust, Block Haven or Tiny Me','#9fe'],
         ['POOL TABLE: take turns with the mouse','#9fe'],
         ['CLAW MACHINES: try to win prizes!','#9fe'],
         ['',''],
@@ -510,7 +510,8 @@ const MY_GAMES={
   chickenlasso:{t:'🐔 CHICKEN LASSO RODEO',c:'#ffd36e',u:'https://chicken-lasso-rodeo.vercel.app/',d:'Lasso as many chickens as you can before time runs out. Watch out for the pig and the sneaky fox!'},
   skybound:{t:'✈ SKY BOUND',c:'#7fd8ff',u:'https://skybound-sage.vercel.app/',d:'Your 3D flight game! Fly planes, helicopters, gliders, an airship and rockets — all the way to the Moon.'},
   reddust:{t:'🚀 RED DUST',c:'#ff7a4a',u:'https://red-dust.vercel.app/',d:'Mars Mining Colony. Stranded in Jezero Crater — dig, build, keep breathing, and power the colony beacon.'},
-  blockhaven:{t:'🧱 BLOCK HAVEN',c:'#3ddc84',u:'https://block-haven-taupe.vercel.app/',d:'Block survival on an island of hills, sea and caves. Dig, craft, farm and build with friends.'}
+  blockhaven:{t:'🧱 BLOCK HAVEN',c:'#3ddc84',u:'https://block-haven-taupe.vercel.app/',d:'Block survival on an island of hills, sea and caves. Dig, craft, farm and build with friends.'},
+  tinyme:{t:'🤏 TINY ME',c:'#ffb347',u:'https://tiny-me-game.vercel.app/',d:'Tiny Me in the Big House. You\'re no bigger than a thimble! Explore the giant house, find junk, build inventions — and don\'t let the cat see you.'}
 };
 const linkp=document.getElementById('linkp');let linkOpen=false;
 function openLink(keys,title,desc,onPick){unlockMouse();const lt=document.getElementById('lt');lt.textContent=title;lt.style.color='#46f3ff';
@@ -1056,7 +1057,7 @@ function updateVent(dt){
   if(near&&(anyPress('KeyE','Enter')||clickUse)){clickUse=false;promptEl.style.display='none';near.act();}
   if(P.has('KeyT'))openChat();
 }
-function openVR(){openLink(['reddust','blockhaven'],'🥽 VR HEADSET','Pick a game to play:');}
+function openVR(){openLink(['reddust','blockhaven','tinyme'],'🥽 VR HEADSET','Pick a game to play:');}
 
 // ======================================================================
 // SKY LEVELS (level 1, 2, 3 …)
@@ -1131,7 +1132,7 @@ function groundAt(x,z){let gy=0,b=false;if(level!==0)return{gy,b};
     if(on&&c.top<=me.y+.31&&c.top>gy){gy=c.top;b=c.bouncy||0;}}
   return{gy,b};}
 function blocked(x,z){
-  const R=me.small?.2:.45;
+  const R=.45;
   if(level===0){
     if(x<-16+R||z<-11+R)return true;
     if(z>11-R){if(!(x>6.25+R&&x<7.35-R&&z<13.4-R))return true;}   // the little nook behind the vending machine
@@ -1144,8 +1145,8 @@ function blocked(x,z){
   else if(Math.hypot(x,z)>16.6)return true;
   for(const c of (level===0?houseCols:skyCols)){
     if(c.off)continue;
-    if(c.under&&(me.crouch||me.small)&&me.y<.1)continue; // crawl under it
-    if(c.leg&&!me.crouch&&!me.small)continue; // legs only matter when you're underneath
+    if(c.under&&me.crouch&&me.y<.1)continue; // crawl under it
+    if(c.leg&&!me.crouch)continue; // legs only matter when you're underneath
     if(c.top!==undefined&&c.top<=me.y+.3)continue; // low enough to step/jump onto
     if(c.r!==undefined){if(Math.hypot(x-c.x,z-c.z)<c.r+R)return true;}
     else if(Math.abs(x-c.x)<c.hw+R&&Math.abs(z-c.z)<c.hd+R)return true;
@@ -1189,7 +1190,7 @@ function updateWorld(dt){
   me.crouch=(!!K.KeyC&&me.y<.1)||(wasCrouch&&underSomething);
   if(wasCrouch&&!K.KeyC&&underSomething&&!me.bumpTip){me.bumpTip=1;toast("🙃 Ouch! You can't stand up under the table");}
   if(!underSomething)me.bumpTip=0;
-  const run=(K.ShiftLeft||K.ShiftRight)&&!me.crouch,sp=(me.crouch?2.4:run?8.5:5)*dt*(performance.now()<(me.boostUntil||0)?1.6:1)*(me.small?.6:1);
+  const run=(K.ShiftLeft||K.ShiftRight)&&!me.crouch,sp=(me.crouch?2.4:run?8.5:5)*dt*(performance.now()<(me.boostUntil||0)?1.6:1);
   const turn=(K.ArrowLeft?1:0)-(K.ArrowRight?1:0);
   me.ry+=turn*2.7*dt;
   const mv=((K.KeyW||K.ArrowUp)?1:0)-((K.KeyS||K.ArrowDown)?1:0);
@@ -1203,13 +1204,13 @@ function updateWorld(dt){
   if(level===0&&me.y<.5&&len&&Math.abs(me.x+15.5)<1.25){const rel=me.z-pushArc.col.z;
     if(rel>.9&&rel<1.45&&dz<-.5)me.push=-1;else if(rel<-.9&&rel>-1.45&&dz>.5)me.push=1;}
   const gr=groundAt(me.x,me.z),onG=me.y<=gr.gy+.001;
-  if(P.has('Space')&&onG&&!me.crouch){me.vy=(gr.b>1?14:gr.b?10.5:(performance.now()<(me.jumpUntil||0)?11:7.5))*(me.small?.7:1);if(gr.b===1&&!me.boinged){me.boinged=1;toast('🛋️ Boing! Bouncy couch!');}if(gr.b>1)toast('🤸 BOING!!');}
+  if(P.has('Space')&&onG&&!me.crouch){me.vy=gr.b>1?14:gr.b?10.5:(performance.now()<(me.jumpUntil||0)?11:7.5);if(gr.b===1&&!me.boinged){me.boinged=1;toast('🛋️ Boing! Bouncy couch!');}if(gr.b>1)toast('🤸 BOING!!');}
   me.vy-=(performance.now()<(me.floatUntil||0)?8:22)*dt;me.y+=me.vy*dt;if(me.y<=gr.gy){me.y=gr.gy;me.vy=0;}
   me.onGround=me.y<=gr.gy+.001;
   // head reaches the ceiling: go up into a vent if you're under one, otherwise bonk
-  {const hh=1.75*mySz(),ceil=me.z>11.6?2.2:inTiny(me.x,me.z)?2.45:5.35;if(level===0&&me.y+hh>ceil){me.y=ceil-hh;if(me.vy>0)me.vy=0;}}
-  if(level===0&&me.x>16.2&&me.y+1.75*mySz()>3.2){me.y=3.2-1.75*mySz();if(me.vy>0)me.vy=0;}
-  if(level===0&&Math.abs(me.x)<1.6&&Math.abs(me.z)<.55&&me.y<3.6&&me.y+1.75*mySz()>3.55){me.y=3.55-1.75*mySz();if(me.vy>0)me.vy=0;}
+  {const hh=1.75,ceil=me.z>11.6?2.2:5.35;if(level===0&&me.y+hh>ceil){me.y=ceil-hh;if(me.vy>0)me.vy=0;}}
+  if(level===0&&me.x>16.2&&me.y+1.75>3.2){me.y=3.2-1.75;if(me.vy>0)me.vy=0;}
+  if(level===0&&Math.abs(me.x)<1.6&&Math.abs(me.z)<.55&&me.y<3.6&&me.y+1.75>3.55){me.y=3.55-1.75;if(me.vy>0)me.vy=0;}
   // stars
   if(level>0)for(let i=starMeshes.length-1;i>=0;i--){const s=starMeshes[i];
     if(Math.hypot(s.position.x-me.x,s.position.z-me.z)<1.1&&me.y<2.2){sky.remove(s);starMeshes.splice(i,1);me.stars++;
@@ -1242,14 +1243,14 @@ function updateCamera(dt){
   // first person: the camera is your eyes
   snapCam=false;
   const bob=me.moving&&me.onGround?Math.sin(me.bob)*.06:0;
-  me.eye=me.eye??1.62;me.eye+=((me.inVent?.62:me.crouch?(me.hiding==='pit'?.3:.7)*mySz():1.62*mySz())-me.eye)*Math.min(1,dt*12);
+  me.eye=me.eye??1.62;me.eye+=((me.inVent?.62:me.crouch?(me.hiding==='pit'?.3:.7):1.62)-me.eye)*Math.min(1,dt*12);
   const cp=Math.cos(me.pitch),fx=Math.sin(me.ry)*cp,fy=Math.sin(me.pitch),fz=Math.cos(me.ry)*cp;
   const tp=thirdPerson&&!me.inVent;
   if(tp){
     // third person: camera floats behind you
     const tx=me.x,ty=me.y+me.eye*.85,tz=me.z;
-    const cd=4.2*Math.max(.4,mySz());let cx=tx-fx*cd,cy=ty-fy*cd+.7*mySz(),cz=tz-fz*cd;
-    if(level===0){if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(inTiny(me.x,me.z)){cx=clamp(cx,14.5,15.8);cz=clamp(cz,-7.0,-6.0);cy=clamp(cy,.3,2.4);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
+    let cx=tx-fx*4.2,cy=ty-fy*4.2+.7,cz=tz-fz*4.2;
+    if(level===0){if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
     camPos.set(cx,cy,cz);camLook.set(tx+fx*3,ty+fy*3,tz+fz*3);
   }else{
     camPos.set(me.x,me.y+me.eye+bob,me.z);
@@ -1258,7 +1259,7 @@ function updateCamera(dt){
   camera.position.copy(camPos);camera.lookAt(camLook);
   hand.visible=!tp;
   if(meAv.userData.shown!==tp){meAv.userData.shown=tp;setMeVisible(tp);}
-  {const z=mySz();meAv.scale.set(z,z*((me.inVent||me.crouch)?.5:1),z);}
+  meAv.scale.y=(me.inVent||me.crouch)?.5:1;
   // your hand + held item swing a little while walking
   hand.position.set(.32,-.3+Math.abs(Math.sin(me.bob))*(me.moving?.03:0),-.55);
 }
@@ -1274,7 +1275,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],tm:[TINY.unl?1:0,TINY.open?1:0,TINY.t],sm:me.small?1:0,k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1301,8 +1302,6 @@ function upsertPeer(p){
   if(e.color!==color){e.color=color;e.av.userData.mat.color.set(color);}
   e.tx=clamp(num(pr.x,0),-40,40);e.ty=clamp(num(pr.y,0),0,10);e.tz=clamp(num(pr.z,0),-40,40);e.try=num(pr.ry,0);
   e.lv=num(pr.lv,0)|0;e.v=!!pr.v;e.hid=(pr.hid==='pit'||pr.hid==='booth'||pr.hid==='box')?pr.hid:'';e.cr=!!pr.cr;e.pu=(pr.pu===1||pr.pu===-1)?pr.pu:0;e.hp=(Number.isInteger(pr.hp)&&pr.hp>=0&&pr.hp<PLANTS.length)?pr.hp:-1;
-  e.sm=pr.sm===1;
-  if(Array.isArray(pr.tm)&&pr.tm.length===3&&typeof pr.tm[2]==='number'&&isFinite(pr.tm[2])&&pr.tm[2]>TINY.t){TINY.t=pr.tm[2];TINY.unl=!!pr.tm[0];TINY.open=!!pr.tm[1];}
   if(Array.isArray(pr.vm)&&pr.vm.length===2&&typeof pr.vm[1]==='number'&&isFinite(pr.vm[1])&&pr.vm[1]>VEND.t){VEND.t=pr.vm[1];VEND.open=!!pr.vm[0];}
   if(Array.isArray(pr.bb)&&pr.bb.length===2&&typeof pr.bb[1]==='number'&&isFinite(pr.bb[1])&&pr.bb[1]>bbState.t){bbState.t=pr.bb[1];bbState.open=!!pr.bb[0];}
   if(Array.isArray(pr.sf)&&pr.sf.length===2&&typeof pr.sf[1]==='number'&&isFinite(pr.sf[1])&&pr.sf[1]>safe.t){safe.t=pr.sf[1];safe.open=!!pr.sf[0];}
@@ -2448,124 +2447,10 @@ function updateVend(){
   const target=VEND.open?VEND.slid:VEND.home;
   VEND.x+=(target-VEND.x)*.08;if(Math.abs(target-VEND.x)<.002)VEND.x=target;
   VEND.g.position.x=VEND.x;VEND.light.intensity=Math.min(1,Math.abs(VEND.x-VEND.home)/1.2)*.35;VEND.col.x=VEND.x;VEND.buy.x=VEND.x;
-  const hid=level===0&&(me.z>11.8||(inTiny(me.x,me.z)&&!TINY.open&&Math.abs(TINY.ang)<.1));
+  const hid=level===0&&me.z>11.8;
   me.hiding=hid?'box':'';
   if(hid&&!VEND.said){VEND.said=true;toast('🤫 Shh… you\'re hiding behind the vending machine!');}
   if(!hid)VEND.said=false;
-}
-// ======================================================================
-// TINY ME: a new machine (still in progress). Unlock it with the key, step inside and shut the door.
-// ======================================================================
-const TINY={unl:false,open:false,t:0,door:null,ang:0,doorCol:null,doorTex:null,drawn:''};
-const TINY_SZ=.35;function mySz(){return me.small?TINY_SZ:1;}
-const inTiny=(x,z)=>x>14.43&&x<16&&z>-7.07&&z<-5.93;
-function setTiny(unl,open,msg){TINY.unl=unl;TINY.open=open;TINY.t=Date.now();sendPresence(true);if(msg)toast(msg);}
-function drawTinyDoor(){
-  const key=TINY.unl?'u':'l';if(TINY.drawn===key)return;TINY.drawn=key;
-  const c=TINY.doorTex.image,g=c.getContext('2d'),w=c.width,h=c.height;
-  g.clearRect(0,0,w,h);g.fillStyle='#14101f';g.fillRect(0,0,w,h);g.strokeStyle='#ffb347';g.lineWidth=5;g.strokeRect(3,3,w-6,h-6);
-  g.textAlign='center';g.font='40px system-ui';g.fillText(TINY.unl?'🔓':'🔒',w/2,50);
-  g.fillStyle='#fff';g.font='bold 13px system-ui';g.fillText(TINY.unl?'OPEN':'LOCKED',w/2,78);
-  TINY.doorTex.needsUpdate=true;
-}
-// Tiny Me in the Big House: a tiny person living in a secret home inside the wall
-SCREEN.tinyme=function(g,t){
-  const gr=g.createLinearGradient(0,0,0,200);gr.addColorStop(0,'#ffcf8a');gr.addColorStop(1,'#f19a5a');g.fillStyle=gr;g.fillRect(0,0,256,200);
-  g.fillStyle='#8a5a3a';g.fillRect(0,160,256,40);                                            // giant floor
-  g.fillStyle='#6b3e26';g.fillRect(150,60,60,100);g.fillStyle='#c98a4b';g.fillRect(156,66,48,30);   // giant cabinet
-  g.fillStyle='#3a2414';g.beginPath();g.arc(40,160,16,Math.PI,0);g.fill();                  // mouse hole home
-  const px=40+((t*.6)%180);                                                                 // tiny me runs across the floor
-  g.fillStyle='#ffd36e';g.beginPath();g.arc(px,150,4,0,7);g.fill();g.fillStyle='#4fc3ff';g.fillRect(px-3,154,6,7);
-  const cx=230-((t*.3)%60);g.fillStyle='#555';g.beginPath();g.ellipse(cx,148,16,10,0,0,7);g.fill();g.beginPath();g.arc(cx-14,140,7,0,7);g.fill();   // the cat!
-  g.beginPath();g.moveTo(cx-19,135);g.lineTo(cx-17,128);g.lineTo(cx-13,134);g.fill();g.fillStyle='#ffd36e';g.fillRect(cx-17,139,2,2);
-  g.fillStyle='rgba(0,0,0,.45)';g.fillRect(0,36,256,22);g.fillStyle='#fff';g.font='bold 13px system-ui';g.textAlign='center';g.fillText('in the BIG HOUSE',128,52);
-};
-function tinySideTex(){return canvasTex(200,420,(g,w,h)=>{
-  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#2a1a4a');gr.addColorStop(1,'#14101f');g.fillStyle=gr;g.fillRect(0,0,w,h);
-  // a giant house
-  g.fillStyle='#c98a4b';g.fillRect(25,150,150,170);g.fillStyle='#8a3a2a';g.beginPath();g.moveTo(10,155);g.lineTo(100,80);g.lineTo(190,155);g.fill();
-  g.fillStyle='#ffe08a';for(const [x,y] of [[45,175],[120,175],[45,240]])g.fillRect(x,y,35,35);g.fillStyle='#5a3418';g.fillRect(118,250,40,70);
-  // tiny me next to the house (so small!)
-  g.fillStyle='#ffd36e';g.beginPath();g.arc(100,330,4,0,7);g.fill();g.fillStyle='#4fc3ff';g.fillRect(97,334,6,8);
-  g.fillStyle='#ffb347';g.font='900 34px system-ui';g.textAlign='center';g.fillText('TINY',w/2,40);g.fillText('ME',w/2,72);
-  g.fillStyle='#fff';g.font='bold 14px system-ui';g.fillText('in the Big House',w/2,370);g.fillStyle='#9fb0e0';g.font='12px system-ui';g.fillText('🚧 still in progress 🚧',w/2,395);});}
-(function buildTiny(){
-  const a={title:'TINY ME',col:'#ffb347',icon:'🧍',sub:'IN PROGRESS'};
-  const col=new THREE.Color(a.col),dark=std(0x14101f,{roughness:.4}),acc=std(col,{emissive:col,emissiveIntensity:.9});
-  const g=new THREE.Group();          // local: front = +z, width along x, depth along z; turned so the front faces the room
-  const W=1.3,D=1.6,H=2.5,VH=1.0,VZ=.6;   // vent: 1 m tall, local z -.6..+.6, on the -x side
-  box(W,H,.06,dark,0,H/2,D/2-.03,g);box(W,.06,D,dark,0,H-.03,0,g);box(W,H,.06,dark,0,H/2,-D/2+.03,g);   // front, roof, back
-  box(.06,H,D,dark,W/2-.03,H/2,0,g);                                   // solid side
-  // vent side: wall above and around the vent hole
-  box(.06,H-VH,D,dark,-W/2+.03,VH+(H-VH)/2,0,g);
-  box(.06,VH,D/2-VZ,dark,-W/2+.03,VH/2,-(VZ+(D/2-VZ)/2),g);box(.06,VH,D/2-VZ,dark,-W/2+.03,VH/2,VZ+(D/2-VZ)/2,g);
-  const art=new THREE.MeshBasicMaterial({map:tinySideTex(),color:0xdddddd});
-  const sp=new THREE.Mesh(new THREE.PlaneGeometry(D*.92,2.0),art);sp.position.set(W/2+.005,1.3,0);sp.rotation.y=Math.PI/2;g.add(sp);
-  const art2=new THREE.Mesh(new THREE.PlaneGeometry(D*.92,1.25),new THREE.MeshBasicMaterial({map:canvasTex(200,260,(q,w,h)=>{q.fillStyle='#14101f';q.fillRect(0,0,w,h);q.fillStyle='#ffb347';q.font='900 36px system-ui';q.textAlign='center';q.fillText('TINY ME',w/2,60);q.font='70px system-ui';q.fillText('🏠',w/2,160);q.fillStyle='#9fb0e0';q.font='bold 14px system-ui';q.fillText('secret home in the wall',w/2,215);}),color:0xdddddd}));
-  art2.position.set(-W/2-.005,VH+.1+1.25/2,0);art2.rotation.y=-Math.PI/2;g.add(art2);
-  box(.07,H,.07,acc,W/2+.02,H/2,D/2,g);box(.07,H,.07,acc,W/2+.02,H/2,-D/2,g);box(.07,H,.07,acc,-W/2-.02,H/2,D/2,g);box(.07,H,.07,acc,-W/2-.02,H/2,-D/2,g);
-  box(W+.1,.07,D+.1,acc,0,H+.02,0,g);
-  const marqTex=canvasTex(256,80,(c)=>{c.fillStyle='#000';c.fillRect(0,0,256,80);c.shadowColor=a.col;c.shadowBlur=18;c.fillStyle=a.col;c.font='900 40px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(a.title,128,42,240);c.fillText(a.title,128,42,240);});
-  const marq=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.4),new THREE.MeshBasicMaterial({map:marqTex}));marq.position.set(0,2.25,D/2+.01);g.add(marq);
-  const c=document.createElement('canvas');c.width=256;c.height=200;
-  const tex=new THREE.CanvasTexture(c);tex.encoding=THREE.sRGBEncoding;
-  const s={g:c.getContext('2d'),tex,col:a.col,title:a.title,kind:'tinyme',sub:a.sub,seed:Math.random()*10};drawScreen(s);screens.push(s);
-  const scr=new THREE.Mesh(new THREE.PlaneGeometry(1.05,.82),new THREE.MeshBasicMaterial({map:tex}));scr.position.set(0,1.58,D/2+.01);g.add(scr);
-  const pnl=box(1.3,.14,.5,dark,0,1.02,D/2+.18,g);pnl.rotation.x=-.25;
-  const stick=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.22),std(0xcccccc));stick.position.set(-.3,1.18,D/2+.2);g.add(stick);
-  const knob=new THREE.Mesh(new THREE.SphereGeometry(.07,12,10),std(0xff3b3b,{emissive:0xff0000,emissiveIntensity:.4}));knob.position.set(-.3,1.3,D/2+.2);g.add(knob);
-  [0xffd36e,0x4fc3ff,0x3ddc84].forEach((cc,j)=>{const b=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.06,14),std(cc,{emissive:cc,emissiveIntensity:.8}));b.position.set(.05+j*.2,1.12,D/2+.2);b.rotation.x=-.25;g.add(b);});
-  floorGlow(0,1.1,2.6,a.col,g);
-  // inside: Tiny Me's cozy secret home (made of things a tiny person would use)
-  const st=canvasTex(256,200,(q,w,h)=>{q.fillStyle='#2a1a10';q.fillRect(0,0,w,h);q.fillStyle='#ffb347';q.textAlign='center';q.font='bold 30px system-ui';q.fillText('TINY ME',w/2,48);
-    q.font='56px system-ui';q.fillText('🏠',w/2,118);q.fillStyle='#ffe6b0';q.font='bold 16px system-ui';q.fillText('my secret home!',w/2,152);q.fillStyle='#9fb0e0';q.font='14px system-ui';q.fillText('🚧 game still in progress 🚧',w/2,180);});
-  const is=new THREE.Mesh(new THREE.PlaneGeometry(.9,.7),new THREE.MeshBasicMaterial({map:st}));is.position.set(0,1.6,D/2-.07);is.rotation.y=Math.PI;g.add(is);
-  const fl=new THREE.Mesh(new THREE.PlaneGeometry(W-.12,D-.12),std(0x8a5a3a,{roughness:.9}));fl.rotation.x=-Math.PI/2;fl.position.y=.01;g.add(fl);
-  // matchbox bed with a sock blanket
-  const mb=box(.32,.12,.5,std(0xe8d0a0),.42,.06,-.5,g);box(.3,.03,.34,std(0xff5d73),.42,.135,-.44,g);box(.2,.05,.12,std(0xffffff),.42,.14,-.68,g);
-  // thread spool stool + thimble + bottle cap plate + button + candle stub
-  const spool=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.18,14),std(0x4fc3ff));spool.position.set(-.38,.11,-.55);g.add(spool);
-  for(const y of [.02,.2]){const r=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.03,14),std(0xc98a4b));r.position.set(-.38,y,-.55);g.add(r);}
-  const thim=new THREE.Mesh(new THREE.CylinderGeometry(.05,.06,.1,12),std(0xc8cde0,{metalness:.8,roughness:.3}));thim.position.set(-.45,.05,.0);g.add(thim);
-  const cap=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.025,16),std(0xffd36e,{metalness:.6}));cap.position.set(-.45,.013,.25);g.add(cap);
-  const btn=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.015,14),std(0x3ddc84));btn.position.set(.45,.008,.2);g.add(btn);
-  const cnd=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.1,10),std(0xfff6e0));cnd.position.set(.48,.05,.45);g.add(cnd);
-  const fla=new THREE.Mesh(new THREE.SphereGeometry(.018,8,6),new THREE.MeshBasicMaterial({color:0xffb347}));fla.position.set(.48,.115,.45);fla.scale.y=1.6;g.add(fla);
-  // workbench: a ruler on two erasers
-  box(.12,.08,.06,std(0xff9fb0),-.42,.04,.45,g);box(.12,.08,.06,std(0xff9fb0),-.42,.04,.65,g);box(.16,.02,.36,std(0xf5e08a),-.42,.09,.55,g);
-  const il=new THREE.PointLight(0xffb347,.5,2.2);il.position.set(0,2.0,0);g.add(il);
-  // the vent cover (hinged at the top, swings up and out)
-  const dc=document.createElement('canvas');dc.width=120;dc.height=90;TINY.doorTex=new THREE.CanvasTexture(dc);TINY.doorTex.encoding=THREE.sRGBEncoding;
-  const hinge=new THREE.Group();hinge.position.set(-W/2-.04,VH,0);
-  const metal=std(0x9aa0ae,{metalness:.7,roughness:.35});
-  box(.04,.06,2*VZ,metal,0,-.03,0,hinge);box(.04,.06,2*VZ,metal,0,-VH+.03,0,hinge);box(.04,VH,.06,metal,0,-VH/2,-VZ+.03,hinge);box(.04,VH,.06,metal,0,-VH/2,VZ-.03,hinge);
-  for(let k=1;k<7;k++){const sl=box(.03,.05,2*VZ-.08,metal,0,-k*VH/7,0,hinge);sl.rotation.z=.5;}
-  box(.02,VH-.04,2*VZ-.04,std(0x0a0814,{roughness:1}),.03,-VH/2,0,hinge);   // solid back: no peeking in
-  const lock=new THREE.Mesh(new THREE.PlaneGeometry(.2,.15),new THREE.MeshBasicMaterial({map:TINY.doorTex}));lock.position.set(-.03,-VH/2,0);lock.rotation.y=-Math.PI/2;hinge.add(lock);
-  g.add(hinge);TINY.door=hinge;
-  g.position.set(15.15,0,-6.5);g.rotation.y=-Math.PI/2;g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);
-  drawTinyDoor();
-  // world: front x 14.35, back x 15.95; vent side z -7.15 (vent hole x 14.55..15.75), solid side z -5.85
-  houseCols.push({x:14.38,z:-6.5,hw:.05,hd:.65},{x:14.1,z:-6.5,hw:.25,hd:.65},{x:15.15,z:-5.88,hw:.8,hd:.05},{x:15.85,z:-7.12,hw:.1,hd:.05});
-  TINY.doorCol={x:15.15,z:-7.12,hw:.6,hd:.05};houseCols.push(TINY.doorCol);
-  // from outside: the vent
-  houseInter.push({x:15.15,z:-7.5,cond:()=>me.z<-7.15,
-    get verb(){return !TINY.unl?(me.hasKey?'Unlock the TINY ME vent 🔑':'A little vent… it\'s locked 🔒'):TINY.open?'Close the vent':'Open the vent 🕳';},
-    act:()=>{
-      if(!TINY.unl){if(me.hasKey)setTiny(true,true,'🔑 Click! The vent swings open… crouch (C) to crawl inside!');else toast('🔒 The vent on TINY ME is locked. Maybe a key opens it?');return;}
-      setTiny(true,!TINY.open,TINY.open?'🕳 Vent closed':'🕳 Vent open! Crouch (C) to crawl inside');}});
-  houseInter.push({x:13.7,z:-6.5,cond:()=>me.x<14,verb:'TINY ME 🚧 still in progress!',act:()=>toast(TINY.unl?'🚧 Not playable yet… but have you checked the vent on its side? 😉':'🚧 TINY ME is still in progress!')});
-  // from inside
-  houseInter.push({x:15.15,z:-6.95,cond:()=>inTiny(me.x,me.z),get verb(){return TINY.open?'Close the vent (hide inside) 🤫':'Open the vent 🕳';},
-    act:()=>setTiny(true,!TINY.open,TINY.open?'🤫 You closed the vent… you\'re hiding in Tiny Me\'s secret home!':'🕳 Vent open — crouch (C) to crawl out')});
-})();
-function updateTiny(){
-  const inside=level===0&&inTiny(me.x,me.z);
-  if(inside&&!TINY.wasIn&&TINY.wasIn!==undefined){me.small=!me.small;sendPresence(true);
-    toast(me.small?'🤏 Whoa! You shrank! You\'re TINY now! (go in again to get big)':'🧍 Poof! You\'re big again!');}
-  TINY.wasIn=inside;
-  TINY.ang+=((TINY.open?-1.4:0)-TINY.ang)*.12;TINY.door.rotation.z=TINY.ang;
-  TINY.doorCol.under=TINY.open?1:0;drawTinyDoor();
 }
 // ----- SODA MACHINE: different kinds of soda, each does something different -----
 const SODAS=[
@@ -2704,7 +2589,7 @@ function loop(){
     const k=1-Math.exp(-dt*12);
     e.av.position.x+=(e.tx-e.av.position.x)*k;e.av.position.y+=(e.ty-(e.hid==='pit'?.62:0)-e.av.position.y)*k;e.av.position.z+=(e.tz-e.av.position.z)*k;
     let d=e.try-e.av.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));e.av.rotation.y+=d*k;
-    {const z=e.sm?TINY_SZ:1;e.av.scale.set(z,z*((e.v||e.cr)?.5:1),z);}
+    e.av.scale.y=(e.v||e.cr)?.5:1;
     e.av.userData.label.visible=!e.hid&&!e.cr;
     animAvatar(e.av,e.mv,dt);
   }
@@ -2740,7 +2625,7 @@ function loop(){
   updateSpray(dt);
   updateTools(dt);
   updateHelp();
-  updateVend();updateTiny();
+  updateVend();
   updateTV();
   sendPresence(false);
   renderer.render(scene,camera);
