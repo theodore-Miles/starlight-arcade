@@ -1320,7 +1320,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1351,6 +1351,9 @@ function upsertPeer(p){
   e.vg=num(pr.vg,0);
   if(pr.rt&&typeof pr.rt==='object'&&myPeer&&pr.rt[myPeer])voiceSignal(p.peer,e,pr.rt[myPeer]);
   if(Array.isArray(pr.jb)&&pr.jb.length===2&&typeof pr.jb[1]==='number'&&isFinite(pr.jb[1])&&pr.jb[1]>JUKE.t&&Number.isInteger(pr.jb[0])&&pr.jb[0]>=-1&&pr.jb[0]<SONGS.length){JUKE.t=pr.jb[1];JUKE.song=pr.jb[0];}
+  {const a=pr.ah,ok=v=>Array.isArray(v)&&v.every(n=>typeof n==='number'&&isFinite(n));
+   e.ah=(a&&typeof a==='object'&&(a.seat===0||a.seat===1)&&ok(a.pad)&&a.pad.length===2)?{seat:a.seat,opp:typeof a.opp==='string'?a.opp:null,pad:a.pad,
+     k:ok(a.k)&&a.k.length===4?a.k:null,op:ok(a.op)&&a.op.length===2?a.op:null,sc:ok(a.sc)&&a.sc.length===2?a.sc.map(n=>clamp(n|0,0,99)):null,over:a.over===1}:null;}
   if(Array.isArray(pr.vm)&&pr.vm.length===2&&typeof pr.vm[1]==='number'&&isFinite(pr.vm[1])&&pr.vm[1]>VEND.t){VEND.t=pr.vm[1];VEND.open=!!pr.vm[0];}
   if(Array.isArray(pr.bb)&&pr.bb.length===2&&typeof pr.bb[1]==='number'&&isFinite(pr.bb[1])&&pr.bb[1]>bbState.t){bbState.t=pr.bb[1];bbState.open=!!pr.bb[0];}
   if(Array.isArray(pr.sf)&&pr.sf.length===2&&typeof pr.sf[1]==='number'&&isFinite(pr.sf[1])&&pr.sf[1]>safe.t){safe.t=pr.sf[1];safe.open=!!pr.sf[0];}
@@ -2730,6 +2733,139 @@ function SkeeBall(){
   };
 }
 // ======================================================================
+// AIR HOCKEY (right side): play a friend on another computer, or the CPU
+// ======================================================================
+const AH={x:18.5,z:.2,puck:null,pads:[],t3:0};
+const AH_W=360,AH_L=600,AH_GOAL=130,AH_PR=26,AH_KR=16,AH_WIN=7;
+(function buildHockey(){
+  const g=new THREE.Group(),dark=std(0x14101f),white=std(0xf2f6ff,{roughness:.25,metalness:.1}),rail=std(0x46f3ff,{emissive:0x46f3ff,emissiveIntensity:.8});
+  box(2.5,.75,1.4,dark,0,.375,0,g);
+  const top=canvasTex(512,300,(q,w,h)=>{q.fillStyle='#eef4ff';q.fillRect(0,0,w,h);q.fillStyle='rgba(120,140,200,.25)';for(let x=8;x<w;x+=16)for(let y=8;y<h;y+=16){q.beginPath();q.arc(x,y,1.5,0,7);q.fill();}
+    q.strokeStyle='#ff3b3b';q.lineWidth=5;q.beginPath();q.moveTo(w/2,0);q.lineTo(w/2,h);q.stroke();q.beginPath();q.arc(w/2,h/2,50,0,7);q.stroke();
+    q.strokeStyle='#3b6bff';q.beginPath();q.arc(0,h/2,70,-Math.PI/2,Math.PI/2);q.stroke();q.beginPath();q.arc(w,h/2,70,Math.PI/2,Math.PI*1.5);q.stroke();});
+  const surf=new THREE.Mesh(new THREE.PlaneGeometry(2.3,1.2),new THREE.MeshStandardMaterial({map:top,roughness:.2,metalness:.05}));surf.rotation.x=-Math.PI/2;surf.position.y=.76;g.add(surf);
+  box(2.5,.1,.08,rail,0,.8,.66,g);box(2.5,.1,.08,rail,0,.8,-.66,g);
+  for(const sx of [-1,1]){box(.08,.1,.4,rail,sx*1.21,.8,.45,g);box(.08,.1,.4,rail,sx*1.21,.8,-.45,g);box(.06,.05,.5,dark,sx*1.2,.77,0,g);}
+  for(const [lx,lz] of [[-1.1,-.55],[1.1,-.55],[-1.1,.55],[1.1,.55]])box(.12,.75,.12,std(0x333344),lx,.375,lz,g);
+  // scoreboard on a post
+  const mq=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.36),new THREE.MeshBasicMaterial({map:canvasTex(256,80,(c)=>{c.fillStyle='#000';c.fillRect(0,0,256,80);c.shadowColor='#46f3ff';c.shadowBlur=16;c.fillStyle='#46f3ff';c.font='900 34px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText('AIR HOCKEY',128,42,240);c.fillText('AIR HOCKEY',128,42,240);})}));
+  mq.position.set(0,1.75,-.75);g.add(mq);box(.06,1.2,.06,dark,0,1.15,-.75,g);
+  // puck + paddles that show what's happening (everyone can watch)
+  const puck=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.02,16),std(0x111111));puck.position.y=.775;puck.visible=false;g.add(puck);AH.puck=puck;
+  for(const c of [0xff3b3b,0x3b6bff]){const p=new THREE.Group();const b=new THREE.Mesh(new THREE.CylinderGeometry(.085,.085,.03,18),std(c,{roughness:.4}));b.position.y=.79;p.add(b);
+    const h=new THREE.Mesh(new THREE.CylinderGeometry(.03,.035,.07,12),std(c,{roughness:.4}));h.position.y=.84;p.add(h);p.visible=false;g.add(p);AH.pads.push(p);}
+  g.position.set(AH.x,0,AH.z);g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);
+  houseCols.push({x:AH.x,z:AH.z,hw:1.25,hd:.7,top:.8});
+  for(const sx of [-1,1])houseInter.push({x:AH.x+sx*1.7,z:AH.z,verb:'Play Air Hockey 🏒 (🪙 2)',act:()=>pay(2,()=>startGame(AirHockey()))});
+})();
+// canonical table: x 0..360 across, y 0..600 long; seat 0 defends y=600, seat 1 defends y=0
+function ahToWorld(x,y){return [ (y-AH_L/2)/(AH_L/2)*-1.1 , (x-AH_W/2)/(AH_W/2)*.56 ];}
+function updateHockey3D(){
+  let host=null;
+  if(game&&game.isHockey&&game.seat===0)host={k:game.puckArr(),pads:[game.myPad(),game.oppPad()]};
+  else for(const e of peers.values())if(e.lv===0&&e.ah&&e.ah.seat===0&&e.ah.k){host={k:e.ah.k,pads:[e.ah.pad,e.ah.op]};break;}
+  AH.puck.visible=!!host;AH.pads.forEach(p=>p.visible=!!host);
+  if(!host)return;
+  const [px,pz]=ahToWorld(host.k[0],host.k[1]);AH.puck.position.x=px;AH.puck.position.z=pz;
+  host.pads.forEach((pd,i)=>{if(!pd){AH.pads[i].visible=false;return;}const [x,z]=ahToWorld(pd[0],pd[1]);AH.pads[i].position.x=x;AH.pads[i].position.z=z;});
+}
+function AirHockey(){
+  let seat,opp,cpu,puck,my,them,sc,over,msg,msgT,hostK,paid,lastOppPad;
+  const flip=(x,y)=>[AH_W-x,AH_L-y];
+  const toCanon=(x,y)=>seat===0?[x,y]:flip(x,y);
+  const OX=300,OY=20;   // where the table is drawn on screen
+  const resetPuck=toward=>{puck={x:AH_W/2,y:AH_L/2+(toward===0?-40:40),vx:0,vy:0};};
+  const say=(t)=>{msg=t;msgT=120;};
+  const findHost=()=>{for(const [id,e] of peers)if(e.lv===0&&e.ah&&e.ah.seat===0&&!e.ah.opp&&!e.ah.over)return id;return null;};
+  const hit=(p,pad)=>{const dx=puck.x-pad.x,dy=puck.y-pad.y,d=Math.hypot(dx,dy),min=AH_PR+AH_KR;
+    if(d<min&&d>0){const nx=dx/d,ny=dy/d;puck.x=pad.x+nx*min;puck.y=pad.y+ny*min;
+      const rv=(puck.vx-pad.vx)*nx+(puck.vy-pad.vy)*ny;if(rv<0){puck.vx-=1.9*rv*nx;puck.vy-=1.9*rv*ny;}
+      const sp=Math.hypot(puck.vx,puck.vy);if(sp>22){puck.vx*=22/sp;puck.vy*=22/sp;}}};
+  return{
+    isHockey:true,
+    get seat(){return seat;},
+    puckArr(){return [puck.x,puck.y,puck.vx,puck.vy];},
+    myPad(){return [my.x,my.y];},oppPad(){return them?[them.x,them.y]:null;},
+    net(){return {seat,opp:opp||null,pad:[+my.x.toFixed(1),+my.y.toFixed(1)],
+      k:seat===0?[+puck.x.toFixed(1),+puck.y.toFixed(1),+puck.vx.toFixed(2),+puck.vy.toFixed(2)]:null,
+      op:seat===0&&them?[+them.x.toFixed(1),+them.y.toFixed(1)]:null,sc:seat===0?sc.slice():null,over:over?1:0};},
+    init(){
+      sc=[0,0];over=false;paid=false;msg='';msgT=0;hostK=null;lastOppPad=null;
+      const h=findHost();
+      if(h){seat=1;opp=h;cpu=false;say('🏒 You joined '+(peers.get(h).nm||'a friend')+"'s game!");}
+      else{seat=0;opp=null;cpu=true;say('🤖 Playing the CPU — a friend can join from the other end!');}
+      my={x:AH_W/2,y:AH_L-70,vx:0,vy:0};them={x:AH_W/2,y:70,vx:0,vy:0};resetPuck(1);
+      if(seat===1){my={x:AH_W/2,y:70,vx:0,vy:0};}
+    },
+    onClose(){sendPresence(true);},
+    update(){
+      if(msgT>0)msgT--;
+      // my paddle follows the mouse (in my half only)
+      let mx=clamp(mouse.x-OX,AH_KR,AH_W-AH_KR),myv=clamp(mouse.y-OY,AH_L/2+AH_KR,AH_L-AH_KR);
+      const [cx,cy]=toCanon(mx,myv);
+      my.vx=cx-my.x;my.vy=cy-my.y;my.x=cx;my.y=cy;
+      if(seat===0){
+        // a friend joined?
+        if(!opp){for(const [id,e] of peers)if(e.lv===0&&e.ah&&e.ah.seat===1&&e.ah.opp===myPeer){opp=id;cpu=false;sc=[0,0];over=false;paid=false;resetPuck(1);say('🏒 '+(e.nm||'A friend')+' joined! First to '+AH_WIN+' wins');break;}}
+        else{const e=peers.get(opp);if(!e||!e.ah||e.ah.seat!==1||e.ah.opp!==myPeer){opp=null;cpu=true;say('👋 Your friend left — back to the CPU');}}
+        if(over){if(P.has('Space')){sc=[0,0];over=false;paid=false;resetPuck(1);}}
+        else{
+          if(cpu){const inMine=puck.y<AH_L/2;let tx=AH_W/2,ty=60;
+            if(inMine){const behind=puck.y-them.y>AH_PR;   // get behind the puck, then hit it toward your goal
+              if(behind){tx=puck.x;ty=puck.y+4;}else{tx=puck.x+(puck.x<AH_W/2?40:-40);ty=Math.max(AH_KR,puck.y-AH_PR-AH_KR-10);}}
+            tx=clamp(tx,AH_KR,AH_W-AH_KR);
+            const nx=them.x+clamp(tx-them.x,-4.5,4.5),ny=them.y+clamp(ty-them.y,-4.5,4.5);them.vx=nx-them.x;them.vy=ny-them.y;them.x=nx;them.y=Math.min(ny,AH_L/2-AH_KR);}
+          else{const e=peers.get(opp);const pd=e&&e.ah&&e.ah.pad;if(pd){const nx=clamp(pd[0],0,AH_W),ny=clamp(pd[1],0,AH_L/2);them.vx=lastOppPad?nx-lastOppPad[0]:0;them.vy=lastOppPad?ny-lastOppPad[1]:0;them.x=nx;them.y=ny;lastOppPad=[nx,ny];}}
+          for(let s=0;s<3;s++){
+            puck.x+=puck.vx/3;puck.y+=puck.vy/3;
+            if(puck.x<AH_PR){puck.x=AH_PR;puck.vx=Math.abs(puck.vx)*.9;}if(puck.x>AH_W-AH_PR){puck.x=AH_W-AH_PR;puck.vx=-Math.abs(puck.vx)*.9;}
+            const inGoal=Math.abs(puck.x-AH_W/2)<AH_GOAL/2;
+            if(puck.y<AH_PR&&!inGoal){puck.y=AH_PR;puck.vy=Math.abs(puck.vy)*.9;}
+            if(puck.y>AH_L-AH_PR&&!inGoal){puck.y=AH_L-AH_PR;puck.vy=-Math.abs(puck.vy)*.9;}
+            hit(puck,my);hit(puck,them);
+          }
+          puck.vx*=.996;puck.vy*=.996;
+          if(puck.y<-AH_PR){sc[0]++;say('🎉 Goal for '+(me.name||'you')+'!');resetPuck(1);}
+          if(puck.y>AH_L+AH_PR){sc[1]++;say(cpu?'🤖 CPU scores!':'🥅 Goal for your friend!');resetPuck(0);}
+          if(sc[0]>=AH_WIN||sc[1]>=AH_WIN){over=true;}
+        }
+      }else{
+        // guest: the host runs the puck; follow it
+        const e=peers.get(opp);
+        if(!e||!e.ah||e.ah.seat!==0||(e.ah.opp&&e.ah.opp!==myPeer)){say('👋 The other player left — you\'re now hosting vs the CPU');seat=0;opp=null;cpu=true;sc=[0,0];over=false;my={x:AH_W/2,y:AH_L-70,vx:0,vy:0};resetPuck(1);sendPresence(true);return;}
+        if(e.ah.k){const k=e.ah.k;if(!hostK||k!==hostK){hostK=k;puck={x:k[0],y:k[1],vx:k[2],vy:k[3]};}else{puck.x+=puck.vx;puck.y+=puck.vy;}}
+        if(e.ah.op===undefined){}
+        const pd=e.ah.pad;if(pd)them={x:pd[0],y:pd[1],vx:0,vy:0};
+        if(e.ah.sc)sc=e.ah.sc;over=!!e.ah.over;
+      }
+      // coins for a win
+      if(over&&!paid){paid=true;const mine=seat===0?sc[0]:sc[1],theirs=seat===0?sc[1]:sc[0];if(mine>theirs){me.score+=3;updInv();toast('🏆 You won air hockey! +🪙 3');}}
+      sendPresence();
+    },
+    draw(){
+      gbg('🏒 AIR HOCKEY','Move the mouse to slide your paddle · first to '+AH_WIN+' wins','#46f3ff');
+      // table (my goal is always at the bottom of the screen)
+      const D=(x,y)=>{const [a,b]=seat===0?[x,y]:flip(x,y);return [OX+a,OY+b];};
+      ctx.fillStyle='#46f3ff';ctx.fillRect(OX-12,OY-12,AH_W+24,AH_L+24);
+      ctx.fillStyle='#eef4ff';ctx.fillRect(OX,OY,AH_W,AH_L);
+      ctx.fillStyle='rgba(120,140,200,.25)';for(let x=12;x<AH_W;x+=24)for(let y=12;y<AH_L;y+=24)ctx.fillRect(OX+x,OY+y,2,2);
+      ctx.strokeStyle='#ff3b3b';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(OX,OY+AH_L/2);ctx.lineTo(OX+AH_W,OY+AH_L/2);ctx.stroke();ctx.beginPath();ctx.arc(OX+AH_W/2,OY+AH_L/2,50,0,7);ctx.stroke();
+      ctx.fillStyle='#111';ctx.fillRect(OX+AH_W/2-AH_GOAL/2,OY-12,AH_GOAL,12);ctx.fillRect(OX+AH_W/2-AH_GOAL/2,OY+AH_L,AH_GOAL,12);
+      ctx.strokeStyle='#3b6bff';ctx.beginPath();ctx.arc(OX+AH_W/2,OY,70,0,Math.PI);ctx.stroke();ctx.beginPath();ctx.arc(OX+AH_W/2,OY+AH_L,70,Math.PI,0);ctx.stroke();
+      const pad=(p,c)=>{const [x,y]=D(p.x,p.y);ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,AH_KR+6,0,7);ctx.fill();ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.arc(x,y,AH_KR-4,0,7);ctx.fill();ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,9,0,7);ctx.fill();};
+      if(them)pad(them,seat===0?'#3b6bff':'#ff3b3b');pad(my,seat===0?'#ff3b3b':'#3b6bff');
+      {const [x,y]=D(puck.x,puck.y);ctx.fillStyle='#111';ctx.beginPath();ctx.arc(x,y,AH_PR-8,0,7);ctx.fill();ctx.strokeStyle='#ffd36e';ctx.lineWidth=3;ctx.stroke();}
+      const mine=seat===0?sc[0]:sc[1],theirs=seat===0?sc[1]:sc[0];
+      const oppName=cpu?'🤖 CPU':((peers.get(opp)||{}).nm||'Friend');
+      txt('You',150,560,22,'#ff9f43','center');txt(String(mine),150,610,48,'#fff','center');
+      txt(oppName,150,90,20,'#9fb0e0','center');txt(String(theirs),150,140,48,'#fff','center');
+      if(seat===0&&cpu)txt('A friend can join by using the table too!',810,320,14,'#9fb0e0','center',false);
+      if(msgT>0)txt(msg,OX+AH_W/2,OY+AH_L/2-70,20,'#ff3df2','center');
+      if(over)overMsg(mine>theirs?'🏆 You win '+mine+'–'+theirs+'!':'😅 '+oppName+' wins '+theirs+'–'+mine,seat===0?'Press Space to play again':'Waiting for the host to start again…');
+    }
+  };
+}
+// ======================================================================
 // VENDING MACHINE in the main room — push it aside to find a tiny hiding spot behind it
 // ======================================================================
 const VEND={home:6.8,slid:8.35,light:null,x:6.8,open:false,t:0,g:null,col:null,said:false};
@@ -2942,7 +3078,7 @@ function loop(){
   updateSpray(dt);
   updateTools(dt);
   updateHelp();
-  updateVend();updateVoiceVolumes();updateJuke();
+  updateVend();updateVoiceVolumes();updateJuke();updateHockey3D();
   updateTV();
   sendPresence(false);
   renderer.render(scene,camera);
