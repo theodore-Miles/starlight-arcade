@@ -2414,7 +2414,7 @@ function squeak(force){
 // ======================================================================
 // VENDING MACHINE in the main room — push it aside to find a tiny hiding spot behind it
 // ======================================================================
-const VEND={home:6.8,slid:8.1,x:6.8,open:false,t:0,g:null,col:null,said:false};
+const VEND={home:6.8,slid:8.35,light:null,x:6.8,open:false,t:0,g:null,col:null,said:false};
 function setVend(open){VEND.open=open;VEND.t=Date.now();sendPresence(true);
   toast(open?'💪 You push the vending machine… there\'s a little hiding spot behind it! 🤫':'💪 The vending machine slides back');}
 (function buildVend(){
@@ -2428,7 +2428,7 @@ function setVend(open){VEND.open=open;VEND.t=Date.now();sendPresence(true);
   const nf=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.6),std(0x2a1a4a,{roughness:1}));nf.rotation.x=-Math.PI/2;nf.position.set(6.8,.005,12.65);house.add(nf);
   const pillow=new THREE.Mesh(new THREE.SphereGeometry(.32,14,10),std(0xb06bff,{roughness:.9}));pillow.scale.set(1,.45,1);pillow.position.set(6.8,.15,13.0);house.add(pillow);
   for(let k=0;k<6;k++){const st=new THREE.Mesh(new THREE.CircleGeometry(.04,5),new THREE.MeshBasicMaterial({color:0xfff6a0}));st.position.set(6.25+((k*.37)%1.1),1.4+((k*.53)%.7),13.39);st.rotation.y=Math.PI;house.add(st);}
-  const nl=new THREE.PointLight(0xb06bff,.35,2.5);nl.position.set(6.8,1.9,12.7);house.add(nl);
+  const nl=new THREE.PointLight(0xb06bff,0,2.5);nl.position.set(6.8,1.9,12.7);house.add(nl);VEND.light=nl;
   // the machine
   const vm=new THREE.Group();
   box(1.1,2.1,.8,std(0xd42a2a,{roughness:.5}),0,1.05,0,vm);
@@ -2437,17 +2437,17 @@ function setVend(open){VEND.open=open;VEND.t=Date.now();sendPresence(true);
   win.position.set(-.12,1.3,.41);vm.add(win);
   const vs=new THREE.Mesh(new THREE.PlaneGeometry(1,.25),new THREE.MeshBasicMaterial({map:labelTex('🥤 SODAS 🪙1','#d42a2a','#fff')}));vs.position.set(0,1.95,.41);vm.add(vs);
   box(.15,.4,.05,std(0x222222),.38,1.2,.42,vm);
-  vm.position.set(VEND.x,0,11.0);vm.rotation.y=Math.PI;vm.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(vm);VEND.g=vm;
-  VEND.col={x:VEND.x,z:11.0,hw:.56,hd:.42};houseCols.push(VEND.col);
+  vm.scale.set(1.3,1.15,1);vm.position.set(VEND.x,0,11.07);vm.rotation.y=Math.PI;vm.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(vm);VEND.g=vm;
+  VEND.col={x:VEND.x,z:11.07,hw:.72,hd:.42};houseCols.push(VEND.col);
   VEND.buy={x:VEND.x,z:10.2,verb:'Pick a soda 🥤 (🪙 1 each)',cond:()=>me.z<11.4,act:()=>startGame(SodaMachine())};houseInter.push(VEND.buy);
-  VEND.pushR={x:VEND.home-.95,z:11.0,cond:()=>!VEND.open&&me.z<11.4,verb:'Push the vending machine ➡',act:()=>setVend(true)};houseInter.push(VEND.pushR);
-  VEND.pushL={x:VEND.slid+.95,z:11.0,cond:()=>VEND.open&&me.z<11.4,verb:'Push the vending machine back ⬅',act:()=>{if(me.x>6.1&&me.x<7.5&&me.z>10.2){toast('🚫 Move out of the way first!');return;}setVend(false);}};houseInter.push(VEND.pushL);
+  VEND.pushR={x:VEND.home-1.15,z:11.0,cond:()=>!VEND.open&&me.z<11.4,verb:'Push the vending machine ➡',act:()=>setVend(true)};houseInter.push(VEND.pushR);
+  VEND.pushL={x:VEND.slid+1.15,z:11.0,cond:()=>VEND.open&&me.z<11.4,verb:'Push the vending machine back ⬅',act:()=>{if(me.x>5.8&&me.x<7.8&&me.z>10.2){toast('🚫 Move out of the way first!');return;}setVend(false);}};houseInter.push(VEND.pushL);
   VEND.inside={x:6.8,z:11.5,cond:()=>me.z>11.7,get verb(){return VEND.open?'Pull the machine back to hide 🤫':'Push the machine out of the way ➡';},act:()=>setVend(!VEND.open)};houseInter.push(VEND.inside);
 })();
 function updateVend(){
   const target=VEND.open?VEND.slid:VEND.home;
   VEND.x+=(target-VEND.x)*.08;if(Math.abs(target-VEND.x)<.002)VEND.x=target;
-  VEND.g.position.x=VEND.x;VEND.col.x=VEND.x;VEND.buy.x=VEND.x;
+  VEND.g.position.x=VEND.x;VEND.light.intensity=Math.min(1,Math.abs(VEND.x-VEND.home)/1.2)*.35;VEND.col.x=VEND.x;VEND.buy.x=VEND.x;
   const hid=level===0&&me.z>11.8;
   me.hiding=hid?'box':'';
   if(hid&&!VEND.said){VEND.said=true;toast('🤫 Shh… you\'re hiding behind the vending machine!');}
