@@ -2563,6 +2563,7 @@ function drawBikeBack(c,cx,cy,sz,col,rider,lean,name){
 function motoScene(c,view){
   const W=960,H=640,HZ=250,RW=480*1.1,HK=RW*.9,d=view.d,x=view.x,seat=view.seat;
   const bgOff=view.bg!=null?view.bg:d*3;
+  c.save();c.translate(480,H);c.rotate(-(view.lean||0)*.07);c.translate(-480,-H);
   let gr=c.createLinearGradient(0,0,0,HZ);gr.addColorStop(0,'#2a0f5e');gr.addColorStop(1,'#ff7a4a');c.fillStyle=gr;c.fillRect(0,0,W,HZ+40);
   const sunX=((700-bgOff*.05)%1200+1200)%1200-120;
   c.fillStyle='#ffd36e';c.beginPath();c.arc(sunX,HZ-20,60,0,7);c.fill();
@@ -2572,7 +2573,7 @@ function motoScene(c,view){
   const seg=5,first=Math.floor(d/seg)*seg,N=44,camH=motoH(d);
   const pts=[];let ox=0,dx=0;
   for(let k=0;k<=N;k++){const z=first+k*seg,r=z-d,s=proj(r);
-    pts.push({z,s,cx:480+ox*RW*s,y:HZ+(H-HZ)*s-(motoH(z)-camH)*HK*s,w:RW*s});
+    pts.push({z,s,cx:480+(ox-x)*RW*s,y:HZ+(H-HZ)*s-(motoH(z)-camH)*HK*s,w:RW*s});
     dx+=motoCurv(z)*.016;ox+=dx;}
   for(let k=N-1;k>=0;k--){
     const a=pts[k],b=pts[k+1],z0=a.z,alt=Math.floor(z0/seg)%2,br=motoBridge(z0),water=MOTO_BRIDGES.some(q=>z0>=q[0]+12&&z0<=q[1]-12);
@@ -2604,9 +2605,37 @@ function motoScene(c,view){
     else if(o.k==='car'){c.fillStyle=o.c;c.fillRect(sx-sz*.45,sy-sz*.45,sz*.9,sz*.35);c.fillStyle='rgba(0,0,0,.5)';c.fillRect(sx-sz*.3,sy-sz*.6,sz*.6,sz*.18);c.fillStyle='#111';c.fillRect(sx-sz*.45,sy-sz*.12,sz*.2,sz*.12);c.fillRect(sx+sz*.25,sy-sz*.12,sz*.2,sz*.12);}
     else drawBikeBack(c,sx,sy,sz*.55,seat?'#ff5d73':'#4fc3ff',o.c||'#fff',0,o.name);
   }
-  drawBikeBack(c,480+x*RW*.92,H-18,105,seat?'#4fc3ff':'#ff5d73',view.rider||'#fff',view.lean||0,'');
+  c.restore();
+  // first person: what you see sitting on the motorcycle
+  motoCockpit(c,view);
   const ahead=motoCurv(d+60);
   if(Math.abs(ahead)>.45&&((view.tick||0)/15|0)%2){c.fillStyle='#ffd36e';c.fillRect(430,100,100,44);c.fillStyle='#111';c.font='bold 30px system-ui';c.textAlign='center';c.fillText(ahead>0?'➡ ➡':'⬅ ⬅',480,133);c.textAlign='left';}
+}
+function motoCockpit(c,view){
+  const H=640,lean=view.lean||0,col=view.seat?'#4fc3ff':'#ff5d73',sp=view.v||0;
+  c.save();c.translate(480,H);c.rotate(lean*.12);
+  // fuel tank + front of the bike
+  c.fillStyle=col;c.beginPath();c.moveTo(-150,10);c.quadraticCurveTo(-130,-95,0,-105);c.quadraticCurveTo(130,-95,150,10);c.fill();
+  c.fillStyle='rgba(255,255,255,.25)';c.beginPath();c.moveTo(-60,10);c.quadraticCurveTo(-55,-80,-10,-98);c.lineTo(10,-98);c.quadraticCurveTo(-30,-70,-30,10);c.fill();
+  c.fillStyle='#fff';c.fillRect(-12,-104,24,114);
+  // dashboard + speedometer
+  c.fillStyle='#1a1a22';c.beginPath();c.ellipse(0,-150,120,52,0,0,7);c.fill();
+  c.fillStyle='#0b0f1e';c.beginPath();c.arc(-40,-155,36,0,7);c.fill();c.strokeStyle='#ff9f43';c.lineWidth=3;c.stroke();
+  for(let k=0;k<=7;k++){const a=Math.PI*.8+k/7*Math.PI*1.4;c.strokeStyle='#ccd';c.lineWidth=2;c.beginPath();c.moveTo(-40+Math.cos(a)*26,-155+Math.sin(a)*26);c.lineTo(-40+Math.cos(a)*33,-155+Math.sin(a)*33);c.stroke();}
+  const na=Math.PI*.8+clamp(sp/14,0,1)*Math.PI*1.4;c.strokeStyle='#ff3b3b';c.lineWidth=3;c.beginPath();c.moveTo(-40,-155);c.lineTo(-40+Math.cos(na)*28,-155+Math.sin(na)*28);c.stroke();
+  c.fillStyle='#46f3ff';c.font='bold 22px system-ui';c.textAlign='center';c.fillText(Math.round(sp*20),45,-150);c.font='12px system-ui';c.fillText('km/h',45,-133);
+  c.fillStyle='#fff3b0';c.beginPath();c.arc(45,-178,6,0,7);c.fill();
+  // handlebars with mirrors, grips and gloves
+  c.strokeStyle='#d8dde8';c.lineWidth=12;c.lineCap='round';c.beginPath();c.moveTo(-330,-150);c.quadraticCurveTo(0,-215,330,-150);c.stroke();
+  for(const sx of [-1,1]){
+    c.strokeStyle='#d8dde8';c.lineWidth=5;c.beginPath();c.moveTo(sx*220,-185);c.lineTo(sx*250,-260);c.stroke();
+    c.fillStyle='#d8dde8';c.beginPath();c.ellipse(sx*262,-282,42,26,sx*.3,0,7);c.fill();
+    c.fillStyle='#5b6b9a';c.beginPath();c.ellipse(sx*262,-282,35,20,sx*.3,0,7);c.fill();
+    c.fillStyle='#111';c.save();c.translate(sx*360,-140);c.rotate(sx*.25);c.fillRect(-45,-16,90,32);c.restore();
+    c.fillStyle=view.rider||'#888';c.beginPath();c.ellipse(sx*370,-128,58,40,sx*.25,0,7);c.fill();
+    c.fillStyle='rgba(0,0,0,.25)';for(let f=0;f<3;f++){c.fillRect(sx*370-38+f*24,-150,4,40);}
+  }
+  c.restore();c.lineCap='butt';c.textAlign='left';
 }
 function MotoRace(seat){
   let d,x,v,t,hit,over,count,place,flash,bg,steerNow;
@@ -2639,7 +2668,7 @@ function MotoRace(seat){
     },
     draw(){
       const o=motoRiders()[1-seat];
-      motoScene(ctx,{d,x,lean:steerNow,seat,rider:me.color,hit,bg,tick:t,other:o?{d:o.d,x:peersMotoX(1-seat),col:o.col,name:o.name}:null});
+      motoScene(ctx,{d,x,v,lean:steerNow,seat,rider:me.color,hit,bg,tick:t,other:o?{d:o.d,x:peersMotoX(1-seat),col:o.col,name:o.name}:null});
       if(flash>0){ctx.fillStyle='rgba(255,60,60,'+(flash/40)+')';ctx.fillRect(0,0,W,H);}
       ctx.fillStyle='#141c3d';ctx.fillRect(0,0,W,56);
       txt('🏍 MOTO RACER   '+Math.round(v*20)+' km/h   '+Math.round(d)+' / '+MOTO_LEN+' m',20,37,22,'#ff9f43');
@@ -2654,7 +2683,7 @@ function MotoRace(seat){
 }
 // the big screen shows each rider's real view from their motorcycle
 const motoView=document.createElement('canvas');motoView.width=960;motoView.height=640;const motoViewCtx=motoView.getContext('2d');
-const motoLastX=[0,0];
+const motoLastX=[0,0],motoLastD=[0,0],motoV=[0,0];
 function updateMotoScreen(){
   if(!MOTO.canvas||level!==0||T%3)return;
   if(Math.hypot(me.x-4,me.z-21)>14&&!me.moto)return;   // only draw when you're near the Party Room screen
@@ -2663,9 +2692,10 @@ function updateMotoScreen(){
   for(let k=0;k<2;k++){
     const x0=k*Wc/2,r=riders[k],mine=me.moto&&me.moto[0]===k;
     const rx=r?(mine?me.moto[2]:peersMotoX(k)):0,lean=clamp((rx-motoLastX[k])*25,-1,1);motoLastX[k]=rx;
+    if(r){motoV[k]+=(clamp((r.d-motoLastD[k])/.3,0,14)-motoV[k])*.3;motoLastD[k]=r.d;}else{motoV[k]=6;motoLastD[k]=0;}
     const o=riders[1-k];
-    const view=r?{d:r.d,x:rx,lean,seat:k,rider:r.col||'#fff',tick:T,other:o?{d:o.d,x:(me.moto&&me.moto[0]===1-k)?me.moto[2]:peersMotoX(1-k),col:o.col,name:o.name}:null}
-               :{d:(T*.6+k*900)%MOTO_LEN,x:Math.sin(T/90+k)*.4,seat:k,rider:'#888',tick:T,other:null};
+    const view=r?{d:r.d,x:rx,v:motoV[k],lean,seat:k,rider:r.col||'#fff',tick:T,other:o?{d:o.d,x:(me.moto&&me.moto[0]===1-k)?me.moto[2]:peersMotoX(1-k),col:o.col,name:o.name}:null}
+               :{d:(T*.6+k*900)%MOTO_LEN,x:Math.sin(T/90+k)*.4,v:6,seat:k,rider:'#888',tick:T,other:null};
     motoScene(motoViewCtx,view);
     // crop the 960x640 view to fit half of the wide screen
     g.drawImage(motoView,90,20,780,620,x0+6,6,Wc/2-12,Hc-12);
