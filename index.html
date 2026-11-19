@@ -2426,8 +2426,6 @@ function setVend(open){VEND.open=open;VEND.t=Date.now();sendPresence(true);
   const nk=std(0x120c26,{roughness:1});
   box(1.6,2.4,.2,nk,6.8,1.2,13.5,house);box(.2,2.4,1.7,nk,6.05,1.2,12.6,house);box(.2,2.4,1.7,nk,7.55,1.2,12.6,house);box(1.6,.12,1.7,nk,6.8,2.26,12.6,house);
   const nf=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.6),std(0x2a1a4a,{roughness:1}));nf.rotation.x=-Math.PI/2;nf.position.set(6.8,.005,12.65);house.add(nf);
-  const pillow=new THREE.Mesh(new THREE.SphereGeometry(.32,14,10),std(0xb06bff,{roughness:.9}));pillow.scale.set(1,.45,1);pillow.position.set(6.8,.15,13.0);house.add(pillow);
-  for(let k=0;k<6;k++){const st=new THREE.Mesh(new THREE.CircleGeometry(.04,5),new THREE.MeshBasicMaterial({color:0xfff6a0}));st.position.set(6.25+((k*.37)%1.1),1.4+((k*.53)%.7),13.39);st.rotation.y=Math.PI;house.add(st);}
   const nl=new THREE.PointLight(0xb06bff,0,2.5);nl.position.set(6.8,1.9,12.7);house.add(nl);VEND.light=nl;
   // the machine
   const vm=new THREE.Group();
