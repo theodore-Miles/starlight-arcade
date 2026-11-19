@@ -2461,8 +2461,16 @@ const PARTY={tiles:[],balloons:[],disco:null,lights:[]};
   vm.position.set(15.5,0,14.5);vm.rotation.y=-Math.PI/2;house.add(vm);
   houseCols.push({x:15.5,z:14.5,hw:.42,hd:.58});
   houseInter.push({x:14.6,z:14.5,verb:'Pick a soda 🥤 (🪙 1 each)',act:()=>startGame(SodaMachine())});
-  // party tables
-  [[2,13.6],[4.6,13.6]].forEach(([x,z])=>{box(.9,.06,.9,std(0xffd36e),x,.85,z,house);box(.1,.85,.1,std(0x888888),x,.42,z,house);houseCols.push({x,z,hw:.45,hd:.45,top:.88,surf:.88});});
+  // party couch (bouncy, like the one in the arcade), back against the front wall
+  {const cm=std(0xff3d9a,{roughness:.6}),cush=std(0xff6fb5,{roughness:.7}),cx=3.3,cz=13.0;
+   box(3.8,.45,1.1,cm,cx,.32,cz,house);                       // base
+   for(const ox of [-1.25,0,1.25])box(1.18,.16,.98,cush,cx+ox,.62,cz+.04,house);   // seat cushions
+   box(3.8,1.0,.32,cm,cx,.85,cz-.55,house);                    // back
+   for(const ox of [-1.25,0,1.25])box(1.12,.6,.14,cush,cx+ox,.95,cz-.36,house);    // back cushions
+   box(.34,.8,1.1,cm,cx-1.9,.5,cz,house);box(.34,.8,1.1,cm,cx+1.9,.5,cz,house);    // arms
+   for(const [px,c] of [[-1.5,0x46f3ff],[1.5,0xffd36e]]){const pl=box(.38,.36,.12,std(c,{roughness:.8}),cx+px,.92,cz-.22,house);pl.rotation.z=px>0?-.25:.25;}
+   for(const lx of [-1.8,1.8])for(const lz of [-.45,.45])box(.08,.1,.08,std(0x222222),cx+lx,.05,cz+lz,house);
+   houseCols.push({x:cx,z:cz+.1,hw:1.9,hd:.5,top:.7,bouncy:1},{x:cx,z:cz-.55,hw:1.9,hd:.16,top:1.35,bouncy:1},{x:cx-1.9,z:cz,hw:.17,hd:.55,top:.9,bouncy:1},{x:cx+1.9,z:cz,hw:.17,hd:.55,top:.9,bouncy:1});}
 })();
 
 // ======================================================================
