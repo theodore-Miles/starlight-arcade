@@ -796,33 +796,33 @@ function makeClaw(x,col){
 }
 
 (function buildHouse(){
-  // arcade carpet (glows like blacklight carpet)
-  const floorTex=canvasTex(512,512,(g)=>{g.fillStyle='#0d0624';g.fillRect(0,0,512,512);
-    const cols=['#ff3df2','#46f3ff','#ffd36e','#3ddc84','#ff7a4a'];let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
-    for(let i=0;i<80;i++){const x=rnd()*512,y=rnd()*512,t=i%4;g.strokeStyle=g.fillStyle=cols[i%5];g.lineWidth=5;g.save();g.translate(x,y);g.rotate(rnd()*6.28);
-      if(t===0){g.beginPath();g.moveTo(0,-14);g.lineTo(13,10);g.lineTo(-13,10);g.closePath();g.stroke();}
-      else if(t===1){g.beginPath();g.arc(0,0,9,0,7);g.stroke();}
-      else if(t===2){g.beginPath();for(let k=0;k<5;k++)g.lineTo(k*9-18,k%2?-7:7);g.stroke();}
-      else{g.fillRect(-3,-12,6,24);g.fillRect(-12,-3,24,6);}
-      g.restore();}});
-  floorTex.wrapS=floorTex.wrapT=THREE.RepeatWrapping;floorTex.repeat.set(7,4);
-  const floor=new THREE.Mesh(new THREE.PlaneGeometry(45,23),std(0xffffff,{map:floorTex,emissive:0xffffff,emissiveMap:floorTex,emissiveIntensity:.45,roughness:.55,metalness:.15}));
+  // space-station floor: dark tiles with a glowing grid
+  const floorTex=canvasTex(512,512,(g)=>{g.fillStyle='#08111f';g.fillRect(0,0,512,512);
+    for(let y=0;y<4;y++)for(let x=0;x<4;x++){g.fillStyle=(x+y)%2?'#0c1a2e':'#0a1526';g.fillRect(x*128+3,y*128+3,122,122);
+      g.fillStyle='rgba(255,255,255,.04)';g.fillRect(x*128+8,y*128+8,112,6);}
+    g.strokeStyle='#22d3ff';g.lineWidth=3;g.shadowColor='#22d3ff';g.shadowBlur=10;
+    for(let k=0;k<=4;k++){g.beginPath();g.moveTo(k*128,0);g.lineTo(k*128,512);g.stroke();g.beginPath();g.moveTo(0,k*128);g.lineTo(512,k*128);g.stroke();}
+    g.shadowBlur=0;g.fillStyle='#ff9f43';for(let y=0;y<=4;y++)for(let x=0;x<=4;x++){g.beginPath();g.arc(x*128,y*128,5,0,7);g.fill();}});
+  floorTex.wrapS=floorTex.wrapT=THREE.RepeatWrapping;floorTex.repeat.set(11,6);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(45,23),std(0xffffff,{map:floorTex,emissive:0xffffff,emissiveMap:floorTex,emissiveIntensity:.5,roughness:.35,metalness:.35}));
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;house.add(floor);
 
   // dark walls + ceiling
-  const wallTex=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#1a1238';g.fillRect(0,0,w,h);
-    g.fillStyle='#211748';g.fillRect(8,8,112,240);g.fillRect(136,8,112,240);
-    g.strokeStyle='rgba(176,107,255,.35)';g.lineWidth=2;g.strokeRect(14,14,100,228);g.strokeRect(142,14,100,228);
-    g.fillStyle='rgba(70,243,255,.25)';for(let k=0;k<6;k++){g.beginPath();g.moveTo(64,40+k*36);g.lineTo(74,50+k*36);g.lineTo(64,60+k*36);g.lineTo(54,50+k*36);g.fill();g.beginPath();g.moveTo(192,58+k*36);g.lineTo(202,68+k*36);g.lineTo(192,78+k*36);g.lineTo(182,68+k*36);g.fill();}});
+  const wallTex=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#1b2638';g.fillRect(0,0,w,h);
+    for(const x of [0,128]){const gr=g.createLinearGradient(x,0,x+128,0);gr.addColorStop(0,'#2a3a54');gr.addColorStop(.5,'#31445f');gr.addColorStop(1,'#243349');g.fillStyle=gr;g.fillRect(x+4,4,120,248);
+      g.strokeStyle='rgba(0,0,0,.45)';g.lineWidth=3;g.strokeRect(x+4,4,120,248);g.strokeStyle='rgba(255,255,255,.08)';g.lineWidth=1;g.strokeRect(x+8,8,112,240);
+      g.fillStyle='#8a9ab8';for(const [rx,ry] of [[12,12],[116,12],[12,244],[116,244]]){g.beginPath();g.arc(x+rx,ry,3,0,7);g.fill();}}
+    g.fillStyle='#ff9f43';g.fillRect(0,150,w,8);g.fillStyle='rgba(255,159,67,.35)';g.fillRect(0,146,w,4);g.fillRect(0,158,w,4);
+    g.fillStyle='rgba(34,211,255,.5)';for(let k=0;k<4;k++)g.fillRect(20+k*64,40,24,4);});
   wallTex.wrapS=wallTex.wrapT=THREE.RepeatWrapping;wallTex.repeat.set(4,1);
-  const wallM=std(0xffffff,{map:wallTex,roughness:.85});
+  const wallM=std(0xffffff,{map:wallTex,roughness:.5,metalness:.35});
   box(45.5,5.4,.5,wallM,0,2.7,-11.75,house);
   box(24.3,5.4,.5,wallM,-10.6,2.7,11.75,house);box(3.55,5.4,.5,wallM,4.225,2.7,11.75,house);box(1.6,3.2,.5,wallM,6.8,3.8,11.75,house);box(.27,2.2,.5,wallM,6.135,1.1,11.75,house);box(.27,2.2,.5,wallM,7.465,1.1,11.75,house);box(15.15,5.4,.5,wallM,15.175,2.7,11.75,house);box(.9,1.75,.5,wallM,2,.875,11.75,house);box(.9,2.75,.5,wallM,2,4.025,11.75,house);
   box(.5,5.4,24,wallM,-22.75,2.7,0,house);
   box(.5,5.4,8.2,wallM,22.75,2.7,-7.9,house);box(.5,5.4,14.2,wallM,22.75,2.7,4.9,house);box(.5,3,1.6,wallM,22.75,3.9,-3,house);
   const ceil=new THREE.Mesh(new THREE.PlaneGeometry(45.5,24),new THREE.MeshBasicMaterial({color:0xbbbbbb,map:(()=>{const t=canvasTex(512,512,(g,w,h)=>{g.fillStyle='#0a0618';g.fillRect(0,0,w,h);let sd=3;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;for(let k=0;k<160;k++){const c=['#fff6c8','#9fe8ff','#ffb3f5'][k%3];g.fillStyle=c;g.globalAlpha=.4+r()*.6;g.beginPath();g.arc(r()*w,r()*h,r()*1.8+.4,0,7);g.fill();}g.globalAlpha=1;});t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(4,2);return t;})()}));ceil.rotation.x=Math.PI/2;ceil.position.y=5.4;house.add(ceil);
   // neon strips along the walls
-  const pink=new THREE.MeshBasicMaterial({color:0xff3df2}),cyan=new THREE.MeshBasicMaterial({color:0x46f3ff}),yel=new THREE.MeshBasicMaterial({color:0xffd36e});
+  const pink=new THREE.MeshBasicMaterial({color:0xff9f43}),cyan=new THREE.MeshBasicMaterial({color:0x22d3ff}),yel=new THREE.MeshBasicMaterial({color:0xd8f4ff});
   const strip=(m,w,d,x,y,z)=>{const s=new THREE.Mesh(new THREE.BoxGeometry(w,.08,d),m);s.position.set(x,y,z);house.add(s);};
   for(const [y,m] of [[5.1,pink],[.14,cyan],[3.0,yel]]){
     strip(m,45,.06,0,y,-11.47);strip(m,45,.06,0,y,11.47);strip(m,.06,23,-22.47,y,0);strip(m,.06,23,22.47,y,0);}
@@ -834,10 +834,26 @@ function makeClaw(x,col){
   neonSign('INSERT COIN','#ffd36e',7,22.46,4.1,-1,-Math.PI/2);
   neonSign('GAME ON!','#3ddc84',6,-12,4.1,11.46,Math.PI);
   neonSign('🥽 VR ZONE','#46f3ff',6,12,4.1,11.46,Math.PI);
+  // round windows: you're in a space station!
+  const spaceTex=k=>canvasTex(256,256,(g,w,h)=>{const gr=g.createRadialGradient(w*.3,h*.3,10,w/2,h/2,w*.7);gr.addColorStop(0,'#1c1650');gr.addColorStop(1,'#03030c');g.fillStyle=gr;g.fillRect(0,0,w,h);
+    let sd=11+k*7;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;for(let i=0;i<120;i++){g.fillStyle=['#fff','#bfe8ff','#ffe0b0'][i%3];g.globalAlpha=.3+r()*.7;g.fillRect(r()*w,r()*h,r()*2+.5,r()*2+.5);}g.globalAlpha=1;
+    const pl=[['#ff9f43','#8a3a10'],['#22d3ff','#0a3a6a'],['#c86bff','#3a1a6a'],['#3ddc84','#0a4a2a']][k%4];
+    if(k%3!==2){const px=60+r()*140,py=60+r()*140,pr=24+r()*40,pg=g.createRadialGradient(px-pr*.4,py-pr*.4,4,px,py,pr);pg.addColorStop(0,pl[0]);pg.addColorStop(1,pl[1]);g.fillStyle=pg;g.beginPath();g.arc(px,py,pr,0,7);g.fill();
+      if(k%2){g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=3;g.beginPath();g.ellipse(px,py,pr*1.6,pr*.35,-.3,0,7);g.stroke();}}});
+  const frameM=std(0x8a9ab8,{metalness:.85,roughness:.25});
+  let wk=0;
+  const porthole=(x,z,ry)=>{const gq=new THREE.Group();const win=new THREE.Mesh(new THREE.CircleGeometry(.5,32),new THREE.MeshBasicMaterial({map:spaceTex(wk++)}));gq.add(win);
+    const fr=new THREE.Mesh(new THREE.TorusGeometry(.52,.07,10,32),frameM);gq.add(fr);
+    for(let b=0;b<8;b++){const a=b/8*Math.PI*2,bolt=new THREE.Mesh(new THREE.SphereGeometry(.03,8,6),frameM);bolt.position.set(Math.cos(a)*.6,Math.sin(a)*.6,.02);gq.add(bolt);}
+    gq.position.set(x,4.35,z);gq.rotation.y=ry;house.add(gq);};
+  for(const x of [-19,-15.5,-8.5,8.5,15.5,19])porthole(x,-11.48,0);
+  for(const x of [-18.5,18.5,-3,3])porthole(x,11.48,Math.PI);
+  for(const z of [-8,8])porthole(-22.48,z,Math.PI/2);
+  for(const z of [-8,6])porthole(22.48,z,-Math.PI/2);
   // coloured mood lights
-  const l1=new THREE.PointLight(0xff3df2,.9,16);l1.position.set(-8,4.5,7);house.add(l1);
-  const l2=new THREE.PointLight(0x46f3ff,.9,16);l2.position.set(7,4.5,-5);house.add(l2);
-  for(const [c,x,z] of [[0xff3df2,18,-6],[0x46f3ff,18,6],[0xffd36e,-18,-6],[0x3ddc84,-16,7]]){const pl=new THREE.PointLight(c,.8,15);pl.position.set(x,4.5,z);house.add(pl);}
+  const l1=new THREE.PointLight(0xff9f43,.9,16);l1.position.set(-8,4.5,7);house.add(l1);
+  const l2=new THREE.PointLight(0x22d3ff,.9,16);l2.position.set(7,4.5,-5);house.add(l2);
+  for(const [c,x,z] of [[0xff9f43,18,-6],[0x22d3ff,18,6],[0x22d3ff,-18,-6],[0xff9f43,-16,7]]){const pl=new THREE.PointLight(c,.8,15);pl.position.set(x,4.5,z);house.add(pl);}
   const poster=(title,sub,c1,c2,draw,x,z,ry)=>{const t=canvasTex(256,360,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,c1);gr.addColorStop(1,c2);g.fillStyle=gr;g.fillRect(0,0,w,h);
       draw(g,w,h);g.fillStyle='rgba(0,0,0,.45)';g.fillRect(0,h-90,w,90);g.fillStyle='#fff';g.textAlign='center';g.font='900 34px system-ui';g.fillText(title,w/2,h-50,w-20);g.font='bold 15px system-ui';g.fillStyle='#ffd36e';g.fillText(sub,w/2,h-20,w-20);});
     const p=new THREE.Mesh(new THREE.PlaneGeometry(1.5,2.1),new THREE.MeshBasicMaterial({map:t,color:0xdddddd}));p.position.set(x,2.6,z);p.rotation.y=ry;house.add(p);
@@ -848,7 +864,7 @@ function makeClaw(x,col){
   poster('RED DUST','Mars mining colony','#ff7a4a','#4a1a10',g=>{g.fillStyle='#ffb07a';g.beginPath();g.arc(170,90,40,0,7);g.fill();g.fillStyle='#8a3a20';g.beginPath();g.moveTo(0,250);g.lineTo(70,180);g.lineTo(130,230);g.lineTo(200,170);g.lineTo(256,240);g.lineTo(256,270);g.lineTo(0,270);g.fill();g.fillStyle='#ddd';g.fillRect(60,200,40,26);g.beginPath();g.arc(80,200,20,Math.PI,0);g.fill();},16,-11.47,0);
   poster('BLOCK HAVEN','dig · craft · build','#3ddc84','#1a6a3a',g=>{for(let i=0;i<8;i++)for(let j=0;j<4;j++){g.fillStyle=j===0?'#3ddc84':j<2?'#8a5a2a':'#777';g.fillRect(i*32,160+j*26,31,25);}g.fillStyle='#5a3a1a';g.fillRect(170,80,16,80);g.fillStyle='#2a9a4a';g.fillRect(146,50,64,50);},-22.47,8.5,Math.PI/2);
   poster('ISLAND SETTLERS','build · trade · explore','#7fd8ff','#1e6cff',g=>{g.fillStyle='#ffe08a';g.beginPath();g.ellipse(128,180,90,40,0,0,7);g.fill();g.fillStyle='#3ddc84';g.beginPath();g.ellipse(128,170,60,26,0,0,7);g.fill();g.fillStyle='#8a5a2a';g.fillRect(150,110,8,50);g.fillStyle='#2a9a4a';g.beginPath();g.arc(154,108,24,0,7);g.fill();},22.47,8.8,-Math.PI/2);
-  const arcLight=new THREE.PointLight(0xb06bff,1,13);arcLight.position.set(-19,4,0);house.add(arcLight);
+  const arcLight=new THREE.PointLight(0x5aa8ff,1,13);arcLight.position.set(-19,4,0);house.add(arcLight);
 
   // ---- 5 playable arcade machines on the left wall ----
   ARC.forEach((a,i)=>{const z=-6+i*3;const cab=makeCabinet(a,-21.7,z,Math.PI/2);
