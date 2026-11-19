@@ -1207,7 +1207,7 @@ function updateWorld(dt){
   me.vy-=(performance.now()<(me.floatUntil||0)?8:22)*dt;me.y+=me.vy*dt;if(me.y<=gr.gy){me.y=gr.gy;me.vy=0;}
   me.onGround=me.y<=gr.gy+.001;
   // head reaches the ceiling: go up into a vent if you're under one, otherwise bonk
-  {const ceil=me.z>11.6?2.2:5.35;if(level===0&&me.y+1.75>ceil){me.y=ceil-1.75;if(me.vy>0)me.vy=0;}}
+  {const ceil=me.z>11.6?2.2:inTiny(me.x,me.z)?2.45:5.35;if(level===0&&me.y+1.75>ceil){me.y=ceil-1.75;if(me.vy>0)me.vy=0;}}
   if(level===0&&me.x>16.2&&me.y+1.75>3.2){me.y=3.2-1.75;if(me.vy>0)me.vy=0;}
   if(level===0&&Math.abs(me.x)<1.6&&Math.abs(me.z)<.55&&me.y<3.6&&me.y+1.75>3.55){me.y=3.55-1.75;if(me.vy>0)me.vy=0;}
   // stars
@@ -1249,7 +1249,7 @@ function updateCamera(dt){
     // third person: camera floats behind you
     const tx=me.x,ty=me.y+me.eye*.85,tz=me.z;
     let cx=tx-fx*4.2,cy=ty-fy*4.2+.7,cz=tz-fz*4.2;
-    if(level===0){if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
+    if(level===0){if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(inTiny(me.x,me.z)){cx=clamp(cx,14.3,15.8);cz=clamp(cz,-7.1,-5.9);cy=clamp(cy,.3,2.4);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
     camPos.set(cx,cy,cz);camLook.set(tx+fx*3,ty+fy*3,tz+fz*3);
   }else{
     camPos.set(me.x,me.y+me.eye+bob,me.z);
@@ -1274,7 +1274,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],tm:[TINY.unl?1:0,TINY.open?1:0,TINY.t],k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1301,6 +1301,7 @@ function upsertPeer(p){
   if(e.color!==color){e.color=color;e.av.userData.mat.color.set(color);}
   e.tx=clamp(num(pr.x,0),-40,40);e.ty=clamp(num(pr.y,0),0,10);e.tz=clamp(num(pr.z,0),-40,40);e.try=num(pr.ry,0);
   e.lv=num(pr.lv,0)|0;e.v=!!pr.v;e.hid=(pr.hid==='pit'||pr.hid==='booth'||pr.hid==='box')?pr.hid:'';e.cr=!!pr.cr;e.pu=(pr.pu===1||pr.pu===-1)?pr.pu:0;e.hp=(Number.isInteger(pr.hp)&&pr.hp>=0&&pr.hp<PLANTS.length)?pr.hp:-1;
+  if(Array.isArray(pr.tm)&&pr.tm.length===3&&typeof pr.tm[2]==='number'&&isFinite(pr.tm[2])&&pr.tm[2]>TINY.t){TINY.t=pr.tm[2];TINY.unl=!!pr.tm[0];TINY.open=!!pr.tm[1];}
   if(Array.isArray(pr.vm)&&pr.vm.length===2&&typeof pr.vm[1]==='number'&&isFinite(pr.vm[1])&&pr.vm[1]>VEND.t){VEND.t=pr.vm[1];VEND.open=!!pr.vm[0];}
   if(Array.isArray(pr.bb)&&pr.bb.length===2&&typeof pr.bb[1]==='number'&&isFinite(pr.bb[1])&&pr.bb[1]>bbState.t){bbState.t=pr.bb[1];bbState.open=!!pr.bb[0];}
   if(Array.isArray(pr.sf)&&pr.sf.length===2&&typeof pr.sf[1]==='number'&&isFinite(pr.sf[1])&&pr.sf[1]>safe.t){safe.t=pr.sf[1];safe.open=!!pr.sf[0];}
@@ -2446,10 +2447,75 @@ function updateVend(){
   const target=VEND.open?VEND.slid:VEND.home;
   VEND.x+=(target-VEND.x)*.08;if(Math.abs(target-VEND.x)<.002)VEND.x=target;
   VEND.g.position.x=VEND.x;VEND.light.intensity=Math.min(1,Math.abs(VEND.x-VEND.home)/1.2)*.35;VEND.col.x=VEND.x;VEND.buy.x=VEND.x;
-  const hid=level===0&&me.z>11.8;
+  const hid=level===0&&(me.z>11.8||(inTiny(me.x,me.z)&&!TINY.open&&Math.abs(TINY.ang)<.1));
   me.hiding=hid?'box':'';
   if(hid&&!VEND.said){VEND.said=true;toast('🤫 Shh… you\'re hiding behind the vending machine!');}
   if(!hid)VEND.said=false;
+}
+// ======================================================================
+// TINY ME: a new machine (still in progress). Unlock it with the key, step inside and shut the door.
+// ======================================================================
+const TINY={unl:false,open:false,t:0,door:null,ang:0,doorCol:null,doorTex:null,drawn:''};
+const inTiny=(x,z)=>x>14.15&&x<16&&z>-7.25&&z<-5.75;
+function setTiny(unl,open,msg){TINY.unl=unl;TINY.open=open;TINY.t=Date.now();sendPresence(true);if(msg)toast(msg);}
+function drawTinyDoor(){
+  const key=TINY.unl?'u':'l';if(TINY.drawn===key)return;TINY.drawn=key;
+  const c=TINY.doorTex.image,g=c.getContext('2d'),w=c.width,h=c.height;
+  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#1fd1b0');gr.addColorStop(1,'#0b6e7a');g.fillStyle=gr;g.fillRect(0,0,w,h);
+  g.strokeStyle='#ffd36e';g.lineWidth=10;g.strokeRect(8,8,w-16,h-16);
+  g.textAlign='center';g.fillStyle='#fff';g.font='bold 54px system-ui';g.fillText('TINY ME',w/2,90);
+  g.font='90px system-ui';g.fillText('🧍',w/2,230);
+  g.fillStyle='#ffd36e';g.fillRect(20,280,w-40,60);g.fillStyle='#111';g.font='bold 26px system-ui';g.fillText('🚧 STILL IN PROGRESS 🚧',w/2,320);
+  g.font='60px system-ui';g.fillText(TINY.unl?'🔓':'🔒',w/2,440);
+  g.fillStyle='#fff';g.font='bold 22px system-ui';g.fillText(TINY.unl?'unlocked!':'locked — needs a key',w/2,490);
+  TINY.doorTex.needsUpdate=true;
+}
+(function buildTiny(){
+  const body=std(0x14a89a,{roughness:.45}),dark=std(0x0b2a33,{roughness:.8}),gold=std(0xffd36e,{metalness:.6,roughness:.3});
+  const X0=14.12,X1=15.95,Z0=-7.3,Z1=-5.7,H=2.6;
+  // shell: two sides, back, roof (the room wall is behind it)
+  box(X1-X0,H,.1,body,(X0+X1)/2,H/2,Z0+.05,house);box(X1-X0,H,.1,body,(X0+X1)/2,H/2,Z1-.05,house);
+  box(.1,H,Z1-Z0,body,X1-.05,H/2,(Z0+Z1)/2,house);box(X1-X0,.12,Z1-Z0,body,(X0+X1)/2,H-.06,(Z0+Z1)/2,house);
+  // dark inside
+  box(X1-X0-.2,.02,Z1-Z0-.2,dark,(X0+X1)/2,.01,(Z0+Z1)/2,house);
+  // marquee
+  const mq=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.38),new THREE.MeshBasicMaterial({map:labelTex('🧍 TINY ME','#0b2a33','#46f3ff')}));mq.position.set(X0-.07,H+.25,(Z0+Z1)/2);mq.rotation.y=-Math.PI/2;house.add(mq);
+  box(.12,.5,1.6,body,X0+.05,H+.25,(Z0+Z1)/2,house);
+  // inside screen + little control panel (you only see them from inside)
+  const st=canvasTex(256,200,(g,w,h)=>{g.fillStyle='#061018';g.fillRect(0,0,w,h);g.fillStyle='#46f3ff';g.textAlign='center';g.font='bold 34px system-ui';g.fillText('TINY ME',w/2,56);
+    g.font='60px system-ui';g.fillText('🧍',w/2,125);g.fillStyle='#ffd36e';g.font='bold 18px system-ui';g.fillText('🚧 still in progress 🚧',w/2,170);g.fillStyle='#9fb0e0';g.font='14px system-ui';g.fillText('you found the inside!',w/2,192);});
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(1.0,.78),new THREE.MeshBasicMaterial({map:st}));scr.position.set(X1-.11,1.6,(Z0+Z1)/2);scr.rotation.y=-Math.PI/2;house.add(scr);
+  box(.4,.12,1.0,dark,X1-.3,1.0,(Z0+Z1)/2,house);
+  const stick=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,.16),std(0x222222));stick.position.set(X1-.32,1.12,(Z0+Z1)/2-.2);house.add(stick);
+  const ball=new THREE.Mesh(new THREE.SphereGeometry(.045,10,8),std(0xff3b3b));ball.position.set(X1-.32,1.21,(Z0+Z1)/2-.2);house.add(ball);
+  for(const [dz,c] of [[.1,0x46f3ff],[.25,0xffd36e],[.4,0x3ddc84]]){const b=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.03,12),std(c,{emissive:c,emissiveIntensity:.6}));b.position.set(X1-.32,1.075,(Z0+Z1)/2+dz-.1);house.add(b);}
+  const il=new THREE.PointLight(0x46f3ff,.4,2.2);il.position.set(15.2,2.1,-6.5);house.add(il);
+  // the door
+  const dc=document.createElement('canvas');dc.width=320;dc.height=540;TINY.doorTex=new THREE.CanvasTexture(dc);TINY.doorTex.encoding=THREE.sRGBEncoding;
+  const hinge=new THREE.Group();hinge.position.set(X0,0,Z0+.1);
+  box(.06,H-.15,Z1-Z0-.2,body,0,(H-.15)/2,(Z1-Z0-.2)/2,hinge);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(Z1-Z0-.3,H-.35),new THREE.MeshBasicMaterial({map:TINY.doorTex}));face.position.set(-.035,(H-.15)/2,(Z1-Z0-.2)/2);face.rotation.y=-Math.PI/2;hinge.add(face);
+  const knob=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),gold);knob.position.set(-.07,1.2,Z1-Z0-.35);hinge.add(knob);
+  const knob2=knob.clone();knob2.position.x=.07;hinge.add(knob2);
+  hinge.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(hinge);TINY.door=hinge;drawTinyDoor();
+  // walls you bump into
+  houseCols.push({x:(X0+X1)/2,z:Z0+.05,hw:(X1-X0)/2,hd:.06},{x:(X0+X1)/2,z:Z1-.05,hw:(X1-X0)/2,hd:.06});
+  houseCols.push({x:X1-.3,z:(Z0+Z1)/2,hw:.22,hd:.5});
+  TINY.doorCol={x:X0,z:(Z0+Z1)/2,hw:.05,hd:(Z1-Z0)/2};houseCols.push(TINY.doorCol);
+  // using it from outside
+  houseInter.push({x:X0-.6,z:-6.5,cond:()=>me.x<14.1,
+    get verb(){return !TINY.unl?(me.hasKey?'Unlock TINY ME 🔑':'TINY ME 🚧 still in progress (locked 🔒)'):TINY.open?'Close TINY ME 🚪':'Open TINY ME 🚪';},
+    act:()=>{
+      if(!TINY.unl){if(me.hasKey)setTiny(true,true,'🔑 Click! TINY ME is unlocked… you can go inside!');else toast('🔒 TINY ME is still in progress… and locked! Maybe a key opens it?');return;}
+      if(TINY.open&&me.x>13.5&&Math.abs(me.z+6.5)<.8){toast('🚫 Step back so the door can close');return;}
+      setTiny(true,!TINY.open,TINY.open?'🚪 TINY ME is shut':'🚪 TINY ME is open');}});
+  // and from inside
+  houseInter.push({x:X0+.2,z:-6.5,cond:()=>inTiny(me.x,me.z),get verb(){return TINY.open?'Shut the machine 🚪':'Open the door 🚪';},
+    act:()=>setTiny(true,!TINY.open,TINY.open?'🚪 You shut yourself inside TINY ME… 🤫':'🚪 The door swings open')});
+})();
+function updateTiny(){
+  TINY.ang+=((TINY.open?-1.5:0)-TINY.ang)*.12;TINY.door.rotation.y=TINY.ang;
+  TINY.doorCol.off=TINY.open;drawTinyDoor();
 }
 // ----- SODA MACHINE: different kinds of soda, each does something different -----
 const SODAS=[
@@ -2624,7 +2690,7 @@ function loop(){
   updateSpray(dt);
   updateTools(dt);
   updateHelp();
-  updateVend();
+  updateVend();updateTiny();
   updateTV();
   sendPresence(false);
   renderer.render(scene,camera);
