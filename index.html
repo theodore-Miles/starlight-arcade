@@ -782,8 +782,8 @@ function makeClaw(x,col){
   // dark walls + ceiling
   const wallM=std(0x1a1238,{roughness:.9});
   box(33.5,5.4,.5,wallM,0,2.7,-11.75,house);
-  box(9.35,5.4,.5,wallM,-12.075,2.7,11.75,house);box(1.6,2.8,.5,wallM,-6.6,4.0,11.75,house);box(7.35,5.4,.5,wallM,-2.125,2.7,11.75,house);box(3.55,5.4,.5,wallM,4.225,2.7,11.75,house);box(1.6,2.8,.5,wallM,6.8,4.0,11.75,house);box(9.15,5.4,.5,wallM,12.175,2.7,11.75,house);box(.9,1.75,.5,wallM,2,.875,11.75,house);box(.9,2.75,.5,wallM,2,4.025,11.75,house);
-  box(.5,5.4,24,wallM,-16.75,2.7,0,house);
+  box(18.3,5.4,.5,wallM,-7.6,2.7,11.75,house);box(3.55,5.4,.5,wallM,4.225,2.7,11.75,house);box(1.6,2.8,.5,wallM,6.8,4.0,11.75,house);box(9.15,5.4,.5,wallM,12.175,2.7,11.75,house);box(.9,1.75,.5,wallM,2,.875,11.75,house);box(.9,2.75,.5,wallM,2,4.025,11.75,house);
+  box(.5,5.4,20.2,wallM,-16.75,2.7,-1.9,house);box(.5,2.8,1.6,wallM,-16.75,4.0,9,house);box(.5,5.4,2.2,wallM,-16.75,2.7,10.9,house);
   box(.5,5.4,8.2,wallM,16.75,2.7,-7.9,house);box(.5,5.4,14.2,wallM,16.75,2.7,4.9,house);box(.5,3,1.6,wallM,16.75,3.9,-3,house);
   const ceil=new THREE.Mesh(new THREE.PlaneGeometry(33.5,24),std(0x0a0618,{roughness:1}));ceil.rotation.x=Math.PI/2;ceil.position.y=5.4;house.add(ceil);
   // neon strips along the walls
@@ -1133,10 +1133,11 @@ function groundAt(x,z){let gy=0,b=false;if(level!==0)return{gy,b};
 function blocked(x,z){
   const R=.45;
   if(level===0){
-    if(x<-16+R||z<-11+R)return true;
-    if(z>11-R){
-      if(z<12+R){if(!(x>6+R&&x<7.6-R)&&!(x>-7.4+R&&x<-5.8-R))return true;}   // squeezing through the party room / office door
-      else if(x<0){if(x<-16+R||x>-.3-R||z>24-R)return true;}                // inside the office
+    if(x<-17-R){if(x<-29+R||z<2+R||z>16-R)return true;}                     // inside the office
+    else if(x<-16+R){if(!(OFFICE.open&&z>8.2+R&&z<9.8-R))return true;}       // office doorway (only when the door is open)
+    if(x>=-16+R&&z<-11+R)return true;
+    if(x>=-16+R&&z>11-R){
+      if(z<12+R){if(x<6+R||x>7.6-R)return true;}          // squeezing through the party room door
       else if(x<0+R||x>16-R||z>26-R)return true;          // inside the party room
     }
     if(x>16-R){
@@ -1211,7 +1212,7 @@ function updateWorld(dt){
   me.vy-=(performance.now()<(me.floatUntil||0)?8:22)*dt;me.y+=me.vy*dt;if(me.y<=gr.gy){me.y=gr.gy;me.vy=0;}
   me.onGround=me.y<=gr.gy+.001;
   // head reaches the ceiling: go up into a vent if you're under one, otherwise bonk
-  {const ceil=me.z>11.6?(me.x<0?3.95:6.45):5.35;if(level===0&&me.y+1.75>ceil){me.y=ceil-1.75;if(me.vy>0)me.vy=0;}}
+  {const ceil=me.x<-16.6?3.95:me.z>11.6?6.45:5.35;if(level===0&&me.y+1.75>ceil){me.y=ceil-1.75;if(me.vy>0)me.vy=0;}}
   if(level===0&&me.x>16.2&&me.y+1.75>3.2){me.y=3.2-1.75;if(me.vy>0)me.vy=0;}
   if(level===0&&Math.abs(me.x)<1.6&&Math.abs(me.z)<.55&&me.y<3.6&&me.y+1.75>3.55){me.y=3.55-1.75;if(me.vy>0)me.vy=0;}
   // stars
@@ -1253,7 +1254,7 @@ function updateCamera(dt){
     // third person: camera floats behind you
     const tx=me.x,ty=me.y+me.eye*.85,tz=me.z;
     let cx=tx-fx*4.2,cy=ty-fy*4.2+.7,cz=tz-fz*4.2;
-    if(level===0){if(me.z>11.6&&me.x<0){cx=clamp(cx,-15.7,-.7);cz=clamp(cz,12.3,23.7);cy=clamp(cy,.3,3.8);}else if(me.z>11.6){cx=clamp(cx,.3,15.7);cz=clamp(cz,12.3,25.7);cy=clamp(cy,.3,6.2);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
+    if(level===0){if(me.x<-16.6){cx=clamp(cx,-28.7,-17.3);cz=clamp(cz,2.3,15.7);cy=clamp(cy,.3,3.8);}else if(me.z>11.6){cx=clamp(cx,.3,15.7);cz=clamp(cz,12.3,25.7);cy=clamp(cy,.3,6.2);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
     camPos.set(cx,cy,cz);camLook.set(tx+fx*3,ty+fy*3,tz+fz*3);
   }else{
     camPos.set(me.x,me.y+me.eye+bob,me.z);
@@ -1278,7 +1279,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',mr:me.moto||null,wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',mr:me.moto||null,wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,od:[OFFICE.open?1:0,OFFICE.t],k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1305,6 +1306,7 @@ function upsertPeer(p){
   if(e.color!==color){e.color=color;e.av.userData.mat.color.set(color);}
   e.tx=clamp(num(pr.x,0),-40,40);e.ty=clamp(num(pr.y,0),0,10);e.tz=clamp(num(pr.z,0),-40,40);e.try=num(pr.ry,0);
   e.lv=num(pr.lv,0)|0;e.v=!!pr.v;e.hid=(pr.hid==='pit'||pr.hid==='booth'||pr.hid==='box')?pr.hid:'';e.cr=!!pr.cr;e.pu=(pr.pu===1||pr.pu===-1)?pr.pu:0;e.hp=(Number.isInteger(pr.hp)&&pr.hp>=0&&pr.hp<PLANTS.length)?pr.hp:-1;
+  if(Array.isArray(pr.od)&&pr.od.length===2&&typeof pr.od[1]==='number'&&isFinite(pr.od[1])&&pr.od[1]>OFFICE.t){OFFICE.t=pr.od[1];OFFICE.open=!!pr.od[0];}
   if(Array.isArray(pr.bb)&&pr.bb.length===2&&typeof pr.bb[1]==='number'&&isFinite(pr.bb[1])&&pr.bb[1]>bbState.t){bbState.t=pr.bb[1];bbState.open=!!pr.bb[0];}
   if(Array.isArray(pr.sf)&&pr.sf.length===2&&typeof pr.sf[1]==='number'&&isFinite(pr.sf[1])&&pr.sf[1]>safe.t){safe.t=pr.sf[1];safe.open=!!pr.sf[0];}
   if(Array.isArray(pr.dw)&&pr.dw.length===2&&Number.isInteger(pr.dw[0])&&typeof pr.dw[1]==='number'&&isFinite(pr.dw[1])&&pr.dw[1]>drawerT){drawerT=pr.dw[1];DRAWERS.forEach((d,i)=>d.open=!!(pr.dw[0]&(1<<i)));if(deskMenu)renderDeskMenu();}
@@ -1342,7 +1344,7 @@ function upsertPeer(p){
     else if(pr.th[6]!==e.thT){e.thT=pr.th[6];const q=pr.th;if(e.lv===level)spawnBall(clamp(q[0],-16,16),clamp(q[1],0,5.3),clamp(q[2],-11,11),clamp(q[3],-20,20),clamp(q[4],-20,20),clamp(q[5],-20,20),false);}
   }else if(e.thT===undefined)e.thT=0;
   e.pb=Array.isArray(pr.pb)?pr.pb.slice(0,11).filter(q=>Array.isArray(q)&&q.length===3&&q.every(n=>typeof n==='number'&&isFinite(n))&&Number.isInteger(q[2])&&q[2]>=0&&q[2]<11).map(q=>[clamp(q[0],100,860),clamp(q[1],120,540),q[2]]):null;
-  if(Array.isArray(pr.pp))pr.pp.slice(0,PLANTS.length).forEach((q,i)=>{if(Array.isArray(q)&&q.length>=3&&q.length<=4&&q.every(n=>typeof n==='number'&&isFinite(n))&&q[2]>PLANTS[i].t&&me.holding!==i){PLANTS[i].x=clamp(q[0],-15.5,16);PLANTS[i].z=clamp(q[1],-10.5,26.1);PLANTS[i].t=q[2];PLANTS[i].y=clamp(q[3]||0,0,3);}});e.az=(typeof pr.az==='number'&&isFinite(pr.az))?clamp(pr.az,-7.75,-6):undefined;e.mv=!!pr.mv;e.st=num(pr.st,0)|0;
+  if(Array.isArray(pr.pp))pr.pp.slice(0,PLANTS.length).forEach((q,i)=>{if(Array.isArray(q)&&q.length>=3&&q.length<=4&&q.every(n=>typeof n==='number'&&isFinite(n))&&q[2]>PLANTS[i].t&&me.holding!==i){PLANTS[i].x=clamp(q[0],-28.8,16);PLANTS[i].z=clamp(q[1],-10.5,26.1);PLANTS[i].t=q[2];PLANTS[i].y=clamp(q[3]||0,0,3);}});e.az=(typeof pr.az==='number'&&isFinite(pr.az))?clamp(pr.az,-7.75,-6):undefined;e.mv=!!pr.mv;e.st=num(pr.st,0)|0;
   const say=typeof pr.say==='string'?pr.say.slice(0,80):'';const key=say+'|'+num(pr.sayAt,0);
   if(say&&key!==e.sayKey){const first=!e.sayInit;e.sayKey=key;showBubble(e.av,say);if(!first)addChat(e.nm||names.get(e.by)||'Player',e.color,say);}
   e.sayInit=true;
@@ -1650,10 +1652,10 @@ function updateBalls(dt){
       const px=b.x,py=b.y,pz=b.z;
       b.vy-=14*h;b.x+=b.vx*h;b.y+=b.vy*h;b.z+=b.vz*h;
       if(b.hitTool&&b.mine&&!b.goalDone&&b.y<1.2)checkGoal(b,px,pz);
-      if(b.x<-16.4){b.x=-16.4;b.vx=Math.abs(b.vx)*.5;}if(b.x>16.4){b.x=16.4;b.vx=-Math.abs(b.vx)*.5;}
+      if(b.x<-16.4&&!inOffice(b.x,b.z)){b.x=-16.4;b.vx=Math.abs(b.vx)*.5;}if(b.x>16.4){b.x=16.4;b.vx=-Math.abs(b.vx)*.5;}
       if(b.z<-11.4){b.z=-11.4;b.vz=Math.abs(b.vz)*.5;}
       if(inParty(b.x,b.z)){if(b.x<.1){b.x=.1;b.vx=Math.abs(b.vx)*.5;}if(b.x>15.9){b.x=15.9;b.vx=-Math.abs(b.vx)*.5;}if(b.z>25.9){b.z=25.9;b.vz=-Math.abs(b.vz)*.5;}if(b.y>6.4){b.y=6.4;b.vy=-Math.abs(b.vy)*.4;}}
-      else if(inOffice(b.x,b.z)){if(b.x>-.4){b.x=-.4;b.vx=-Math.abs(b.vx)*.5;}if(b.z>23.9){b.z=23.9;b.vz=-Math.abs(b.vz)*.5;}if(b.y>3.9){b.y=3.9;b.vy=-Math.abs(b.vy)*.4;}}
+      else if(inOffice(b.x,b.z)){if(b.x<-28.9){b.x=-28.9;b.vx=Math.abs(b.vx)*.5;}if(b.z<2.1){b.z=2.1;b.vz=Math.abs(b.vz)*.5;}if(b.z>15.9){b.z=15.9;b.vz=-Math.abs(b.vz)*.5;}if(b.y>3.9){b.y=3.9;b.vy=-Math.abs(b.vy)*.4;}}
       else if(b.z>11.4){b.z=11.4;b.vz=-Math.abs(b.vz)*.5;}
       if(b.y>5.3){b.y=5.3;b.vy=-Math.abs(b.vy)*.4;}
       if(can&&!can.held&&level===0){
@@ -1930,8 +1932,8 @@ function updateDarts(dt){
       d.z=DB.z+.05;d.vz=0;d.vx*=.2; // bonk off the wall and drop
       if(d.mine)toast('🎯 Missed the board!');
     }
-    if(d.x<-16.4||d.x>16.4){d.x=clamp(d.x,-16.4,16.4);d.vx=0;}
-    if(d.z>11.4&&!inParty(d.x,d.z)&&!inOffice(d.x,d.z)){d.z=11.4;d.vz=0;}if(inOffice(d.x,d.z)&&d.z>23.9){d.z=23.9;d.vz=0;}if(inParty(d.x,d.z)&&d.z>25.9){d.z=25.9;d.vz=0;}if(d.z<-11.4){d.z=-11.4;d.vz=0;}
+    if((d.x<-16.4&&!inOffice(d.x,d.z))||d.x>16.4){d.x=clamp(d.x,-16.4,16.4);d.vx=0;}
+    if(d.z>11.4&&!inParty(d.x,d.z)&&!inOffice(d.x,d.z)){d.z=11.4;d.vz=0;}if(inParty(d.x,d.z)&&d.z>25.9){d.z=25.9;d.vz=0;}if(d.z<-11.4){d.z=-11.4;d.vz=0;}
     if(d.y>5.3){d.y=5.3;d.vy=-Math.abs(d.vy)*.3;}
     if(d.y<.03){d.y=.03;d.rest=true;d.life=0;d.m.rotation.set(0,Math.random()*6,0);d.m.rotateX(Math.PI/2);d.m.position.set(d.x,d.y,d.z);continue;}
     d.m.position.set(d.x,d.y,d.z);d.m.lookAt(d.x+d.vx,d.y+d.vy,d.z+d.vz);
@@ -2804,11 +2806,12 @@ function SodaMachine(){
 // ======================================================================
 // OFFICE: a new room next to the Party Room (door in the front wall, left side)
 // ======================================================================
-const inOffice=(x,z)=>x<-.3&&x>-16&&z>11.9&&z<24.1;
-const OFFICE={lights:[],clockTex:null,clockC:null,lastMin:-1};
+const inOffice=(x,z)=>x<-17&&x>-29&&z>2&&z<16;
+const OFFICE={lights:[],clockTex:null,clockC:null,lastMin:-1,door:null,open:false,t:0,ang:0};
+function setOfficeDoor(open){OFFICE.open=open;OFFICE.t=Date.now();sendPresence(true);toast(open?'🚪 The office door creaks open':'🚪 Office door closed');}
 (function buildOffice(){
   const noShadow=m=>{m.castShadow=false;return m;};
-  const OX=-8.15,OZ=18,OW=15.7,OD=12,OH=4;
+  const OX=-23,OZ=9,OW=12,OD=14,OH=4;     // office: x -29..-17, z 2..16, door in the arcade's left wall at z 8.2..9.8
   // wooden floor
   const ft=canvasTex(512,512,(g,w,h)=>{for(let r=0;r<8;r++){for(let c=0;c<3;c++){const off=(r%2)*85;const sh=40+((r*7+c*13)%5)*6;
       g.fillStyle='rgb('+(150+sh)+','+(100+sh*.6|0)+','+(60+sh*.3|0)+')';g.fillRect(c*170-off,r*64,170,64);g.fillRect(c*170-off+510,r*64,170,64);
@@ -2818,29 +2821,38 @@ const OFFICE={lights:[],clockTex:null,clockC:null,lastMin:-1};
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(OW,OD),std(0xffffff,{map:ft,roughness:.6}));fl.rotation.x=-Math.PI/2;fl.position.set(OX,.004,OZ);fl.receiveShadow=true;house.add(fl);
   // walls + ceiling
   const wm=std(0x5a6b8c,{roughness:.9}),trim=std(0xeeeeee,{roughness:.6});
-  noShadow(box(OW+.6,OH,.3,wm,OX,OH/2,24.15,house));
-  noShadow(box(.3,OH,OD+.6,wm,-16.15,OH/2,OZ,house));
-  noShadow(box(.06,OH,OD,wm,-.33,OH/2,OZ,house));          // office side of the Party Room wall
-  // office side of the front wall, with a hole for the door
-  noShadow(box(8.6,OH,.06,wm,-11.7,OH/2,12.03,house));noShadow(box(5.5,OH,.06,wm,-3.05,OH/2,12.03,house));noShadow(box(1.6,OH-2.6,.06,wm,-6.6,2.6+(OH-2.6)/2,12.03,house));
-  for(const [w,x,z,ry] of [[OW,OX,23.99,0],[OD,-15.99,OZ,1],[OD,-.37,OZ,1]]){const b=box(ry?.04:w,.18,ry?w:.04,trim,x,.09,z,house);}
+  noShadow(box(OW+.6,OH,.3,wm,OX,OH/2,16.15,house));             // back (north)
+  noShadow(box(OW+.6,OH,.3,wm,OX,OH/2,1.85,house));              // front (south)
+  noShadow(box(.3,OH,OD+.6,wm,-29.15,OH/2,OZ,house));            // west
+  noShadow(box(.5,OH,4.3,wm,-16.75,OH/2,14.15,house));           // east wall past the end of the arcade
+  // office side of the shared wall, with a hole for the door
+  noShadow(box(.06,OH,6.2,wm,-17.03,OH/2,5.1,house));noShadow(box(.06,OH,6.2,wm,-17.03,OH/2,12.9,house));noShadow(box(.06,OH-2.6,1.6,wm,-17.03,2.6+(OH-2.6)/2,9,house));
+  box(OW,.18,.04,trim,OX,.09,15.98,house);box(OW,.18,.04,trim,OX,.09,2.02,house);box(.04,.18,OD,trim,-28.98,.09,OZ,house);
   const ceil=new THREE.Mesh(new THREE.PlaneGeometry(OW+.6,OD+.6),std(0xe8e8ee,{roughness:1}));ceil.rotation.x=Math.PI/2;ceil.position.set(OX,OH,OZ);house.add(ceil);
-  // ceiling light panels + lights
-  for(const [x,z] of [[-12,15],[-4.5,15],[-12,21],[-4.5,21]]){noShadow(box(1.6,.05,.8,new THREE.MeshBasicMaterial({color:0xfffbe8}),x,OH-.03,z,house));}
-  for(const [x,z] of [[-11,16.5],[-5,19.5]]){const l=new THREE.PointLight(0xfff4dd,.9,14);l.position.set(x,OH-.4,z);house.add(l);OFFICE.lights.push(l);}
-  // door frame on both sides + small door sign outside
-  const wood=std(0x6b4423,{roughness:.6}),dark=std(0x3a2414,{roughness:.6});
-  for(const z of [11.47,12.06]){box(.1,2.65,.1,wood,-7.4,1.32,z,house);box(.1,2.65,.1,wood,-5.8,1.32,z,house);box(1.7,.1,.1,wood,-6.6,2.65,z,house);}
-  {const p=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.38),new THREE.MeshBasicMaterial({map:labelTex('💼 OFFICE','#3a2414','#ffe6b0')}));p.position.set(-6.6,2.95,11.48);p.rotation.y=Math.PI;house.add(p);}
+  for(const [x,z] of [[-26,5.5],[-20,5.5],[-26,12.5],[-20,12.5]])noShadow(box(1.6,.05,.8,new THREE.MeshBasicMaterial({color:0xfffbe8}),x,OH-.03,z,house));
+  for(const [x,z] of [[-25,6.5],[-21,11.5]]){const l=new THREE.PointLight(0xfff4dd,.9,14);l.position.set(x,OH-.4,z);house.add(l);OFFICE.lights.push(l);}
+  // the DOOR (opens and closes, everyone sees it)
+  const wood=std(0x6b4423,{roughness:.6}),dark=std(0x3a2414,{roughness:.6}),brass=std(0xd4a640,{metalness:.85,roughness:.25});
+  for(const x of [-16.47,-17.07]){box(.1,2.65,.1,wood,x,1.32,8.2,house);box(.1,2.65,.1,wood,x,1.32,9.8,house);box(.1,.1,1.7,wood,x,2.65,9,house);}
+  const hinge=new THREE.Group();hinge.position.set(-16.77,0,8.25);
+  box(.07,2.55,1.5,wood,0,1.28,.75,hinge);
+  for(const [y,h] of [[.75,.9],[1.85,.8]])for(const sx of [-.04,.04])box(.01,h,1.1,dark,sx,y,.75,hinge);
+  for(const sx of [-.07,.07]){const kb=new THREE.Mesh(new THREE.SphereGeometry(.045,12,10),brass);kb.position.set(sx,1.15,1.35);hinge.add(kb);}
+  hinge.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(hinge);OFFICE.door=hinge;
+  {const p=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.38),new THREE.MeshBasicMaterial({map:labelTex('💼 OFFICE','#3a2414','#ffe6b0')}));p.position.set(-16.48,2.98,9);p.rotation.y=Math.PI/2;house.add(p);}
+  const doorVerb=()=>OFFICE.open?'Close the office door 🚪':'Open the office door 🚪';
+  houseInter.push({x:-16.1,z:9,get verb(){return doorVerb();},act:()=>setOfficeDoor(!OFFICE.open)});
+  houseInter.push({x:-17.5,z:9,get verb(){return doorVerb();},act:()=>setOfficeDoor(!OFFICE.open)});
+  // desk area: built facing the door, then turned to sit by the west wall
+  const area=new THREE.Group();area.position.set(-26,0,9);area.rotation.y=-Math.PI/2;house.add(area);
+  const A=(m)=>{area.add(m);return m;};
+  const ab=(w,h,d,mat,x,y,z)=>box(w,h,d,mat,x,y,z,area);
   // rug
-  const rug=new THREE.Mesh(new THREE.PlaneGeometry(5,3.6),std(0x8a2a3a,{roughness:1}));rug.rotation.x=-Math.PI/2;rug.position.set(-8.2,.01,20.6);house.add(rug);
-  const rug2=new THREE.Mesh(new THREE.PlaneGeometry(4.6,3.2),std(0xd8b35a,{roughness:1}));rug2.rotation.x=-Math.PI/2;rug2.position.set(-8.2,.012,20.6);house.add(rug2);
-  const rug3=new THREE.Mesh(new THREE.PlaneGeometry(4.3,2.9),std(0x8a2a3a,{roughness:1}));rug3.rotation.x=-Math.PI/2;rug3.position.set(-8.2,.014,20.6);house.add(rug3);
-  // the BOSS desk
-  box(3.2,.08,1.3,dark,-8.2,.82,21.5,house);
-  box(.08,.8,1.2,dark,-9.75,.4,21.5,house);box(.08,.8,1.2,dark,-6.65,.4,21.5,house);box(3.1,.6,.05,dark,-8.2,.5,20.9,house);
-  box(.8,.7,1.1,wood,-9.3,.38,21.5,house);for(let k=0;k<3;k++)box(.6,.02,.02,std(0xc8a050,{metalness:.8}),-9.3,.2+k*.22,20.94,house);
-  houseCols.push({x:-8.2,z:21.5,hw:1.6,hd:.65,top:.86,surf:.86});
+  for(const [w,d,c,y] of [[5,3.6,0x8a2a3a,.01],[4.6,3.2,0xd8b35a,.012],[4.3,2.9,0x8a2a3a,.014]]){const r=new THREE.Mesh(new THREE.PlaneGeometry(w,d),std(c,{roughness:1}));r.rotation.x=-Math.PI/2;r.position.set(0,y,-.9);A(r);}
+  // boss desk
+  ab(3.2,.08,1.3,dark,0,.82,0);ab(.08,.8,1.2,dark,-1.55,.4,0);ab(.08,.8,1.2,dark,1.55,.4,0);ab(3.1,.6,.05,dark,0,.5,-.6);
+  ab(.8,.7,1.1,wood,-1.1,.38,0);for(let k=0;k<3;k++)ab(.6,.02,.02,brass,-1.1,.2+k*.22,-.56);
+  houseCols.push({x:-26,z:9,hw:.65,hd:1.6,top:.86,surf:.86});
   // computer
   const mon=new THREE.Group();
   box(1.0,.62,.05,std(0x111111),0,.38,0,mon);
@@ -2848,62 +2860,60 @@ const OFFICE={lights:[],clockTex:null,clockC:null,lastMin:-1};
     g.fillStyle='#fff';g.font='bold 30px system-ui';g.textAlign='center';g.fillText('⌨ TYPING RACE',w/2,80);g.font='18px system-ui';g.fillText('Type fast, earn 🪙!',w/2,120);g.fillText('BOSS PC',w/2,170);});
   const scr=new THREE.Mesh(new THREE.PlaneGeometry(.92,.54),new THREE.MeshBasicMaterial({map:scrTex}));scr.position.set(0,.38,.03);mon.add(scr);
   box(.08,.2,.08,std(0x222222),0,.1,-.03,mon);box(.3,.02,.2,std(0x222222),0,.01,-.03,mon);
-  mon.position.set(-8.2,.86,21.15);house.add(mon);
-  box(.7,.03,.24,std(0x222230),-8.2,.875,21.75,house);
-  box(.1,.03,.14,std(0xdddddd),-7.65,.875,21.75,house);
-  // mug + papers + desk lamp
-  const mug=new THREE.Mesh(new THREE.CylinderGeometry(.06,.055,.12,14),std(0xff5d73));mug.position.set(-9.3,.92,21.3);house.add(mug);
-  for(let k=0;k<3;k++){const pa=box(.3,.006,.4,std(0xfafafa),-7.0,.865+k*.007,21.6,house);pa.rotation.y=k*.2-.2;}
+  mon.position.set(0,.86,-.35);A(mon);
+  ab(.7,.03,.24,std(0x222230),0,.875,.25);ab(.1,.03,.14,std(0xdddddd),.55,.875,.25);
+  const mug=new THREE.Mesh(new THREE.CylinderGeometry(.06,.055,.12,14),std(0xff5d73));mug.position.set(-1.1,.92,-.2);A(mug);
+  for(let k=0;k<3;k++){const pa=ab(.3,.006,.4,std(0xfafafa),1.2,.865+k*.007,.1);pa.rotation.y=k*.2-.2;}
   const lp=new THREE.Group();box(.18,.03,.18,std(0x222222),0,.015,0,lp);const arm=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.45),std(0x222222));arm.position.set(0,.22,0);arm.rotation.z=.3;lp.add(arm);
   const shade=new THREE.Mesh(new THREE.ConeGeometry(.12,.15,14,1,true),std(0x3ddc84,{side:THREE.DoubleSide}));shade.position.set(-.1,.45,0);shade.rotation.z=-.6;lp.add(shade);
-  lp.position.set(-9.55,.86,21.0);house.add(lp);
-  // boss chair (behind the desk) + 2 visitor chairs
-  const chair=(x,z,ry,col,big)=>{const g=new THREE.Group(),m=std(col,{roughness:.5});
-    box(.6,.12,.6,m,0,.5,0,g);box(.6,big?.9:.55,.1,m,0,big?.98:.82,big?-.28:-.28,g);
+  lp.position.set(-1.35,.86,-.5);A(lp);
+  // chairs (local coords) -> world colliders
+  const chair=(lx,lz,ry,col,big)=>{const g=new THREE.Group(),m=std(col,{roughness:.5});
+    box(.6,.12,.6,m,0,.5,0,g);box(.6,big?.9:.55,.1,m,0,big?.98:.82,-.28,g);
     if(big){const p=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.4),std(0x888888,{metalness:.8}));p.position.y=.25;g.add(p);for(let k=0;k<5;k++){const a=k/5*Math.PI*2;box(.04,.04,.34,std(0x333333),Math.sin(a)*.15,.04,Math.cos(a)*.15,g).rotation.y=a;}}
-    else for(const [lx,lz] of [[-.26,-.26],[.26,-.26],[-.26,.26],[.26,.26]])box(.05,.5,.05,std(0x333333),lx,.25,lz,g);
-    g.position.set(x,0,z);g.rotation.y=ry;g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);
-    houseCols.push({x,z,r:.32,top:.58});};
-  chair(-8.2,22.6,Math.PI,0x1a1a22,true);chair(-9.1,19.6,0,0x8a2a3a,false);chair(-7.3,19.6,0,0x8a2a3a,false);
-  // bookshelves on the left wall
+    else for(const [qx,qz] of [[-.26,-.26],[.26,-.26],[-.26,.26],[.26,.26]])box(.05,.5,.05,std(0x333333),qx,.25,qz,g);
+    g.position.set(lx,0,lz);g.rotation.y=ry;g.traverse(o=>{if(o.isMesh)o.castShadow=true;});A(g);
+    houseCols.push({x:-26-lz,z:9+lx,r:.32,top:.58});};
+  chair(0,1.1,Math.PI,0x1a1a22,true);chair(-.9,-1.9,0,0x8a2a3a,false);chair(.9,-1.9,0,0x8a2a3a,false);
+  // bookshelves on the back (north) wall
   const bookCols=[0xff5d73,0x4fc3ff,0x3ddc84,0xffd36e,0xb06bff,0xff9f43,0xffffff,0x46f3ff];
-  for(const sz of [15.2,18.6]){
-    box(.45,2.2,2.4,wood,-15.75,1.1,sz,house);
-    for(let sh=0;sh<4;sh++){box(.42,.04,2.3,dark,-15.72,.25+sh*.52,sz,house);
-      let zz=sz-1.08;while(zz<sz+1.05){const bw=.06+((zz*97|0)%5)*.015,bh=.3+((zz*53|0)%4)*.04;const b=box(.3,bh,bw,std(bookCols[(zz*31|0)%8],{roughness:.7}),-15.68,.27+sh*.52+bh/2,zz+bw/2,house);if(((zz*17|0)%9)===0)b.rotation.x=.15;zz+=bw+.01;}}
-    houseCols.push({x:-15.75,z:sz,hw:.25,hd:1.2,top:2.2});}
-  // filing cabinets in the back corner (you can climb them)
-  for(const fx of [-14.6,-13.8]){box(.75,1.3,.65,std(0x9aa0ae,{metalness:.5,roughness:.4}),fx,.65,23.55,house);
-    for(let k=0;k<3;k++){box(.68,.01,.01,std(0x666666),fx,.38+k*.4,23.22,house);box(.18,.04,.03,std(0xdddddd,{metalness:.8}),fx,.48+k*.4,23.22,house);}
-    houseCols.push({x:fx,z:23.55,hw:.38,hd:.33,top:1.3,surf:1.3});}
-  // water cooler
+  for(const sx of [-26.2,-22.6]){
+    box(2.4,2.2,.45,wood,sx,1.1,15.75,house);
+    for(let sh=0;sh<4;sh++){box(2.3,.04,.42,dark,sx,.25+sh*.52,15.72,house);
+      let xx=sx-1.08;while(xx<sx+1.05){const bw=.06+((Math.abs(xx)*97|0)%5)*.015,bh=.3+((Math.abs(xx)*53|0)%4)*.04;const b=box(bw,bh,.3,std(bookCols[(Math.abs(xx)*31|0)%8],{roughness:.7}),xx+bw/2,.27+sh*.52+bh/2,15.68,house);if(((Math.abs(xx)*17|0)%9)===0)b.rotation.z=.15;xx+=bw+.01;}}
+    houseCols.push({x:sx,z:15.75,hw:1.2,hd:.25,top:2.2});}
+  // filing cabinets (climbable) in the south-west corner
+  for(const fx of [-28.4,-27.6]){box(.75,1.3,.65,std(0x9aa0ae,{metalness:.5,roughness:.4}),fx,.65,2.45,house);
+    for(let k=0;k<3;k++){box(.68,.01,.01,std(0x666666),fx,.38+k*.4,2.78,house);box(.18,.04,.03,std(0xdddddd,{metalness:.8}),fx,.48+k*.4,2.78,house);}
+    houseCols.push({x:fx,z:2.45,hw:.38,hd:.33,top:1.3,surf:1.3});}
+  // water cooler by the door
   {const wc=new THREE.Group();box(.45,1.0,.45,std(0xf0f0f0),0,.5,0,wc);
    const jug=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.45,16),new THREE.MeshStandardMaterial({color:0x6ec8ff,transparent:true,opacity:.6,roughness:.1}));jug.position.y=1.25;wc.add(jug);
    box(.06,.06,.06,std(0x46b4ff),-.08,.8,.24,wc);box(.06,.06,.06,std(0xff5d73),.08,.8,.24,wc);
-   wc.position.set(-1.0,0,23.5);wc.rotation.y=Math.PI;house.add(wc);houseCols.push({x:-1.0,z:23.5,hw:.24,hd:.24});
-   houseInter.push({x:-1.0,z:23.5,verb:'Drink some water 💧',act:()=>{gulp();toast('💧 Ahh, nice cold water!');}});}
+   wc.position.set(-17.7,0,2.6);house.add(wc);houseCols.push({x:-17.7,z:2.6,hw:.24,hd:.24});
+   houseInter.push({x:-17.7,z:2.6,verb:'Drink some water 💧',act:()=>{gulp();toast('💧 Ahh, nice cold water!');}});}
   // big plant in the corner
-  {const pot=new THREE.Mesh(new THREE.CylinderGeometry(.3,.24,.5,16),std(0xd4733a));pot.position.set(-15.4,.25,12.7);house.add(pot);
-   for(let k=0;k<9;k++){const lf=new THREE.Mesh(new THREE.SphereGeometry(.28,10,8),std(0x2fa84f,{roughness:.8}));const a=k/9*Math.PI*2;lf.scale.set(.5,1.3,.5);lf.position.set(-15.4+Math.cos(a)*.22,.85+(k%3)*.25,12.7+Math.sin(a)*.22);lf.rotation.z=Math.cos(a)*.4;lf.rotation.x=Math.sin(a)*.4;house.add(lf);}
-   houseCols.push({x:-15.4,z:12.7,r:.35});}
-  // whiteboard behind the desk
+  {const pot=new THREE.Mesh(new THREE.CylinderGeometry(.3,.24,.5,16),std(0xd4733a));pot.position.set(-17.7,.25,15.3);house.add(pot);
+   for(let k=0;k<9;k++){const lf=new THREE.Mesh(new THREE.SphereGeometry(.28,10,8),std(0x2fa84f,{roughness:.8}));const a=k/9*Math.PI*2;lf.scale.set(.5,1.3,.5);lf.position.set(-17.7+Math.cos(a)*.22,.85+(k%3)*.25,15.3+Math.sin(a)*.22);lf.rotation.z=Math.cos(a)*.4;lf.rotation.x=Math.sin(a)*.4;house.add(lf);}
+   houseCols.push({x:-17.7,z:15.3,r:.35});}
+  // whiteboard behind the boss chair (west wall)
   const wbT=canvasTex(512,256,(g,w,h)=>{g.fillStyle='#fdfdfd';g.fillRect(0,0,w,h);g.strokeStyle='#bbb';g.lineWidth=8;g.strokeRect(0,0,w,h);
     g.fillStyle='#1e5bff';g.font='bold 34px "Comic Sans MS","Chalkboard SE",cursive';g.fillText('ARCADE TO DO:',24,52);
     g.font='26px "Comic Sans MS","Chalkboard SE",cursive';
     [['✅ build the arcade','#2a8a4a'],['✅ party room','#2a8a4a'],['✅ motorcycle race','#2a8a4a'],['⬜ get a high score!','#d42a2a']].forEach(([t,c],k)=>{g.fillStyle=c;g.fillText(t,40,100+k*38);});
     g.strokeStyle='#ff9f43';g.lineWidth=4;g.beginPath();g.arc(420,150,50,0,7);g.stroke();g.fillStyle='#ff9f43';g.font='bold 40px system-ui';g.textAlign='center';g.fillText('⭐',420,165);});
-  const wb=new THREE.Mesh(new THREE.PlaneGeometry(2.8,1.4),new THREE.MeshBasicMaterial({map:wbT}));wb.position.set(-8.2,2.2,23.98);wb.rotation.y=Math.PI;house.add(wb);
-  box(2.9,.06,.12,std(0xaaaaaa),-8.2,1.48,23.92,house);
-  // wall clock showing the real time
+  const wb=new THREE.Mesh(new THREE.PlaneGeometry(2.8,1.4),new THREE.MeshBasicMaterial({map:wbT}));wb.position.set(-28.98,2.2,9);wb.rotation.y=Math.PI/2;house.add(wb);
+  box(.12,.06,2.9,std(0xaaaaaa),-28.92,1.48,9,house);
+  // wall clock (real time) on the south wall
   OFFICE.clockC=document.createElement('canvas');OFFICE.clockC.width=OFFICE.clockC.height=128;
   OFFICE.clockTex=new THREE.CanvasTexture(OFFICE.clockC);OFFICE.clockTex.encoding=THREE.sRGBEncoding;
-  const ck=new THREE.Mesh(new THREE.CircleGeometry(.35,32),new THREE.MeshBasicMaterial({map:OFFICE.clockTex}));ck.position.set(-3.5,2.9,23.98);ck.rotation.y=Math.PI;house.add(ck);
-  const rim=new THREE.Mesh(new THREE.TorusGeometry(.35,.03,8,32),std(0x222222));rim.position.set(-3.5,2.9,23.97);house.add(rim);
-  // the boss computer
-  houseInter.push({x:-8.2,z:21.5,verb:'Use the boss computer ⌨ (typing race, earn 🪙)',act:()=>startGame(TypingRace())});
+  const ck=new THREE.Mesh(new THREE.CircleGeometry(.35,32),new THREE.MeshBasicMaterial({map:OFFICE.clockTex}));ck.position.set(-23,2.9,2.02);house.add(ck);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(.35,.03,8,32),std(0x222222));rim.position.set(-23,2.9,2.03);house.add(rim);
+  houseInter.push({x:-26,z:9,verb:'Use the boss computer ⌨ (typing race, earn 🪙)',act:()=>startGame(TypingRace())});
 })();
 function updateOffice(){
   if(level!==0)return;
+  if(OFFICE.door){OFFICE.ang+=((OFFICE.open?-1.45:0)-OFFICE.ang)*.12;OFFICE.door.rotation.y=OFFICE.ang;}
   for(const l of OFFICE.lights)l.intensity=lights.on?.9:.15;
   const d=new Date(),m=d.getHours()*60+d.getMinutes();
   if(m!==OFFICE.lastMin&&OFFICE.clockC){OFFICE.lastMin=m;const g=OFFICE.clockC.getContext('2d');
