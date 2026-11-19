@@ -1302,7 +1302,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1329,6 +1329,9 @@ function upsertPeer(p){
   if(e.color!==color){e.color=color;e.av.userData.mat.color.set(color);}
   e.tx=clamp(num(pr.x,0),-40,40);e.ty=clamp(num(pr.y,0),0,10);e.tz=clamp(num(pr.z,0),-40,40);e.try=num(pr.ry,0);
   e.lv=num(pr.lv,0)|0;e.v=!!pr.v;e.hid=(pr.hid==='pit'||pr.hid==='booth'||pr.hid==='box')?pr.hid:'';e.cr=!!pr.cr;e.pu=(pr.pu===1||pr.pu===-1)?pr.pu:0;e.hp=(Number.isInteger(pr.hp)&&pr.hp>=0&&pr.hp<PLANTS.length)?pr.hp:-1;
+  {const vo=pr.vo===1;if(vo&&!e.vo&&e.vo!==undefined)addSys('🎤 '+(e.nm||names.get(e.by)||'A player')+' turned on their mic — go near them to hear!');e.vo=vo;}
+  e.vg=num(pr.vg,0);
+  if(pr.rt&&typeof pr.rt==='object'&&myPeer&&pr.rt[myPeer])voiceSignal(p.peer,e,pr.rt[myPeer]);
   if(Array.isArray(pr.vm)&&pr.vm.length===2&&typeof pr.vm[1]==='number'&&isFinite(pr.vm[1])&&pr.vm[1]>VEND.t){VEND.t=pr.vm[1];VEND.open=!!pr.vm[0];}
   if(Array.isArray(pr.bb)&&pr.bb.length===2&&typeof pr.bb[1]==='number'&&isFinite(pr.bb[1])&&pr.bb[1]>bbState.t){bbState.t=pr.bb[1];bbState.open=!!pr.bb[0];}
   if(Array.isArray(pr.sf)&&pr.sf.length===2&&typeof pr.sf[1]==='number'&&isFinite(pr.sf[1])&&pr.sf[1]>safe.t){safe.t=pr.sf[1];safe.open=!!pr.sf[0];}
@@ -1371,12 +1374,12 @@ function upsertPeer(p){
   if(say&&key!==e.sayKey){const first=!e.sayInit;e.sayKey=key;showBubble(e.av,say);if(!first)addChat(e.nm||names.get(e.by)||'Player',e.color,say);}
   e.sayInit=true;
 }
-function removePeer(id){const e=peers.get(id);if(!e)return;scene.remove(e.av);peers.delete(id);}
+function removePeer(id){const e=peers.get(id);if(!e)return;closePC(id);scene.remove(e.av);peers.delete(id);}
 function renderOnline(){
   olist.textContent='';
   if(!room){const d=document.createElement('div');d.className='muted';d.textContent='Playing offline. Share this page from claude.ai to play together!';olist.append(d);return;}
-  const rows=[{n:(me.name||'You')+' (you)',c:me.color,st:me.stars,lv:level,sc:me.score,ds:me.dartPts}];
-  for(const e of peers.values())rows.push({n:e.nm||names.get(e.by)||'Player',c:e.color,st:e.st,lv:e.lv,sc:e.sc||0,ds:e.ds||0});
+  const rows=[{n:(VOICE.on?'🎤 ':'')+(me.name||'You')+' (you)',c:me.color,st:me.stars,lv:level,sc:me.score,ds:me.dartPts}];
+  for(const e of peers.values())rows.push({n:(e.vo?'🎤 ':'')+(e.nm||names.get(e.by)||'Player'),c:e.color,st:e.st,lv:e.lv,sc:e.sc||0,ds:e.ds||0});
   const head=document.createElement('div');head.className='muted';head.textContent='🟢 '+rows.length+' in Starlight Arcade';olist.append(head);
   for(const r of rows){const row=document.createElement('div');row.className='row';
     const dot=document.createElement('span');dot.className='dot';dot.style.background=r.c;
@@ -2168,8 +2171,87 @@ function findPlayer(name){
   const q=name.toLowerCase();const list=[...peers.entries()].map(([id,e])=>({id,e,n:(e.nm||names.get(e.by)||'').toLowerCase()})).filter(x=>x.n);
   return list.find(x=>x.n===q)||list.find(x=>x.n.startsWith(q))||null;
 }
+// ======================================================================
+// VOICE CHAT: type /speak to turn your microphone on (players near you hear you)
+// ======================================================================
+const VOICE={on:false,stream:null,gen:0,pcs:new Map(),out:{},audio:new Map(),lastIn:new Map(),badge:null};
+const pairKey=(id,e)=>{const mine=VOICE.gen,theirs=e.vg||0;return myPeer<id?mine+'.'+theirs:theirs+'.'+mine;};
+function voiceWanted(e){return !!myPeer&&(VOICE.on||e.vo)&&e.lv===level;}
+function closePC(id){const pc=VOICE.pcs.get(id);if(pc){try{pc.close();}catch(e){}VOICE.pcs.delete(id);}delete VOICE.out[id];
+  const a=VOICE.audio.get(id);if(a){a.srcObject=null;VOICE.audio.delete(id);}}
+function gathered(pc){return pc.iceGatheringState==='complete'?Promise.resolve():new Promise(r=>{const t=setTimeout(r,3000);
+  pc.addEventListener('icegatheringstatechange',()=>{if(pc.iceGatheringState==='complete'){clearTimeout(t);r();}});});}
+function makePC(id,key){
+  const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});
+  pc.key=key;VOICE.pcs.set(id,pc);
+  pc.ontrack=ev=>{let a=VOICE.audio.get(id);if(!a){a=new Audio();a.autoplay=true;VOICE.audio.set(id,a);}
+    a.srcObject=ev.streams&&ev.streams[0]?ev.streams[0]:new MediaStream([ev.track]);a.play().catch(()=>{});};
+  pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed'&&VOICE.pcs.get(id)===pc){closePC(id);sendPresence(true);}};
+  return pc;
+}
+async function voiceOffer(id,key){
+  const pc=makePC(id,key);
+  try{
+    const tr=pc.addTransceiver('audio',{direction:VOICE.stream?'sendrecv':'recvonly'});
+    if(VOICE.stream)await tr.sender.replaceTrack(VOICE.stream.getAudioTracks()[0]);
+    await pc.setLocalDescription(await pc.createOffer());await gathered(pc);
+    if(VOICE.pcs.get(id)!==pc)return;
+    VOICE.out[id]={k:'o',g:key,s:pc.localDescription.sdp};sendPresence(true);
+  }catch(e){closePC(id);}
+}
+async function voiceAnswer(id,key,sdp){
+  closePC(id);const pc=makePC(id,key);
+  try{
+    await pc.setRemoteDescription({type:'offer',sdp});
+    const tr=pc.getTransceivers()[0];
+    if(tr){if(VOICE.stream){await tr.sender.replaceTrack(VOICE.stream.getAudioTracks()[0]);tr.direction='sendrecv';}else tr.direction='recvonly';}
+    await pc.setLocalDescription(await pc.createAnswer());await gathered(pc);
+    if(VOICE.pcs.get(id)!==pc)return;
+    VOICE.out[id]={k:'a',g:key,s:pc.localDescription.sdp};sendPresence(true);
+  }catch(e){closePC(id);}
+}
+// a message another player left for me in their presence
+function voiceSignal(id,e,msg){
+  if(!msg||typeof msg!=='object'||typeof msg.s!=='string'||msg.s.length>20000||typeof msg.g!=='string')return;
+  const sig=msg.k+msg.g+msg.s.length+msg.s.slice(-40);if(VOICE.lastIn.get(id)===sig)return;VOICE.lastIn.set(id,sig);
+  if(!voiceWanted(e)||msg.g!==pairKey(id,e))return;
+  if(msg.k==='o'&&myPeer>id)voiceAnswer(id,msg.g,msg.s);
+  else if(msg.k==='a'&&myPeer<id){const pc=VOICE.pcs.get(id);if(pc&&pc.key===msg.g&&pc.signalingState==='have-local-offer')pc.setRemoteDescription({type:'answer',sdp:msg.s}).catch(()=>closePC(id));}
+}
+function voiceTick(){
+  if(!room||!myPeer||typeof RTCPeerConnection!=='function')return;
+  for(const id of [...VOICE.pcs.keys()])if(!peers.has(id))closePC(id);
+  for(const [id,e] of peers){
+    const want=voiceWanted(e),pc=VOICE.pcs.get(id),key=pairKey(id,e);
+    if(!want){if(pc||VOICE.out[id]){closePC(id);sendPresence(true);}continue;}
+    if(pc&&pc.key!==key){closePC(id);sendPresence(true);}
+    if(!VOICE.pcs.get(id)&&myPeer<id)voiceOffer(id,key);
+  }
+}
+setInterval(voiceTick,1000);
+function updateVoiceVolumes(){
+  for(const [id,a] of VOICE.audio){const e=peers.get(id);if(!e){a.volume=0;continue;}
+    const d=Math.hypot(e.av.position.x-me.x,e.av.position.z-me.z);
+    a.volume=e.lv!==level?0:clamp(1-(d-3)/17,0,1);}
+}
+async function setVoice(on){
+  if(on===VOICE.on)return;
+  if(on){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof RTCPeerConnection!=='function'){addSys('🎤 Voice chat doesn\'t work in this browser');return;}
+    try{VOICE.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});}
+    catch(e){addSys('🎤 Couldn\'t turn on your microphone. Say "Allow" when your browser asks. (If you\'re playing on claude.ai, try the starlight-arcade website instead.)');return;}
+  }else if(VOICE.stream){VOICE.stream.getTracks().forEach(t=>t.stop());VOICE.stream=null;}
+  VOICE.on=on;VOICE.gen++;
+  for(const id of [...VOICE.pcs.keys()])closePC(id);VOICE.out={};
+  sendPresence(true);
+  if(!VOICE.badge){VOICE.badge=document.createElement('div');VOICE.badge.style.cssText='position:fixed;left:12px;bottom:200px;z-index:20;padding:5px 10px;border-radius:10px;background:rgba(255,59,59,.85);color:#fff;font:700 13px system-ui;pointer-events:none';document.body.append(VOICE.badge);}
+  VOICE.badge.textContent='🎤 MIC ON — type /speak to turn off';VOICE.badge.style.display=on?'block':'none';
+  addSys(on?'🎤 Your mic is ON — players near you can hear you! Type /speak again to turn it off.':'🔇 Your mic is OFF.');
+}
 function runCommand(cmd){
   const parts=cmd.trim().split(/\s+/);const c=parts[0].toLowerCase();
+  if(c==='/speak'||c==='/talk'||c==='/mic'){setVoice(!VOICE.on);return;}
+  if(c==='/mute'){setVoice(false);return;}
   if(c==='/give'){
     let n=NaN,rest=parts.slice(1);
     if(rest.length&&/^\d+$/.test(rest[0])){n=+rest[0];rest=rest.slice(1);}
@@ -2208,7 +2290,7 @@ function runCommand(cmd){
     me.lastWhisper=[p.id,text,Date.now()];sendPresence(true);
     addWhisper('🤫 You whisper to '+nm+': ',text);return;
   }
-  if(c==='/help'){addSys('Commands: /give 10 PlayerName · /give 10 all · /whisper PlayerName message');return;}
+  if(c==='/help'){addSys('Commands: /give 10 PlayerName · /give 10 all · /whisper PlayerName message · /speak (turn your mic on/off)');return;}
   addSys('Unknown command. Try /help');
 }
 // ======================================================================
@@ -2652,7 +2734,7 @@ function loop(){
   updateSpray(dt);
   updateTools(dt);
   updateHelp();
-  updateVend();
+  updateVend();updateVoiceVolumes();
   updateTV();
   sendPresence(false);
   renderer.render(scene,camera);
