@@ -1466,7 +1466,7 @@ function updatePlants(){
       p.g.position.set(p.x,p.y,p.z);p.g.scale.setScalar(p.y>.05?.7:1);if(p.kind==='spray')p.g.rotation.set(0,0,0);if(p.kind==='mop'||p.kind==='vacuum')p.g.rotation.set(0,0,p.kind==='mop'?.12:0);
     }
     if((p.kind==='phone'||p.kind==='duck')&&p.t===0&&!holder){const d=DRAWERS[p.kind==='phone'?1:3].g.position;p.g.position.set(d.x,d.y-(p.kind==='duck'?.12:.06),d.z+.14);p.g.scale.setScalar(1);}
-    if(p.kind==='soda'){const pk=sodaParked(p)&&!holder;p.g.visible=!pk;if(pk)p.col.off=true;}
+    if(p.kind==='soda'){const pk=sodaHidden(p)&&!holder;p.g.visible=!pk;if(pk)p.col.off=true;}
     p.col.x=p.x;p.col.z=p.z;p.it.x=p.x;p.it.z=p.z;
   });
 }
@@ -2467,7 +2467,11 @@ function burp(){try{const ac=window._ac||(window._ac=new (window.AudioContext||w
 
 // soda cans: 2 of each kind live inside the machine until someone buys them
 const SODA_PARK={x:15.5,z:14.5};
-function sodaParked(p){return Math.abs(p.x-SODA_PARK.x)<.02&&Math.abs(p.z-SODA_PARK.z)<.02;}
+const SODA_EMPTY={x:15.5,z:14.0},SODA_RESTOCK=60000;   // drunk cans wait here, then the machine restocks them after 60 seconds
+const atSpot=(p,q)=>Math.abs(p.x-q.x)<.02&&Math.abs(p.z-q.z)<.02;
+function sodaRestockLeft(p){return atSpot(p,SODA_EMPTY)?Math.max(0,SODA_RESTOCK-(Date.now()-p.t)):0;}
+function sodaParked(p){return atSpot(p,SODA_PARK)||(atSpot(p,SODA_EMPTY)&&sodaRestockLeft(p)===0);}   // ready to buy
+function sodaHidden(p){return atSpot(p,SODA_PARK)||atSpot(p,SODA_EMPTY);}                           // inside the machine
 SODAS.forEach((sd,k)=>{for(let n=0;n<2;n++){
   const i=PLANTS.length,g=new THREE.Group(),colr=new THREE.Color(sd.col).getHex();
   const body=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.17,16),std(colr,{metalness:.5,roughness:.3}));body.position.y=.085;g.add(body);
@@ -2476,7 +2480,7 @@ SODAS.forEach((sd,k)=>{for(let n=0;n<2;n++){
   const lab=new THREE.Mesh(new THREE.CylinderGeometry(.0605,.0605,.06,16,1,true),new THREE.MeshStandardMaterial({color:0xffffff,roughness:.5}));lab.position.y=.09;g.add(lab);
   g.traverse(o=>{if(o.isMesh)o.castShadow=true;});g.visible=false;house.add(g);
   const col={x:SODA_PARK.x,z:SODA_PARK.z,r:.1,off:true},it={x:SODA_PARK.x,z:SODA_PARK.z,verb:'Pick up the '+sd.name+' soda '+sd.emo,
-    cond:()=>me.holding==null&&!PLANTS[i].held&&!sodaParked(PLANTS[i])&&Math.abs(PLANTS[i].y-me.y)<2.2,act:()=>pickPlant(i)};
+    cond:()=>me.holding==null&&!PLANTS[i].held&&!sodaHidden(PLANTS[i])&&Math.abs(PLANTS[i].y-me.y)<2.2,act:()=>pickPlant(i)};
   houseCols.push(col);houseInter.push(it);
   PLANTS.push({g,col,it,x:SODA_PARK.x,y:0,z:SODA_PARK.z,t:0,held:false,kind:'soda',flav:k,name:sd.name,icon:sd.emo});
 }});
@@ -2486,15 +2490,17 @@ function gulp(){try{const ac=window._ac||(window._ac=new (window.AudioContext||w
 function drinkSoda(){
   const p=PLANTS[me.holding];if(!p||p.kind!=='soda')return;
   const sd=SODAS[p.flav];
-  p.x=SODA_PARK.x;p.z=SODA_PARK.z;p.y=0;p.t=Date.now();p.held=false;me.holding=null;   // empty can goes back into the machine
+  p.x=SODA_EMPTY.x;p.z=SODA_EMPTY.z;p.y=0;p.t=Date.now();p.held=false;me.holding=null;   // empty can: the machine restocks it later
   sendPresence(true);sd.go();
 }
+function sodaStock(k){return PLANTS.filter(p=>p.kind==='soda'&&p.flav===k&&sodaParked(p)&&!p.held).length;}
+function sodaWait(k){let w=0;for(const p of PLANTS)if(p.kind==='soda'&&p.flav===k&&!p.held){const l=sodaRestockLeft(p);if(l>0&&(!w||l<w))w=l;}return w;}
 function SodaMachine(){
   let sel=0;const bw=160,gap=20,x0=(W-(bw*5+gap*4))/2,y0=170;
   const buy=k=>{closeGame();
     if(me.holding!=null){toast('🙌 Your hands are full — put down what you\'re holding first');return;}
     const i=PLANTS.findIndex(p=>p.kind==='soda'&&p.flav===k&&sodaParked(p)&&!p.held);
-    if(i<0){toast(SODAS[k].emo+' Sold out! Someone has to drink one first');return;}
+    if(i<0){const w=sodaWait(k);toast(SODAS[k].emo+' Sold out! '+(w?'Restocking in '+Math.ceil(w/1000)+' seconds ⏳':'They\'re all out in the arcade — someone has to drink one first'));return;}
     pay(1,()=>{PLANTS[i].t=Date.now();pickPlant(i);});};
   return{
     init(){},
@@ -2506,7 +2512,7 @@ function SodaMachine(){
       for(let k=0;k<5;k++){const x=x0+k*(bw+gap);if(mouse.x>x&&mouse.x<x+bw&&mouse.y>y0&&mouse.y<y0+330){sel=k;if(mouse.clicked){buy(k);return;}}}
     },
     draw(){
-      gbg('🥤 SODA MACHINE','Click a soda (or press 1–5) · 🪙 1 each · you get a can!','#ff5d73');
+      gbg('🥤 SODA MACHINE','Click a soda (or press 1–5) · 🪙 1 each · 2 of each kind, restocks after 60s','#ff5d73');
       txt('You have 🪙 '+me.score,W/2,140,20,'#ffd36e','center');
       SODAS.forEach((s,k)=>{const x=x0+k*(bw+gap),on=k===sel;
         ctx.fillStyle=on?'#2a3466':'#141c3d';ctx.fillRect(x,y0,bw,330);
@@ -2519,7 +2525,9 @@ function SodaMachine(){
         ctx.font='32px system-ui';ctx.textAlign='center';ctx.fillText(s.emo,cx,top+96);
         txt(s.name,cx,y0+235,17,'#fff','center');
         txt(s.what,cx,y0+262,13,'#9fb0e0','center',false);
-        txt((k+1)+'  ·  🪙 1',cx,y0+305,15,on?s.col:'#9fb0e0','center');});
+        const n=sodaStock(k),w=sodaWait(k);
+        txt(n?('🥤 '+n+' left  ·  🪙 1'):(w?'⏳ restock in '+Math.ceil(w/1000)+'s':'SOLD OUT'),cx,y0+305,15,n?(on?s.col:'#9fb0e0'):'#ff5d73','center');
+        if(!n){ctx.fillStyle='rgba(10,15,36,.55)';ctx.fillRect(x,y0,bw,280);ctx.save();ctx.translate(cx,y0+120);ctx.rotate(-.35);ctx.fillStyle='#ff3b3b';ctx.fillRect(-78,-20,156,40);txt('SOLD OUT',0,9,24,'#fff','center');ctx.restore();}});
     }
   };
 }
