@@ -832,8 +832,8 @@ function makeClaw(x,col){
   neonSign('STARLIGHT ARCADE','#ff3df2',14,0,4.05,-11.46,0,120);
   neonSign('★ HIGH SCORE ★','#46f3ff',8,-22.46,4.1,0,Math.PI/2);
   neonSign('INSERT COIN','#ffd36e',7,22.46,4.1,-1,-Math.PI/2);
-  neonSign('GAME ON!','#3ddc84',6,-6,4.1,11.46,Math.PI);
-  neonSign('🥽 VR ZONE','#46f3ff',6,11.5,4.1,11.46,Math.PI);
+  neonSign('GAME ON!','#3ddc84',6,-12,4.1,11.46,Math.PI);
+  neonSign('🥽 VR ZONE','#46f3ff',6,12,4.1,11.46,Math.PI);
   // coloured mood lights
   const l1=new THREE.PointLight(0xff3df2,.9,16);l1.position.set(-8,4.5,7);house.add(l1);
   const l2=new THREE.PointLight(0x46f3ff,.9,16);l2.position.set(7,4.5,-5);house.add(l2);
@@ -846,8 +846,8 @@ function makeClaw(x,col){
   poster('SKY BOUND','fly to the Moon!','#2a7fff','#bfe8ff',g=>{g.fillStyle='#fff';for(const [x,y] of [[60,90],[190,140],[90,200]]){g.beginPath();g.arc(x,y,22,0,7);g.arc(x+24,y,18,0,7);g.fill();}g.fillStyle='#ff5d73';g.fillRect(100,150,70,16);g.fillRect(126,126,16,64);g.fillStyle='#ffd36e';g.beginPath();g.arc(210,50,22,0,7);g.fill();},-19.5,-11.47,0);
   poster('TINY ME','in the Big House','#ffcf8a','#c97a3a',g=>{g.fillStyle='#8a3a2a';g.beginPath();g.moveTo(40,140);g.lineTo(128,60);g.lineTo(216,140);g.fill();g.fillStyle='#e8b070';g.fillRect(56,140,144,110);g.fillStyle='#ffd36e';g.beginPath();g.arc(128,232,5,0,7);g.fill();g.fillStyle='#4fc3ff';g.fillRect(124,237,8,12);},19.5,-11.47,0);
   poster('RED DUST','Mars mining colony','#ff7a4a','#4a1a10',g=>{g.fillStyle='#ffb07a';g.beginPath();g.arc(170,90,40,0,7);g.fill();g.fillStyle='#8a3a20';g.beginPath();g.moveTo(0,250);g.lineTo(70,180);g.lineTo(130,230);g.lineTo(200,170);g.lineTo(256,240);g.lineTo(256,270);g.lineTo(0,270);g.fill();g.fillStyle='#ddd';g.fillRect(60,200,40,26);g.beginPath();g.arc(80,200,20,Math.PI,0);g.fill();},16,-11.47,0);
-  poster('BLOCK HAVEN','dig · craft · build','#3ddc84','#1a6a3a',g=>{for(let i=0;i<8;i++)for(let j=0;j<4;j++){g.fillStyle=j===0?'#3ddc84':j<2?'#8a5a2a':'#777';g.fillRect(i*32,160+j*26,31,25);}g.fillStyle='#5a3a1a';g.fillRect(170,80,16,80);g.fillStyle='#2a9a4a';g.fillRect(146,50,64,50);},-22.47,8,Math.PI/2);
-  poster('ISLAND SETTLERS','build · trade · explore','#7fd8ff','#1e6cff',g=>{g.fillStyle='#ffe08a';g.beginPath();g.ellipse(128,180,90,40,0,0,7);g.fill();g.fillStyle='#3ddc84';g.beginPath();g.ellipse(128,170,60,26,0,0,7);g.fill();g.fillStyle='#8a5a2a';g.fillRect(150,110,8,50);g.fillStyle='#2a9a4a';g.beginPath();g.arc(154,108,24,0,7);g.fill();},22.47,-10,-Math.PI/2);
+  poster('BLOCK HAVEN','dig · craft · build','#3ddc84','#1a6a3a',g=>{for(let i=0;i<8;i++)for(let j=0;j<4;j++){g.fillStyle=j===0?'#3ddc84':j<2?'#8a5a2a':'#777';g.fillRect(i*32,160+j*26,31,25);}g.fillStyle='#5a3a1a';g.fillRect(170,80,16,80);g.fillStyle='#2a9a4a';g.fillRect(146,50,64,50);},-22.47,8.5,Math.PI/2);
+  poster('ISLAND SETTLERS','build · trade · explore','#7fd8ff','#1e6cff',g=>{g.fillStyle='#ffe08a';g.beginPath();g.ellipse(128,180,90,40,0,0,7);g.fill();g.fillStyle='#3ddc84';g.beginPath();g.ellipse(128,170,60,26,0,0,7);g.fill();g.fillStyle='#8a5a2a';g.fillRect(150,110,8,50);g.fillStyle='#2a9a4a';g.beginPath();g.arc(154,108,24,0,7);g.fill();},22.47,8.8,-Math.PI/2);
   const arcLight=new THREE.PointLight(0xb06bff,1,13);arcLight.position.set(-19,4,0);house.add(arcLight);
 
   // ---- 5 playable arcade machines on the left wall ----
@@ -945,7 +945,7 @@ function makeClaw(x,col){
   house.userData.headsets=headsets;
 
   // ---- plants & couch ----
-  [[-21.2,-10.2],[21.2,-10.2],[-9.3,9.75]].forEach(([x,z],i)=>{
+  [[-17.6,-10.8],[17.6,-10.8],[-9.3,9.75]].forEach(([x,z],i)=>{
     const g=new THREE.Group();
     const pot=new THREE.Mesh(new THREE.CylinderGeometry(.4,.3,.6,14),std(0x3a2a6a));pot.position.y=.3;pot.castShadow=true;g.add(pot);
     const lv=new THREE.Mesh(new THREE.IcosahedronGeometry(.7,0),std(0x2fa84f,{flatShading:true,emissive:0x0a3a14}));lv.position.y=1.1;lv.castShadow=true;g.add(lv);
@@ -1873,7 +1873,7 @@ function doSwing(pw){
 // ======================================================================
 // DARTBOARD (back wall, left side)
 // ======================================================================
-const DB={x:-10,y:1.73,z:-11.44,r:.45,R:.55};
+const DB={x:-12,y:1.73,z:-11.44,r:.45,R:.55};
 const DART_ORDER=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
 (function buildDartboard(){
   const px=256/DB.R; // canvas pixels per metre
@@ -2659,7 +2659,7 @@ function JukeboxPicker(){
 // ======================================================================
 // SKEE-BALL lane (right wall): roll balls up the ramp into the rings!
 // ======================================================================
-(function buildSkee(){
+[[20.25,-9.4,-Math.PI/2,18.3,'x<'],[-20.25,-9.4,Math.PI/2,-18.3,'x>']].forEach(([SX,SZ,SR,IX,SIDE])=>{(function buildSkee(){
   const g=new THREE.Group(),wood=std(0xb07a3a,{roughness:.5}),dark=std(0x14101f),acc=std(0x46f3ff,{emissive:0x46f3ff,emissiveIntensity:.8}),glass=new THREE.MeshStandardMaterial({color:0x9fd8ff,transparent:true,opacity:.25,roughness:.1});
   // local: lane runs from +z (player end) to -z (targets); turned so the targets are at the wall
   const L=3.3;
@@ -2678,10 +2678,10 @@ function JukeboxPicker(){
   // balls waiting at the front
   for(let k=0;k<5;k++){const b=new THREE.Mesh(new THREE.SphereGeometry(.07,12,10),std(0xc8a050,{roughness:.6}));b.position.set(-.3+k*.15,.86,L/2-.55);g.add(b);}
   floorGlow(0,.6,1.6,'#46f3ff',g);
-  g.position.set(20.25,0,-8);g.rotation.y=-Math.PI/2;g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);
-  houseCols.push({x:20.25,z:-8,hw:1.7,hd:.55,top:.82});
-  houseInter.push({x:18.3,z:-8,cond:()=>me.x<18.9,verb:'Play Skee-Ball 🎳 (🪙 2)',act:()=>pay(2,()=>startGame(SkeeBall()))});
-})();
+  g.position.set(SX,0,SZ);g.rotation.y=SR;g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);
+  houseCols.push({x:SX,z:SZ,hw:1.7,hd:.55,top:.82});
+  houseInter.push({x:IX,z:SZ,cond:()=>SIDE==='x<'?me.x<IX+.6:me.x>IX-.6,verb:'Play Skee-Ball 🎳 (🪙 2)',act:()=>pay(2,()=>startGame(SkeeBall()))});
+})();});
 function SkeeBall(){
   const CX=480,CY=170,HOLES=[[360,80],[600,80]],RINGS=[[22,50],[44,40],[66,30],[88,20],[130,10]];
   let balls,score,aim,charging,power,pdir,roll,over,last,paid;
@@ -2735,7 +2735,7 @@ function SkeeBall(){
 // ======================================================================
 // AIR HOCKEY (right side): play a friend on another computer, or the CPU
 // ======================================================================
-const AH_TABLES=[{x:18.5,z:.2,puck:null,pads:[]},{x:-4,z:5.2,puck:null,pads:[]}];
+const AH_TABLES=[{x:16,z:0,puck:null,pads:[]},{x:-16,z:0,puck:null,pads:[]}];
 const AH_W=360,AH_L=600,AH_GOAL=130,AH_PR=26,AH_KR=16,AH_WIN=7;
 AH_TABLES.forEach((AH,tid)=>{(function buildHockey(){
   const g=new THREE.Group(),dark=std(0x14101f),white=std(0xf2f6ff,{roughness:.25,metalness:.1}),rail=std(0x46f3ff,{emissive:0x46f3ff,emissiveIntensity:.8});
