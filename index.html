@@ -1273,11 +1273,11 @@ let room=null,userCap=null;
 const peers=new Map();       // peer label -> {av,tx,ty,tz,try,lv,mv,st,name,color,sayKey}
 const names=new Map();       // user id -> name
 const olist=document.getElementById('olist');
-let lastSent='',lastSendT=0;
+let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',mr:me.moto||null,wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',mr:me.moto||null,wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -2855,6 +2855,8 @@ function loop(){
   }else if(started&&!chatting&&!noteOpen){
     updateWorld(dt);
   }else me.moving=false;
+  // keep telling everyone you're still here, even while playing a machine game
+  if(started&&room&&performance.now()-lastSendT>1500){beat=(beat+1)%1000;sendPresence(true);}
   // my avatar
   meAv.position.set(me.x,me.y,me.z);meAv.rotation.y=me.ry;animAvatar(meAv,me.moving,dt);
   // other players
