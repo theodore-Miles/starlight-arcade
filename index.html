@@ -945,7 +945,7 @@ function makeClaw(x,col){
   house.userData.headsets=headsets;
 
   // ---- plants & couch ----
-  [[-21.2,-10.2],[21.2,-10.2],[-0.25,9.75]].forEach(([x,z],i)=>{
+  [[-21.2,-10.2],[21.2,-10.2],[-9.3,9.75]].forEach(([x,z],i)=>{
     const g=new THREE.Group();
     const pot=new THREE.Mesh(new THREE.CylinderGeometry(.4,.3,.6,14),std(0x3a2a6a));pot.position.y=.3;pot.castShadow=true;g.add(pot);
     const lv=new THREE.Mesh(new THREE.IcosahedronGeometry(.7,0),std(0x2fa84f,{flatShading:true,emissive:0x0a3a14}));lv.position.y=1.1;lv.castShadow=true;g.add(lv);
@@ -1027,8 +1027,8 @@ function makeClaw(x,col){
       cast(g);});
   }
   const couchM=std(0x7a2bd1);
-  box(4.2,.6,1.2,couchM,-3,.45,8.6,house);box(4.2,1,.35,couchM,-3,.9,9.3,house);box(.4,.8,1.2,couchM,-5,.6,8.6,house);box(.4,.8,1.2,couchM,-1,.6,8.6,house);
-  houseCols.push({x:-3,z:8.6,hw:2.1,hd:.6,top:.75,bouncy:1},{x:-3,z:9.3,hw:2.1,hd:.18,top:1.4,bouncy:1},{x:-5,z:8.6,hw:.2,hd:.6,top:1.0,bouncy:1},{x:-1,z:8.6,hw:.2,hd:.6,top:1.0,bouncy:1});
+  box(4.2,.6,1.2,couchM,-12,.45,8.6,house);box(4.2,1,.35,couchM,-12,.9,9.3,house);box(.4,.8,1.2,couchM,-14,.6,8.6,house);box(.4,.8,1.2,couchM,-10,.6,8.6,house);
+  houseCols.push({x:-12,z:8.6,hw:2.1,hd:.6,top:.75,bouncy:1},{x:-12,z:9.3,hw:2.1,hd:.18,top:1.4,bouncy:1},{x:-14,z:8.6,hw:.2,hd:.6,top:1.0,bouncy:1},{x:-10,z:8.6,hw:.2,hd:.6,top:1.0,bouncy:1});
 })();
 // ======================================================================
 // CEILING VENTS + AIR DUCT you can crawl through
@@ -1352,7 +1352,7 @@ function upsertPeer(p){
   if(pr.rt&&typeof pr.rt==='object'&&myPeer&&pr.rt[myPeer])voiceSignal(p.peer,e,pr.rt[myPeer]);
   if(Array.isArray(pr.jb)&&pr.jb.length===2&&typeof pr.jb[1]==='number'&&isFinite(pr.jb[1])&&pr.jb[1]>JUKE.t&&Number.isInteger(pr.jb[0])&&pr.jb[0]>=-1&&pr.jb[0]<SONGS.length){JUKE.t=pr.jb[1];JUKE.song=pr.jb[0];}
   {const a=pr.ah,ok=v=>Array.isArray(v)&&v.every(n=>typeof n==='number'&&isFinite(n));
-   e.ah=(a&&typeof a==='object'&&(a.seat===0||a.seat===1)&&ok(a.pad)&&a.pad.length===2)?{seat:a.seat,opp:typeof a.opp==='string'?a.opp:null,pad:a.pad,
+   e.ah=(a&&typeof a==='object'&&(a.seat===0||a.seat===1)&&ok(a.pad)&&a.pad.length===2)?{tb:a.tb===1?1:0,seat:a.seat,opp:typeof a.opp==='string'?a.opp:null,pad:a.pad,
      k:ok(a.k)&&a.k.length===4?a.k:null,op:ok(a.op)&&a.op.length===2?a.op:null,sc:ok(a.sc)&&a.sc.length===2?a.sc.map(n=>clamp(n|0,0,99)):null,over:a.over===1}:null;}
   if(Array.isArray(pr.vm)&&pr.vm.length===2&&typeof pr.vm[1]==='number'&&isFinite(pr.vm[1])&&pr.vm[1]>VEND.t){VEND.t=pr.vm[1];VEND.open=!!pr.vm[0];}
   if(Array.isArray(pr.bb)&&pr.bb.length===2&&typeof pr.bb[1]==='number'&&isFinite(pr.bb[1])&&pr.bb[1]>bbState.t){bbState.t=pr.bb[1];bbState.open=!!pr.bb[0];}
@@ -2355,7 +2355,7 @@ addEventListener('pagehide',()=>{saveNow();});
 // ======================================================================
 // TV + CONTROLLERS (in front of the couch)
 // ======================================================================
-const TV={x:-3,z:6.3};const TV_GAMES=['islandsettlers','pocketgenesis','chickenlasso'];let tvPickAt=0;
+const TV={x:-12,z:6.3};const TV_GAMES=['islandsettlers','pocketgenesis','chickenlasso'];let tvPickAt=0;
 // when you come back from the game tab, you're not on the TV any more
 function tvBack(){if(me.tv&&performance.now()-tvPickAt>2500){me.tv=null;sendPresence(true);}}
 addEventListener('focus',tvBack);document.addEventListener('visibilitychange',()=>{if(!document.hidden)tvBack();});let tvCanvas=null,tvTex=null,tvT=0;
@@ -2735,9 +2735,9 @@ function SkeeBall(){
 // ======================================================================
 // AIR HOCKEY (right side): play a friend on another computer, or the CPU
 // ======================================================================
-const AH={x:18.5,z:.2,puck:null,pads:[],t3:0};
+const AH_TABLES=[{x:18.5,z:.2,puck:null,pads:[]},{x:-4,z:5.2,puck:null,pads:[]}];
 const AH_W=360,AH_L=600,AH_GOAL=130,AH_PR=26,AH_KR=16,AH_WIN=7;
-(function buildHockey(){
+AH_TABLES.forEach((AH,tid)=>{(function buildHockey(){
   const g=new THREE.Group(),dark=std(0x14101f),white=std(0xf2f6ff,{roughness:.25,metalness:.1}),rail=std(0x46f3ff,{emissive:0x46f3ff,emissiveIntensity:.8});
   box(2.5,.75,1.4,dark,0,.375,0,g);
   const top=canvasTex(512,300,(q,w,h)=>{q.fillStyle='#eef4ff';q.fillRect(0,0,w,h);q.fillStyle='rgba(120,140,200,.25)';for(let x=8;x<w;x+=16)for(let y=8;y<h;y+=16){q.beginPath();q.arc(x,y,1.5,0,7);q.fill();}
@@ -2756,37 +2756,38 @@ const AH_W=360,AH_L=600,AH_GOAL=130,AH_PR=26,AH_KR=16,AH_WIN=7;
     const h=new THREE.Mesh(new THREE.CylinderGeometry(.03,.035,.07,12),std(c,{roughness:.4}));h.position.y=.84;p.add(h);p.visible=false;g.add(p);AH.pads.push(p);}
   g.position.set(AH.x,0,AH.z);g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);
   houseCols.push({x:AH.x,z:AH.z,hw:1.25,hd:.7,top:.8});
-  for(const sx of [-1,1])houseInter.push({x:AH.x+sx*1.7,z:AH.z,verb:'Play Air Hockey 🏒 (🪙 2)',act:()=>pay(2,()=>startGame(AirHockey()))});
-})();
+  for(const sx of [-1,1])houseInter.push({x:AH.x+sx*1.7,z:AH.z,verb:'Play Air Hockey 🏒 (🪙 2)',act:()=>pay(2,()=>startGame(AirHockey(tid)))});
+})();});
 // canonical table: x 0..360 across, y 0..600 long; seat 0 defends y=600, seat 1 defends y=0
 function ahToWorld(x,y){return [ (y-AH_L/2)/(AH_L/2)*-1.1 , (x-AH_W/2)/(AH_W/2)*.56 ];}
-function updateHockey3D(){
+function updateHockey3D(){AH_TABLES.forEach((AH,tid)=>updateHockeyTable(AH,tid));}
+function updateHockeyTable(AH,tid){
   let host=null;
-  if(game&&game.isHockey&&game.seat===0)host={k:game.puckArr(),pads:[game.myPad(),game.oppPad()]};
-  else for(const e of peers.values())if(e.lv===0&&e.ah&&e.ah.seat===0&&e.ah.k){host={k:e.ah.k,pads:[e.ah.pad,e.ah.op]};break;}
+  if(game&&game.isHockey&&game.seat===0&&game.tid===tid)host={k:game.puckArr(),pads:[game.myPad(),game.oppPad()]};
+  else for(const e of peers.values())if(e.lv===0&&e.ah&&e.ah.tb===tid&&e.ah.seat===0&&e.ah.k){host={k:e.ah.k,pads:[e.ah.pad,e.ah.op]};break;}
   AH.puck.visible=!!host;AH.pads.forEach(p=>p.visible=!!host);
   if(!host)return;
   const [px,pz]=ahToWorld(host.k[0],host.k[1]);AH.puck.position.x=px;AH.puck.position.z=pz;
   host.pads.forEach((pd,i)=>{if(!pd){AH.pads[i].visible=false;return;}const [x,z]=ahToWorld(pd[0],pd[1]);AH.pads[i].position.x=x;AH.pads[i].position.z=z;});
 }
-function AirHockey(){
+function AirHockey(tid){tid=tid|0;
   let seat,opp,cpu,puck,my,them,sc,over,msg,msgT,hostK,paid,lastOppPad;
   const flip=(x,y)=>[AH_W-x,AH_L-y];
   const toCanon=(x,y)=>seat===0?[x,y]:flip(x,y);
   const OX=300,OY=20;   // where the table is drawn on screen
   const resetPuck=toward=>{puck={x:AH_W/2,y:AH_L/2+(toward===0?-40:40),vx:0,vy:0};};
   const say=(t)=>{msg=t;msgT=120;};
-  const findHost=()=>{for(const [id,e] of peers)if(e.lv===0&&e.ah&&e.ah.seat===0&&!e.ah.opp&&!e.ah.over)return id;return null;};
+  const findHost=()=>{for(const [id,e] of peers)if(e.lv===0&&e.ah&&e.ah.tb===tid&&e.ah.seat===0&&!e.ah.opp&&!e.ah.over)return id;return null;};
   const hit=(p,pad)=>{const dx=puck.x-pad.x,dy=puck.y-pad.y,d=Math.hypot(dx,dy),min=AH_PR+AH_KR;
     if(d<min&&d>0){const nx=dx/d,ny=dy/d;puck.x=pad.x+nx*min;puck.y=pad.y+ny*min;
       const rv=(puck.vx-pad.vx)*nx+(puck.vy-pad.vy)*ny;if(rv<0){puck.vx-=1.9*rv*nx;puck.vy-=1.9*rv*ny;}
       const sp=Math.hypot(puck.vx,puck.vy);if(sp>22){puck.vx*=22/sp;puck.vy*=22/sp;}}};
   return{
-    isHockey:true,
+    isHockey:true,tid,
     get seat(){return seat;},
     puckArr(){return [puck.x,puck.y,puck.vx,puck.vy];},
     myPad(){return [my.x,my.y];},oppPad(){return them?[them.x,them.y]:null;},
-    net(){return {seat,opp:opp||null,pad:[+my.x.toFixed(1),+my.y.toFixed(1)],
+    net(){return {tb:tid,seat,opp:opp||null,pad:[+my.x.toFixed(1),+my.y.toFixed(1)],
       k:seat===0?[+puck.x.toFixed(1),+puck.y.toFixed(1),+puck.vx.toFixed(2),+puck.vy.toFixed(2)]:null,
       op:seat===0&&them?[+them.x.toFixed(1),+them.y.toFixed(1)]:null,sc:seat===0?sc.slice():null,over:over?1:0};},
     init(){
@@ -2806,7 +2807,7 @@ function AirHockey(){
       my.vx=cx-my.x;my.vy=cy-my.y;my.x=cx;my.y=cy;
       if(seat===0){
         // a friend joined?
-        if(!opp){for(const [id,e] of peers)if(e.lv===0&&e.ah&&e.ah.seat===1&&e.ah.opp===myPeer){opp=id;cpu=false;sc=[0,0];over=false;paid=false;resetPuck(1);say('🏒 '+(e.nm||'A friend')+' joined! First to '+AH_WIN+' wins');break;}}
+        if(!opp){for(const [id,e] of peers)if(e.lv===0&&e.ah&&e.ah.tb===tid&&e.ah.seat===1&&e.ah.opp===myPeer){opp=id;cpu=false;sc=[0,0];over=false;paid=false;resetPuck(1);say('🏒 '+(e.nm||'A friend')+' joined! First to '+AH_WIN+' wins');break;}}
         else{const e=peers.get(opp);if(!e||!e.ah||e.ah.seat!==1||e.ah.opp!==myPeer){opp=null;cpu=true;say('👋 Your friend left — back to the CPU');}}
         if(over){if(P.has('Space')){sc=[0,0];over=false;paid=false;resetPuck(1);}}
         else{
