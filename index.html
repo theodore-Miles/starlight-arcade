@@ -2615,7 +2615,7 @@ function motoScene(c,view){
   const other=view.other;
   if(other&&other.d-d>.5&&other.d-d<200)things.push({r:other.d-d,x:other.x,k:'bike',c:other.col,name:other.name});
   things.sort((a,b)=>b.r-a.r);
-  for(const o of things){const p=at(o.r),s=p.s,sx=p.cx+o.x*RW*s,sy=p.y,sz=s*120*RF;
+  for(const o of things){const p=at(o.r),s=p.s,sx=p.cx+o.x*RW*s,sy=p.y,sz=s*RW*.5;   // sized to the road: a car is about as wide as the space it takes up
     if(o.k==='cone'){c.fillStyle='#ff8a00';c.beginPath();c.moveTo(sx,sy-sz*.6);c.lineTo(sx+sz*.22,sy);c.lineTo(sx-sz*.22,sy);c.fill();c.fillStyle='#fff';c.fillRect(sx-sz*.12,sy-sz*.3,sz*.24,sz*.07);}
     else if(o.k==='car'){c.fillStyle=o.c;c.fillRect(sx-sz*.45,sy-sz*.45,sz*.9,sz*.35);c.fillStyle='rgba(0,0,0,.5)';c.fillRect(sx-sz*.3,sy-sz*.6,sz*.6,sz*.18);c.fillStyle='#111';c.fillRect(sx-sz*.45,sy-sz*.12,sz*.2,sz*.12);c.fillRect(sx+sz*.25,sy-sz*.12,sz*.2,sz*.12);}
     else drawBikeBack(c,sx,sy,sz*.55,seat?'#ff5d73':'#4fc3ff',o.c||'#fff',0,o.name);
