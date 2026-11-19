@@ -899,7 +899,7 @@ function makeClaw(x,col){
   house.userData.headsets=headsets;
 
   // ---- plants & couch ----
-  [[-15.2,-10.2],[15.2,-10.2],[5.5,10.3]].forEach(([x,z],i)=>{
+  [[-15.2,-10.2],[15.2,-10.2],[-0.25,9.75]].forEach(([x,z],i)=>{
     const g=new THREE.Group();
     const pot=new THREE.Mesh(new THREE.CylinderGeometry(.4,.3,.6,14),std(0x3a2a6a));pot.position.y=.3;pot.castShadow=true;g.add(pot);
     const lv=new THREE.Mesh(new THREE.IcosahedronGeometry(.7,0),std(0x2fa84f,{flatShading:true,emissive:0x0a3a14}));lv.position.y=1.1;lv.castShadow=true;g.add(lv);
