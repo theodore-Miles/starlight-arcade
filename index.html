@@ -822,11 +822,6 @@ function makeClaw(x,col){
   // neon tubes on the ceiling
   [pink,cyan,yel,pink,cyan].forEach((m,i)=>{const t=new THREE.Mesh(new THREE.BoxGeometry(26,.1,.1),m);t.position.set(0,5.32,-8+i*4);house.add(t);ceilTubes.push(t);});
   // neon signs
-  neonSign('STARLIGHT ARCADE','#ff3df2',14,0,4.05,-11.46,0,120);
-  neonSign('★ HIGH SCORE ★','#46f3ff',8,-16.46,4.1,0,Math.PI/2);
-  neonSign('INSERT COIN','#ffd36e',7,16.46,4.1,-1,-Math.PI/2);
-  neonSign('GAME ON!','#3ddc84',6,-6,4.1,11.46,Math.PI);
-  neonSign('🥽 VR ZONE','#46f3ff',6,11.5,4.1,11.46,Math.PI);
   // coloured mood lights
   const l1=new THREE.PointLight(0xff3df2,.9,16);l1.position.set(-8,4.5,7);house.add(l1);
   const l2=new THREE.PointLight(0x46f3ff,.9,16);l2.position.set(7,4.5,-5);house.add(l2);
@@ -890,7 +885,6 @@ function makeClaw(x,col){
   for(const y of [2.2,3.1]){box(5,.1,.5,shelfM,12,y,-11.25,house);
     for(let i=0;i<8;i++){const cc=[0xff69b4,0xffd36e,0x46f3ff,0x3ddc84,0xb06bff,0xff7a4a][(i+y*3|0)%6];
       const p=new THREE.Mesh(i%2?new THREE.SphereGeometry(.22,14,10):new THREE.BoxGeometry(.35,.35,.35),std(cc,{emissive:cc,emissiveIntensity:.2}));p.position.set(9.9+i*.6,y+.25,-11.2);p.castShadow=true;house.add(p);}}
-  neonSign('PRIZES','#ff69b4',4,12,4.1,-11.46);
   floorGlow(12,-7.2,4,'#ff3df2');
   {const dm=std(0x2a1650);
    box(.75,1,1.3,dm,10.625,.5,-8.3,house);box(1.35,1,1.3,dm,13.075,.5,-8.3,house);
@@ -2234,19 +2228,20 @@ function updateVoiceVolumes(){
     const d=Math.hypot(e.av.position.x-me.x,e.av.position.z-me.z);
     a.volume=e.lv!==level?0:clamp(1-(d-3)/17,0,1);}
 }
+function cmdSay(t){toast(t);}
 async function setVoice(on){
   if(on===VOICE.on)return;
   if(on){
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof RTCPeerConnection!=='function'){addSys('🎤 Voice chat doesn\'t work in this browser');return;}
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof RTCPeerConnection!=='function'){cmdSay('🎤 Voice chat doesn\'t work in this browser');return;}
     try{VOICE.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});}
-    catch(e){addSys('🎤 Couldn\'t turn on your microphone. Say "Allow" when your browser asks. (If you\'re playing on claude.ai, try the starlight-arcade website instead.)');return;}
+    catch(e){cmdSay('🎤 Couldn\'t turn on your microphone. Say "Allow" when your browser asks. (If you\'re playing on claude.ai, try the starlight-arcade website instead.)');return;}
   }else if(VOICE.stream){VOICE.stream.getTracks().forEach(t=>t.stop());VOICE.stream=null;}
   VOICE.on=on;VOICE.gen++;
   for(const id of [...VOICE.pcs.keys()])closePC(id);VOICE.out={};
   sendPresence(true);
   if(!VOICE.badge){VOICE.badge=document.createElement('div');VOICE.badge.style.cssText='position:fixed;left:12px;bottom:200px;z-index:20;padding:5px 10px;border-radius:10px;background:rgba(255,59,59,.85);color:#fff;font:700 13px system-ui;pointer-events:none';document.body.append(VOICE.badge);}
   VOICE.badge.textContent='🎤 MIC ON — type /speak to turn off';VOICE.badge.style.display=on?'block':'none';
-  addSys(on?'🎤 Your mic is ON — players near you can hear you! Type /speak again to turn it off.':'🔇 Your mic is OFF.');
+  cmdSay(on?'🎤 Your mic is ON — players near you can hear you! Type /speak again to turn it off.':'🔇 Your mic is OFF.');
 }
 function runCommand(cmd){
   const parts=cmd.trim().split(/\s+/);const c=parts[0].toLowerCase();
@@ -2257,41 +2252,41 @@ function runCommand(cmd){
     if(rest.length&&/^\d+$/.test(rest[0])){n=+rest[0];rest=rest.slice(1);}
     else if(rest.length&&/^\d+$/.test(rest[rest.length-1])){n=+rest[rest.length-1];rest=rest.slice(0,-1);}
     const who=rest.join(' ');
-    if(!(n>=1)||!who){addSys('Try: /give 10 PlayerName  or  /give 10 all');return;}
+    if(!(n>=1)||!who){cmdSay('Try: /give 10 PlayerName  or  /give 10 all');return;}
     n=Math.min(1000,Math.floor(n));
     if(who.toLowerCase()==='all'){
       const others=[...peers.values()].length;
-      if(!others){addSys('🤔 Nobody else is here to give points to');return;}
+      if(!others){cmdSay('🤔 Nobody else is here to give points to');return;}
       const cost=n*others;
-      if(me.score<cost){addSys('🪙 Giving '+n+' to all '+others+' players costs '+cost+' — you only have '+me.score);return;}
+      if(me.score<cost){cmdSay('🪙 Giving '+n+' to all '+others+' players costs '+cost+' — you only have '+me.score);return;}
       me.score-=cost;updInv();me.lastGive=['all',n,Date.now()];sendPresence(true);
-      addSys('🎁 You gave '+n+' points to everyone ('+cost+' total)!');toast('🎁 You gave everyone '+n+' points (-'+cost+')');return;}
-    if(me.name&&who.toLowerCase()===me.name.toLowerCase()){addSys("😄 You can't give points to yourself!");return;}
+      cmdSay('🎁 You gave '+n+' points to everyone ('+cost+' total)!');toast('🎁 You gave everyone '+n+' points (-'+cost+')');return;}
+    if(me.name&&who.toLowerCase()===me.name.toLowerCase()){cmdSay("😄 You can't give points to yourself!");return;}
     const p=findPlayer(who);
-    if(!p){addSys('🤔 No player named "'+who+'" is here right now');return;}
-    if(me.score<n){addSys('🪙 You only have '+me.score+' points to give');return;}
+    if(!p){cmdSay('🤔 No player named "'+who+'" is here right now');return;}
+    if(me.score<n){cmdSay('🪙 You only have '+me.score+' points to give');return;}
     me.score-=n;updInv();me.lastGive=[p.id,n,Date.now()];sendPresence(true);
-    const nm=p.e.nm||names.get(p.e.by)||'Player';addSys('🎁 You gave '+n+' points to '+nm+'!');toast('🎁 Gave '+n+' points to '+nm+' (-'+n+')');return;
+    const nm=p.e.nm||names.get(p.e.by)||'Player';cmdSay('🎁 You gave '+n+' points to '+nm+'!');toast('🎁 Gave '+n+' points to '+nm+' (-'+n+')');return;
   }
   if(c==='/whisper'||c==='/w'){
     const rest=parts.slice(1);
-    if(rest.length<2){addSys('Try: /whisper PlayerName your secret message');return;}
+    if(rest.length<2){cmdSay('Try: /whisper PlayerName your secret message');return;}
     // the name can have spaces: try the longest name that matches a player exactly, then a name start
     let p=null,used=0;
     for(let n=rest.length-1;n>=1&&!p;n--){const nm=rest.slice(0,n).join(' ').toLowerCase();
       for(const [id,e] of peers){const en=(e.nm||names.get(e.by)||'').toLowerCase();if(en&&en===nm){p={id,e};used=n;break;}}}
     if(!p){const f=findPlayer(rest[0]);if(f){p=f;used=1;}}
-    if(!p){addSys('🤔 No player named "'+rest[0]+'" is here right now');return;}
+    if(!p){cmdSay('🤔 No player named "'+rest[0]+'" is here right now');return;}
     const text=rest.slice(used).join(' ').slice(0,80);
-    if(!text){addSys('🤫 Write a message after the name');return;}
+    if(!text){cmdSay('🤫 Write a message after the name');return;}
     const e=p.e,nm=e.nm||names.get(e.by)||'Player';
     const d=Math.hypot(e.tx-me.x,e.tz-me.z);
-    if(e.lv!==level||!!e.v!==!!me.inVent||d>4||Math.abs(e.ty-me.y)>3){addSys('🤫 You have to be close to '+nm+' to whisper ('+d.toFixed(1)+' m away — get within 4 m)');return;}
+    if(e.lv!==level||!!e.v!==!!me.inVent||d>4||Math.abs(e.ty-me.y)>3){cmdSay('🤫 You have to be close to '+nm+' to whisper ('+d.toFixed(1)+' m away — get within 4 m)');return;}
     me.lastWhisper=[p.id,text,Date.now()];sendPresence(true);
     addWhisper('🤫 You whisper to '+nm+': ',text);return;
   }
-  if(c==='/help'){addSys('Commands: /give 10 PlayerName · /give 10 all · /whisper PlayerName message · /speak (turn your mic on/off)');return;}
-  addSys('Unknown command. Try /help');
+  if(c==='/help'){cmdSay('Commands: /give 10 PlayerName · /give 10 all · /whisper PlayerName message · /speak (turn your mic on/off)');return;}
+  cmdSay('Unknown command. Try /help');
 }
 // ======================================================================
 // SAVED POINTS: each player's total is kept on their Claude account
