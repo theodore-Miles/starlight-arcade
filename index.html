@@ -1236,7 +1236,7 @@ function updateWorld(dt){
   if(P.has('KeyR'))scrunch();
   if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='phone')toast(PHONE_LINES[Math.random()*PHONE_LINES.length|0]);
   if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='duck')squeak(true);
-  if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='soda')drinkSoda();
+  if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='soda'&&!(me.drinkT>0)){me.drinkT=.7;gulp();}
 }
 
 // camera
@@ -1453,7 +1453,11 @@ function updatePlants(){
     if(me.holding===i)holder={x:me.x,y:me.y,z:me.z,ry:me.ry,mine:!thirdPerson,squish:me.inVent||me.crouch};
     else for(const e of peers.values())if(e.hp===i&&e.lv===level){holder={x:e.av.position.x,y:e.av.position.y,z:e.av.position.z,ry:e.av.rotation.y,squish:e.v||e.cr};break;}
     p.held=!!holder;p.col.off=p.held||p.y>.05;
-    if(holder&&holder.mine&&(p.kind==='spray'||p.kind==='mop')){
+    if(holder&&p.kind==='soda'&&!holder.mine){
+      const rx=-Math.cos(holder.ry),rz=Math.sin(holder.ry),fx=Math.sin(holder.ry),fz=Math.cos(holder.ry),sq=holder.squish?.55:1;
+      p.g.rotation.set(0,holder.ry,0);p.g.scale.setScalar(1);
+      p.g.position.set(holder.x+rx*.34+fx*.22,holder.y+.82*sq,holder.z+rz*.34+fz*.22);
+    }else if(holder&&holder.mine&&(p.kind==='spray'||p.kind==='mop'||p.kind==='soda')){
       p.g.scale.setScalar(p.kind==='mop'?1:.85); // placed in your hand by updateSpray()
     }else if(holder){
       if(p.kind==='spray')p.g.rotation.set(0,holder.ry,0);
@@ -1703,6 +1707,15 @@ function updateSpray(dt){
     hp.g.quaternion.copy(camera.quaternion).multiply(_q);
     hp.g.updateMatrixWorld(true);
   }
+  if(hp&&hp.kind==='soda'&&!thirdPerson){
+    // the can sits in your right hand; when you drink it comes up to your mouth and tips
+    const k=me.drinkT>0?Math.sin(Math.min(1,(.7-me.drinkT)/.25)*Math.PI/2):0;
+    camera.updateMatrixWorld();
+    camera.localToWorld(_v.set(.28-.26*k,-.3+.16*k,-.55+.2*k));hp.g.position.copy(_v);
+    hp.g.quaternion.copy(camera.quaternion);hp.g.rotateX(-.35*(1-k));hp.g.rotateZ(1.5*k);hp.g.rotateY(-.4);
+    hp.g.scale.setScalar(1);hp.g.updateMatrixWorld(true);
+  }
+  if(me.drinkT>0){me.drinkT-=dt;if(me.drinkT<=0){me.drinkT=0;drinkSoda();}}
   if(hp&&hp.kind==='mop'&&!thirdPerson){
     camera.updateMatrixWorld();camera.localToWorld(_v.set(.34,-.36,-.42));
     let th;const pw=toolCharge.on?Math.min(1,toolCharge.t):0;
@@ -2742,6 +2755,9 @@ SODAS.forEach((sd,k)=>{for(let n=0;n<2;n++){
   houseCols.push(col);houseInter.push(it);
   PLANTS.push({g,col,it,x:SODA_PARK.x,y:0,z:SODA_PARK.z,t:0,held:false,kind:'soda',flav:k,name:sd.name,icon:sd.emo});
 }});
+function gulp(){try{const ac=window._ac||(window._ac=new (window.AudioContext||window.webkitAudioContext)());
+  for(let n=0;n<3;n++){const o=ac.createOscillator(),g=ac.createGain(),t0=ac.currentTime+n*.2;o.type='sine';o.frequency.setValueAtTime(260,t0);o.frequency.exponentialRampToValueAtTime(120,t0+.12);
+    g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.25,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+.14);o.connect(g);g.connect(ac.destination);o.start(t0);o.stop(t0+.15);}}catch(e){}}
 function drinkSoda(){
   const p=PLANTS[me.holding];if(!p||p.kind!=='soda')return;
   const sd=SODAS[p.flav];
