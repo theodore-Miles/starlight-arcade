@@ -521,7 +521,18 @@ function openLink(keys,title,desc,onPick){unlockMouse();const lt=document.getEle
     const h=document.createElement('b');h.textContent='▶ '+g.t;h.style.color=g.c;const p=document.createElement('span');p.textContent=g.d;a.append(h,p);
     a.addEventListener('click',()=>{if(onPick)onPick(k);setTimeout(closeLink,300);});bx.append(a);}
   linkp.style.display='block';linkOpen=true;}
-function closeLink(){linkp.style.display='none';linkOpen=false;boardMenu=false;deskMenu=false;}
+function closeLink(){linkp.style.display='none';linkOpen=false;boardMenu=false;deskMenu=false;const rb=document.getElementById('raidersBox');if(rb)rb.remove();}
+// BLOCK RAIDERS plays right inside the arcade, in a big screen on top
+function openRaiders(){unlockMouse();if(document.getElementById('raidersBox'))return;
+  const box=document.createElement('div');box.id='raidersBox';
+  box.style.cssText='position:fixed;inset:0;z-index:50;background:#0b0920;display:flex;flex-direction:column';
+  const bar=document.createElement('div');bar.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#16123a;border-bottom:2px solid #ffd23f;font:700 16px system-ui;color:#ffd23f';
+  const t=document.createElement('span');t.textContent='🚀 BLOCK RAIDERS';
+  const x=document.createElement('button');x.textContent='✕ Back to the arcade';x.style.cssText='font:700 15px system-ui;padding:7px 14px;border-radius:9px;border:0;background:#ffd23f;color:#1a1440;cursor:pointer';
+  x.onclick=closeLink;bar.append(t,x);
+  const f=document.createElement('iframe');f.src='blockraiders.html';f.title='Block Raiders';f.style.cssText='flex:1;width:100%;border:0;display:block';
+  f.addEventListener('load',()=>{try{f.contentWindow.focus();}catch(e){}});
+  box.append(bar,f);document.body.appendChild(box);linkOpen=true;}
 let deskMenu=false;
 let boardMenu=false;
 document.getElementById('lc').onclick=closeLink;
@@ -619,7 +630,7 @@ const ARC=[
   {title:'SNAKE',kind:'snake',icon:'🐍',col:'#3ddc84',act:()=>pay(2,()=>startGame(Snake())),verb:'Play Snake (🪙 2)'},
   {title:'SKY PONG',kind:'pong',icon:'🏓',col:'#ff9f43',act:()=>pay(2,()=>startGame(Pong())),verb:'Play Sky Pong (🪙 2)'},
   {title:'BRICKS',kind:'bricks',icon:'🧱',col:'#ff5d73',act:()=>pay(2,()=>startGame(Bricks())),verb:'Play Brick Bash (🪙 2)'},
-  {title:'BLOCK RAIDERS',kind:'raiders',icon:'🚀',col:'#ffd23f',act:()=>openLink(['blockraiders'],'🕹 BLOCK RAIDERS','Your space shooter:'),verb:'Play BLOCK RAIDERS 🚀'},
+  {title:'BLOCK RAIDERS',kind:'raiders',icon:'🚀',col:'#ffd23f',act:()=>openRaiders(),verb:'Play BLOCK RAIDERS 🚀'},
 ];
 // ---------- arcade helpers ----------
 const screens=[],neonSigns=[],clawBits=[],floorGlows=[];

@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Block Raiders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --space:#0d0b26; --ink:#eef0ff; --dim:#9a9cc8; --panel:rgba(22,18,58,.94); --edge:#3b3580;
+  --core:#ffd23f; --btn:#ffd23f; --btnInk:#1a1440; --scrap:#ffcf6b;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --space:#0b0920; --panel:rgba(20,16,52,.95); } }
+:root[data-theme="dark"]{ --space:#0b0920; --panel:rgba(20,16,52,.95); }
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--space);color:var(--ink);
+  font-family:"Chakra Petch",system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;
+  user-select:none;-webkit-user-select:none;touch-action:none}
+#wrap{position:relative;width:100%;height:100%}
+#c{display:block;width:100%;height:100%}
+#hud{position:absolute;top:10px;left:12px;font-size:15px;line-height:1.45;pointer-events:none;text-shadow:0 1px 3px #000}
+#hud .row{display:flex;gap:14px;flex-wrap:wrap}
+.bar{width:150px;height:7px;background:rgba(255,255,255,.12);border-radius:4px;margin-top:4px;overflow:hidden}
+.bar div{height:100%;width:100%;transition:width .15s}
+#corefill{background:var(--core)}
+#shieldfill{background:#7d8cff}
+#shieldbar.off{display:none}
+#cargoHint{color:var(--core);font-weight:600}
+.scrapTxt{color:var(--scrap)}
+.sq{width:11px;height:11px;border-radius:2px;display:inline-block;border:1px solid rgba(255,255,255,.4);flex:none}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(5,4,20,.6)}
+.overlay.hidden{display:none}
+.card{background:var(--panel);border:2px solid var(--edge);border-radius:14px;max-width:560px;width:100%;padding:20px 22px;max-height:100%;overflow:auto}
+h1{font-size:40px;margin:0 0 4px;letter-spacing:.02em;line-height:1.05}
+.sub{color:var(--dim);margin:0 0 14px;font-size:16px}
+.card p{margin:8px 0;font-size:15.5px;line-height:1.45;max-width:64ch}
+.legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 14px;margin:12px 0;font-size:14px}
+.legend div{display:flex;gap:8px;align-items:flex-start;line-height:1.3}
+.legend .sq{width:15px;height:15px;margin-top:1px}
+.keys{color:var(--dim);font-size:14px;margin-top:10px}
+button{font:inherit}
+button.go{margin-top:14px;font-weight:700;font-size:19px;padding:11px 24px;border-radius:10px;border:0;background:var(--btn);color:var(--btnInk);cursor:pointer}
+button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+#touch{position:absolute;left:0;right:0;bottom:0;display:none;justify-content:space-between;padding:0 14px calc(14px + env(safe-area-inset-bottom,0px));pointer-events:none}
+#touch .grp{display:flex;gap:10px;pointer-events:auto}
+#touch button{width:68px;height:68px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;font-size:24px;touch-action:none}
+#touch button.fire{width:84px;height:84px;background:rgba(255,84,112,.35);font-size:17px;font-weight:700}
+@media (pointer:coarse){#touch{display:flex}}
+#buildBtn{position:absolute;top:10px;right:12px;font-weight:700;font-size:16px;padding:9px 14px;border-radius:10px;border:2px solid var(--core);background:rgba(22,18,58,.85);color:var(--ink);cursor:pointer;display:none}
+#buildBtn.ready{background:var(--core);color:var(--btnInk);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){#buildBtn.ready{animation:none}}
+/* builder */
+.ed{max-width:880px;display:flex;gap:20px;flex-wrap:wrap}
+.ed h1{font-size:30px;margin-bottom:10px}
+.edGrid{flex:1 1 340px;min-width:260px}
+#edc{width:100%;max-width:440px;aspect-ratio:1;display:block;border-radius:10px;background:#120e36;border:2px solid var(--edge);cursor:crosshair;touch-action:none}
+.tools{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tools button{flex:1;min-width:90px;padding:9px 8px;border-radius:9px;border:2px solid var(--edge);background:rgba(255,255,255,.05);color:var(--ink);font-weight:600;cursor:pointer}
+.tools button.on{border-color:var(--core);background:var(--core);color:var(--btnInk)}
+.front{color:var(--dim);font-size:14px;margin-top:6px;min-height:2.8em;line-height:1.4}
+#edInfo{color:var(--ink)}
+.edSide{flex:1 1 260px;display:flex;flex-direction:column;gap:8px}
+.scrapBig{font-size:20px;font-weight:700;color:var(--scrap)}
+.partsGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.part{display:flex;align-items:center;gap:8px;font-size:14.5px;color:var(--ink);text-align:left;background:rgba(255,255,255,.06);border:2px solid transparent;border-radius:9px;padding:7px 9px;cursor:pointer}
+.part .sq{width:16px;height:16px}
+.part .cnt{margin-left:auto;font-weight:700}
+.part.sel{border-color:var(--core);background:rgba(255,210,63,.14)}
+.empty{color:var(--dim);font-size:14.5px;grid-column:1/-1}
+#edSel{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 12px;font-size:14.5px;line-height:1.4}
+#edSel:empty{display:none}
+.btnRow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.small{padding:8px 11px;border-radius:9px;border:2px solid var(--scrap);background:transparent;color:var(--scrap);font-weight:600;cursor:pointer;font-size:14.5px}
+.small:disabled{opacity:.4;cursor:default}
+#edStats{font-size:14.5px;color:var(--dim);line-height:1.5}
+#edStats b{color:var(--ink)}
+#edMsg{min-height:1.4em;color:var(--core);font-size:15px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <div class="row"><span>Score <b id="score">0</b></span><span>Danger <b id="wave">1</b></span><span class="scrapTxt">Scrap ⚙ <b id="scrap">0</b></span></div>
+    <div class="row"><span>Blocks <b id="nAll">0</b></span><span>Weapons <b id="nWep">0</b></span><span>Threat <b id="threat">Low</b></span><span>Cargo <b id="nCargo">0</b> <span id="cargoHint"></span></span></div>
+    <div id="lockInfo" style="color:#ffd23f;font-weight:600"></div>
+    <div class="bar"><div id="corefill"></div></div>
+    <div class="bar off" id="shieldbar"><div id="shieldfill"></div></div>
+  </div>
+  <button id="buildBtn">🔧 Build (E)</button>
+
+  <div id="touch">
+    <div class="grp">
+      <button data-k="left" aria-label="Turn left">◀</button>
+      <button data-k="right" aria-label="Turn right">▶</button>
+    </div>
+    <div class="grp">
+      <button data-k="up" aria-label="Thrust">▲</button>
+      <button data-k="fire" class="fire" aria-label="Fire">FIRE</button>
+    </div>
+  </div>
+
+  <div id="menu" class="overlay">
+    <div class="card">
+      <h1>Block Raiders</h1>
+      <p class="sub">Roam space. Shoot ships apart. Steal their blocks. Build a bigger ship.</p>
+      <p>Every ship is made of blocks. Hit the <b style="color:var(--core)">yellow core</b> and the whole ship falls apart — every block still in one piece floats free. Fly into floating blocks to grab them, then press <b>E</b> to open the ship builder.</p>
+      <p>Ships from three gangs fly all over space — <b style="color:#ff3d6e">Crimson</b>, <b style="color:#ffa23d">Amber</b> and <b style="color:#d98bff">Lilac</b>. They fight each other, so you can grab the leftovers. They leave you alone unless you fly too close or shoot them — then they hunt you down, and so do their friends nearby. A yellow <b style="color:#ffd23f">?</b> means a ship is getting suspicious — back off! A red <b style="color:#ff3d6e">!</b> means it's hunting you. The farther you fly from home, the tougher the ships and the better the parts.</p>
+      <p>Gang ships grab floating parts too, so they get bigger over time. The bigger your ship gets, the more gangs see you as a threat: they spot you from farther away and come after you faster. Watch your <b>Threat</b> level! Shields only protect the parts close to them, so spread them out. Put a <b>Radar</b> next to your guns to turn them into turrets, then click (or tap) any part of an enemy ship to lock on — your turrets will shoot at exactly that part. Add a <b>Scanner</b> to get a mini map that shows ships around you. The bigger your ship, the bigger your build area.</p>
+      <p>In the builder you can add parts, sell spare parts for scrap ⚙, and spend scrap to upgrade blocks. Upgraded blocks are tougher, and upgraded weapons hit harder and fire faster. </p>
+      <div class="legend" id="legend"></div>
+      <p class="keys">Arrow keys or WASD to fly · Space to shoot · E to build</p>
+      <button class="go" id="startBtn">Launch</button>
+    </div>
+  </div>
+
+  <div id="editor" class="overlay hidden">
+    <div class="card ed">
+      <div class="edGrid">
+        <h1>Ship builder</h1>
+        <div class="tools" id="tools">
+          <button data-tool="add">Add part</button>
+          <button data-tool="remove">Take off</button>
+          <button data-tool="upgrade">Upgrade</button>
+        </div>
+        <canvas id="edc"></canvas>
+        <div class="front">Your ship faces right — weapons shoot that way.<br><span id="edInfo"></span></div>
+      </div>
+      <div class="edSide">
+        <div class="scrapBig">Scrap ⚙ <span id="edScrap">0</span></div>
+        <div id="edParts" class="partsGrid"></div>
+        <div id="edSel"></div>
+        <button class="small" id="repairAll">Repair whole ship</button>
+        <div id="edStats"></div>
+        <div id="edMsg"></div>
+        <button class="go" id="doneBtn">Back to battle</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="over" class="overlay hidden">
+    <div class="card">
+      <h1>Ship destroyed</h1>
+      <p class="sub" id="overText"></p>
+      <p id="bestText"></p>
+      <button class="go" id="againBtn">Play again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const canvas = document.getElementById('c');
+const mainCtx = canvas.getContext('2d');
+let ctx = mainCtx;
+const S = 18, TAU = Math.PI * 2, MAXLVL = 3;
+const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
+
+// ---------- part catalogue ----------
+const TYPES = {
+  core:    { hp: 4, color: '#ffd23f', name: 'Core',        value: 20, desc: 'The heart of your ship. Lose it and the game is over.' },
+  gun:     { hp: 2, color: '#ff5470', name: 'Blaster',     value: 8,  desc: 'Steady shots. A good all-rounder.' },
+  laser:   { hp: 2, color: '#c86bff', name: 'Laser',       value: 12, desc: 'Very fast, weak zaps that fly far.' },
+  scatter: { hp: 2, color: '#ff9a3c', name: 'Scatter gun', value: 12, desc: 'Sprays 5 pellets. Great up close.' },
+  cannon:  { hp: 3, color: '#a5573a', name: 'Cannon',      value: 15, desc: 'Slow, huge shots that smash blocks.' },
+  missile: { hp: 2, color: '#b6e84a', name: 'Missiles',    value: 18, desc: 'Homing rockets that chase enemies.' },
+  armor:   { hp: 5, color: '#8f95c9', name: 'Armor',       value: 5,  desc: 'Tough block that soaks up hits.' },
+  engine:  { hp: 2, color: '#3fe0ff', name: 'Engine',      value: 8,  desc: 'More speed and better turning.' },
+  shield:  { hp: 2, color: '#6b7dff', name: 'Shield',      value: 16, desc: 'Makes a bubble around itself that blocks shots, then recharges. Only protects parts close to it.' },
+  repair:  { hp: 2, color: '#ff7eb6', name: 'Repair bay',  value: 15, desc: 'Slowly fixes cracked blocks during battle.' },
+  magnet:  { hp: 2, color: '#2fd1a6', name: 'Magnet',      value: 10, desc: 'Pulls floating parts to you from far away.' },
+  radar:   { hp: 2, color: '#e9eefc', name: 'Radar',       value: 18, desc: 'Weapons within 2 squares become turrets. Click or tap a part of an enemy ship to lock on, and the turrets shoot at that exact part.' },
+  scanner: { hp: 2, color: '#4a4f7a', name: 'Scanner',     value: 14, desc: 'Detects ships and shows them on a mini map. Upgrade it or add more to see farther.' },
+};
+const PART_ORDER = ['gun', 'laser', 'scatter', 'cannon', 'missile', 'armor', 'engine', 'shield', 'repair', 'magnet', 'radar', 'scanner'];
+const UNLOCK = { gun: 1, armor: 1, engine: 1, laser: 2, magnet: 2, scatter: 3, shield: 3, cannon: 4, repair: 5, missile: 5, radar: 2, scanner: 1 };
+const WEIGHT = { armor: 3, engine: 1.4, gun: 2, laser: 1.2, magnet: 0.5, scatter: 1.1, shield: 0.8, cannon: 0.9, repair: 0.6, missile: 0.8, radar: 0.6, scanner: 0.7 };
+const WEAPONS = {
+  gun:     { cool: 12, speed: 10, dmg: 1,   life: 80,  r: 3,   color: '#ffb0bc' },
+  laser:   { cool: 6,  speed: 16, dmg: 0.5, life: 55,  r: 2,   color: '#ecc4ff', beam: true },
+  scatter: { cool: 24, speed: 9,  dmg: 0.6, life: 38,  r: 2.3, color: '#ffc48a', pellets: 5, spread: 0.45 },
+  cannon:  { cool: 45, speed: 7,  dmg: 3,   life: 110, r: 6,   color: '#ff9a7a' },
+  missile: { cool: 70, speed: 4,  dmg: 2,   life: 170, r: 3.5, color: '#d8ff7a', homing: true },
+};
+const CORE_GUN = { cool: 18, speed: 10, dmg: 0.6, life: 70, r: 2.2, color: '#fff3b0' };
+const lvlMult = l => 1 + 0.5 * (l - 1);
+
+// legend on the start screen
+document.getElementById('legend').innerHTML = ['core', ...PART_ORDER].map(t =>
+  '<div><span class="sq" style="background:' + TYPES[t].color + '"></span><span><b>' + TYPES[t].name + '</b> — ' + TYPES[t].desc + '</span></div>').join('');
+
+let W, H, DPR, ZOOM;
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const r = canvas.getBoundingClientRect();
+  W = r.width; H = r.height;
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  ZOOM = Math.max(0.55, Math.min(1.15, Math.min(W, H) / 720));
+  if (state === 'edit') renderEditor();
+}
+
+// ---------- state ----------
+let player, enemies = [], bullets = [], loose = [], particles = [], popups = [], cargo = [];
+let score = 0, scrap = 0, wave = 1, elapsed = 0, spawnTimer = 0, state = 'menu', overTimer = 0, maxBlocks = 0;
+const FACTIONS = [{ name: 'Crimson', color: '#ff3d6e' }, { name: 'Amber', color: '#ffa23d' }, { name: 'Lilac', color: '#d98bff' }];
+let banner = { text: '', life: 0 };
+let last = performance.now();
+const cam = { x: 0, y: 0 };
+const keys = {};
+const stars = [];
+for (let i = 0; i < 260; i++) stars.push({ x: Math.random() * 2400, y: Math.random() * 2400, z: [0.15, 0.35, 0.6][i % 3], s: Math.random() * 1.6 + 0.4 });
+
+const key = (x, y) => x + ',' + y;
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const angDiff = (t, a) => ((t - a + Math.PI) % TAU + TAU) % TAU - Math.PI;
+
+// ---------- ships ----------
+function makeShip(x, y, layout, isPlayer, coreHp) {
+  const s = { x, y, vx: 0, vy: 0, a: 0, isPlayer, alive: true, thrusting: false, blocks: new Map(), r: S, orbit: 1,
+    shield: 0, shieldMax: 0, shieldIdle: 999, shieldFlash: 0 };
+  for (const [gx, gy, t, lvl = 1] of layout) {
+    const base = t === 'core' ? coreHp : TYPES[t].hp;
+    const max = base * lvlMult(lvl);
+    addBlock(s, gx, gy, { type: t, hp: max, max, base, lvl });
+  }
+  recalc(s);
+  for (const b of s.blocks.values()) if (b.type === 'shield') b.sh = b.shMax;
+  recalc(s);
+  return s;
+}
+function addBlock(s, gx, gy, it) {
+  s.blocks.set(key(gx, gy), { gx, gy, type: it.type, hp: it.hp, max: it.max, base: it.base, lvl: it.lvl, flash: 0, cool: rand(0, 20), aim: 0, want: 0, tgt: null, auto: false, autoRange: 0, sh: 0, shMax: 0, shIdle: 999, shFlash: 0 });
+}
+const hasType = (s, t) => [...s.blocks.values()].some(b => b.type === t);
+const itemOf = b => ({ type: b.type, hp: b.hp, max: b.max, base: b.base, lvl: b.lvl });
+function recalc(s) {
+  let r = 0, sm = 0, reach = 0;
+  for (const b of s.blocks.values()) {
+    r = Math.max(r, Math.hypot(b.gx, b.gy));
+    if (b.type === 'shield') {
+      b.shMax = 4 * lvlMult(b.lvl); b.sh = Math.min(b.sh, b.shMax); b.shR = shieldRadius(b.lvl);
+      sm += b.shMax; reach = Math.max(reach, Math.hypot(b.gx, b.gy) + b.shR);
+    }
+  }
+  s.r = r * S + S * 1.3;
+  // weapons close to a radar become auto-turrets
+  const radars = [...s.blocks.values()].filter(b => b.type === 'radar');
+  for (const b of s.blocks.values()) {
+    b.auto = false; b.autoRange = 0;
+    if (!WEAPONS[b.type]) { b.aim = 0; continue; }
+    for (const rb of radars) {
+      if (Math.max(Math.abs(rb.gx - b.gx), Math.abs(rb.gy - b.gy)) <= 1 + rb.lvl) {
+        b.auto = true; b.autoRange = Math.max(b.autoRange, 560 + 160 * (rb.lvl - 1));
+      }
+    }
+    if (!b.auto) { b.aim = 0; b.tgt = null; }
+  }
+  s.shieldMax = sm;
+  s.reach = Math.max(s.r, reach * S + 6);
+}
+// a shield bubble's size in squares: bigger with each level
+function shieldRadius(lvl) { return 1.6 + 0.6 * lvl; }
+function shieldTotal(s) { let t = 0; for (const b of s.blocks.values()) if (b.type === 'shield') t += b.sh; return t; }
+function scanRange(s) {
+  let best = 0, count = 0;
+  for (const b of s.blocks.values()) if (b.type === 'scanner') { count++; best = Math.max(best, b.lvl); }
+  return count ? 1400 + 600 * (best - 1) + 250 * (count - 1) : 0;
+}
+function stats(s) {
+  const st = { n: s.blocks.size, auto: 0, weapons: 0, ep: 0, shields: 0, rp: 0, mp: 0, armor: 0 };
+  for (const b of s.blocks.values()) {
+    const m = lvlMult(b.lvl);
+    if (WEAPONS[b.type]) { st.weapons++; if (b.auto) st.auto++; }
+    else if (b.type === 'engine') st.ep += m;
+    else if (b.type === 'shield') st.shields += m;
+    else if (b.type === 'repair') st.rp += m;
+    else if (b.type === 'magnet') st.mp += m;
+    else if (b.type === 'armor') st.armor++;
+  }
+  return st;
+}
+// how far from the core a ship may build: grows by 1 square for every 5 blocks
+function buildRadius(s) { return Math.min(14, 3 + Math.floor(s.blocks.size / 5)); }
+function attachPart(s, it, near) {
+  const R = buildRadius(s);
+  let cand = null, cd = 1e9;
+  for (const b of s.blocks.values()) for (const [dx, dy] of DIRS) {
+    const nx = b.gx + dx, ny = b.gy + dy;
+    if (Math.abs(nx) > R || Math.abs(ny) > R || s.blocks.has(key(nx, ny))) continue;
+    const d = Math.hypot(near.x - nx, near.y - ny);
+    if (d < cd) { cd = d; cand = [nx, ny]; }
+  }
+  if (!cand) return false;
+  addBlock(s, cand[0], cand[1], it);
+  s.blocks.get(key(cand[0], cand[1])).flash = 1;
+  recalc(s);
+  return true;
+}
+let lock = null;   // the enemy part the player picked: { ship, gx, gy }
+function lockValid() { return lock && lock.ship.alive && lock.ship.blocks.has(key(lock.gx, lock.gy)); }
+function updateTurrets(s, dt) {
+  for (const b of s.blocks.values()) {
+    if (!b.auto) continue;
+    const p = toWorld(s, b.gx, b.gy);
+    let tg = null, aimAt = null;
+    if (s.isPlayer) {
+      if (lockValid()) {
+        const lp = toWorld(lock.ship, lock.gx, lock.gy);
+        if (Math.hypot(lp.x - p.x, lp.y - p.y) < b.autoRange) { tg = lock.ship; aimAt = lp; }
+      }
+    } else if (s.target && s.target.alive && Math.hypot(s.target.x - p.x, s.target.y - p.y) < b.autoRange) { tg = s.target; aimAt = tg; }
+    b.tgt = tg;
+    let want = 0;
+    if (tg) {
+      const sp = WEAPONS[b.type].speed * (s.isPlayer ? 1 : 0.6);
+      const tt = Math.hypot(aimAt.x - p.x, aimAt.y - p.y) / sp;
+      want = angDiff(Math.atan2(aimAt.y + tg.vy * tt - p.y, aimAt.x + tg.vx * tt - p.x), s.a);
+    }
+    b.want = want;
+    b.aim += clamp(angDiff(want, b.aim), -0.12 * dt, 0.12 * dt);
+  }
+}
+function shipPower(s, st = stats(s)) {
+  return { accel: (0.12 + st.ep * 0.14) * 6 / (st.n + 5), turn: 0.02 + 0.3 / (st.n + 4) + st.ep * 0.004 };
+}
+function toWorld(s, gx, gy) {
+  const c = Math.cos(s.a), sn = Math.sin(s.a), lx = gx * S, ly = gy * S;
+  return { x: s.x + lx * c - ly * sn, y: s.y + lx * sn + ly * c };
+}
+function toLocal(s, x, y) {
+  const dx = x - s.x, dy = y - s.y, c = Math.cos(s.a), sn = Math.sin(s.a);
+  return { x: (dx * c + dy * sn) / S, y: (-dx * sn + dy * c) / S };
+}
+
+function genLayout(n, w) {
+  const cells = new Map([[key(0, 0), ['core', 1]]]);
+  const list = [[0, 0]];
+  const avail = PART_ORDER.filter(t => UNLOCK[t] <= w);
+  const weapons = avail.filter(t => WEAPONS[t]);
+  const types = [weapons[Math.floor(Math.random() * weapons.length)], 'engine'];
+  const total = avail.reduce((a, t) => a + WEIGHT[t], 0);
+  while (types.length < n) {
+    let r = Math.random() * total;
+    for (const t of avail) { r -= WEIGHT[t]; if (r <= 0) { types.push(t); break; } }
+  }
+  for (const t of types) {
+    let lvl = 1;
+    if (w >= 5 && Math.random() < Math.min(0.5, 0.1 * (w - 4))) lvl = 2;
+    if (w >= 9 && Math.random() < Math.min(0.4, 0.08 * (w - 8))) lvl = 3;
+    for (let tries = 0; tries < 60; tries++) {
+      const [cx, cy] = list[Math.floor(Math.random() * list.length)];
+      let [dx, dy] = DIRS[Math.floor(Math.random() * 4)];
+      if (WEAPONS[t] && dx < 0 && Math.random() < 0.7) dx = 1;
+      if (t === 'engine' && dx > 0 && Math.random() < 0.7) dx = -1;
+      const k = key(cx + dx, cy + dy);
+      if (!cells.has(k)) { cells.set(k, [t, lvl]); list.push([cx + dx, cy + dy]); break; }
+    }
+  }
+  return [...cells].map(([k, [t, lvl]]) => { const [x, y] = k.split(',').map(Number); return [x, y, t, lvl]; });
+}
+
+// ---------- game flow ----------
+function newGame() {
+  player = makeShip(0, 0, [[0,0,'core'],[1,0,'gun'],[-1,0,'engine'],[0,-1,'armor'],[0,1,'armor']], true, 10);
+  player.faction = -1;
+  enemies = []; bullets = []; loose = []; particles = []; popups = []; cargo = []; lock = null;
+  score = 0; scrap = 0; wave = 1; elapsed = 0; spawnTimer = 0; maxBlocks = 5; state = 'play';
+  selType = null; tool = 'add';
+  cam.x = 0; cam.y = 0;
+  ['menu', 'over', 'editor'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  for (let i = 0; i < 4; i++) { const a = rand(0, TAU), d = rand(800, 1700); spawnGroup(Math.cos(a) * d, Math.sin(a) * d); }
+  banner = { text: 'Explore!', sub: 'Ships get tougher the farther you fly from home', life: 200 };
+}
+// how dangerous a spot in space is: grows with distance from home and a little with time
+function tierAt(x, y) { return Math.min(15, 1 + Math.floor(Math.hypot(x, y) / 1400 + elapsed / 3600 * 0.3)); }
+function spawnGroup(x, y) {
+  const tier = tierAt(x, y), f = Math.floor(Math.random() * FACTIONS.length);
+  const r = Math.random(), count = r < 0.6 ? 1 : r < 0.9 ? 2 : 3;
+  const heading = rand(0, TAU);
+  for (let i = 0; i < count; i++) {
+    const n = Math.min(3 + Math.floor(tier * 1.4) + Math.floor(rand(0, 3)), 32);
+    const e = makeShip(x + rand(-160, 160), y + rand(-160, 160), genLayout(n, tier), false, 3 + Math.floor(tier / 3));
+    e.a = heading; e.faction = f; e.tier = tier; e.anger = 0; e.sus = 0; e.pd = 9999; e.target = null; e.loot = null; e.foe = null; e.think = rand(0, 20);
+    e.orbit = Math.random() < 0.5 ? 1 : -1;
+    e.wp = { x: e.x + Math.cos(heading) * 900, y: e.y + Math.sin(heading) * 900 };
+    enemies.push(e);
+  }
+}
+// the bigger your ship, the more gangs see you as a threat
+function threatLevel() {
+  const n = player ? player.blocks.size : 0;
+  return {
+    notice: Math.min(900, 330 + Math.max(0, n - 5) * 14),
+    rate: 1 + n / 20,
+    bold: n >= 15,
+    name: n < 15 ? 'Low' : n < 30 ? 'Medium' : 'High',
+    color: n < 15 ? '#7dffa0' : n < 30 ? '#ffd23f' : '#ff3d6e',
+  };
+}
+function pickTarget(e) {
+  let best = null, bd = 1e9;
+  if (player.alive && e.anger > 0) {
+    const d = Math.hypot(player.x - e.x, player.y - e.y);
+    if (d < 1700) { best = player; bd = d * 0.8; }
+  }
+  for (const o of enemies) {
+    if (o === e || o.faction === e.faction || !o.alive) continue;
+    const d = Math.hypot(o.x - e.x, o.y - e.y);
+    if ((d < 480 || (o === e.foe && d < 1200)) && d < bd) { bd = d; best = o; }
+  }
+  e.target = best;
+  // nothing to fight? look for floating parts to grab
+  if (!best && (!e.loot || e.loot.gone) && e.blocks.size < 45) {
+    e.loot = null;
+    let ld = 800;
+    for (const p of loose) { if (p.delay > 0) continue; const d = Math.hypot(p.x - e.x, p.y - e.y); if (d < ld) { ld = d; e.loot = p; } }
+  }
+}
+function angerGroup(s, amount) {
+  s.anger = Math.max(s.anger, amount);
+  for (const o of enemies) if (o.faction === s.faction && Math.hypot(o.x - s.x, o.y - s.y) < 900) o.anger = Math.max(o.anger, amount * 0.7);
+}
+
+// ---------- combat ----------
+function fireWeapons(s, manual) {
+  for (const b of s.blocks.values()) {
+    let w = WEAPONS[b.type];
+    if (!w && s.isPlayer && b.type === 'core') w = CORE_GUN;
+    if (!w || b.cool > 0) continue;
+    if (b.tgt) { if (Math.abs(angDiff(b.want, b.aim)) > 0.15) continue; }   // auto-turret: fire when lined up
+    else if (!manual) continue;
+    const dm = 1 + 0.35 * (b.lvl - 1);
+    const base = s.a + b.aim;
+    const p0 = toWorld(s, b.gx, b.gy);
+    const p = { x: p0.x + Math.cos(base) * S * 0.6, y: p0.y + Math.sin(base) * S * 0.6 };
+    const pel = w.pellets || 1;
+    const sp = w.speed * (s.isPlayer ? 1 : 0.6);
+    for (let i = 0; i < pel; i++) {
+      const a = base + (pel > 1 ? (i / (pel - 1) - 0.5) * w.spread : 0);
+      bullets.push({ x: p.x, y: p.y, vx: Math.cos(a) * sp + s.vx * 0.3, vy: Math.sin(a) * sp + s.vy * 0.3,
+        life: w.life * (s.isPlayer ? 1 : 1.4), fromPlayer: s.isPlayer, owner: s, faction: s.faction, target: b.tgt || (s.isPlayer ? null : s.target),
+        color: s.isPlayer ? w.color : FACTIONS[s.faction].color,
+        r: w.r, dmg: w.dmg * dm, beam: w.beam, homing: w.homing, maxSp: sp * 1.9 });
+    }
+    b.cool = w.cool * (1 - 0.15 * (b.lvl - 1)) * (s.isPlayer ? 1 : rand(5, 7) * (s.tier <= 2 ? 1.4 : 1));
+  }
+}
+function bulletHit(bl) {
+  for (let i = -1; i < enemies.length; i++) {
+    const s = i < 0 ? player : enemies[i];
+    if (!s.alive || s === bl.owner || s.faction === bl.faction) continue;
+    const d = Math.hypot(bl.x - s.x, bl.y - s.y);
+    if (d < s.r + 8 && !s.isPlayer) {
+      if (bl.fromPlayer) angerGroup(s, 1800);
+      else if (bl.owner.alive) s.foe = bl.owner;
+    }
+    if (d > s.reach) continue;
+    const l = toLocal(s, bl.x, bl.y);
+    // only bubbles around shield blocks stop shots
+    let shieldHit = null;
+    if (s.shieldMax > 0) for (const sb of s.blocks.values())
+      if (sb.type === 'shield' && sb.sh > 0.05 && Math.hypot(l.x - sb.gx, l.y - sb.gy) <= sb.shR) { shieldHit = sb; break; }
+    if (shieldHit) {
+      shieldHit.sh = Math.max(0, shieldHit.sh - bl.dmg); shieldHit.shFlash = 1; shieldHit.shIdle = 0;
+      burst(bl.x, bl.y, '#9fabff', 5, 2);
+      return true;
+    }
+    if (d > s.r) continue;
+    const gx = Math.round(l.x), gy = Math.round(l.y);
+    const b = s.blocks.get(key(gx, gy));
+    if (b && Math.abs(l.x - gx) < 0.56 + bl.r / S * 0.5 && Math.abs(l.y - gy) < 0.56 + bl.r / S * 0.5) { damage(s, b, bl); return true; }
+  }
+  return false;
+}
+function damage(s, b, bl) {
+  b.hp -= bl.dmg; b.flash = 1;
+  burst(bl.x, bl.y, TYPES[b.type].color, bl.dmg >= 2 ? 10 : 5, 2);
+  if (b.hp > 0.001) return;
+  s.blocks.delete(key(b.gx, b.gy));
+  const p = toWorld(s, b.gx, b.gy);
+  burst(p.x, p.y, TYPES[b.type].color, 16, 3.5);
+  if (b.type === 'core') breakShip(s, bl.owner);
+  else { detach(s); recalc(s); if (!s.isPlayer && bl.fromPlayer) score += 5; }
+}
+function breakShip(s, killer) {
+  const n = s.blocks.size;
+  for (const b of s.blocks.values()) spawnLoose(s, b, 1.4);
+  s.blocks.clear(); s.alive = false;
+  burst(s.x, s.y, '#ffffff', 30, 5);
+  if (s.isPlayer) { state = 'over'; overTimer = 100; saveBest(); }
+  else {
+    enemies = enemies.filter(e => e !== s);
+    if (killer === player) {
+      const loot = 4 + s.tier;
+      score += 100; scrap += loot;
+      popup(s.x, s.y - 20, 'Broken! +⚙' + loot + (n ? ', ' + n + ' parts free' : ''), '#ffd23f');
+    } else if (player.alive && Math.hypot(s.x - player.x, s.y - player.y) < 1400) {
+      popup(s.x, s.y - 20, FACTIONS[s.faction].name + ' ship destroyed — free parts!', FACTIONS[s.faction].color);
+    }
+  }
+}
+function unconnected(s) {
+  if (!s.blocks.has('0,0')) return [];
+  const seen = new Set(['0,0']), q = [[0, 0]];
+  while (q.length) {
+    const [x, y] = q.pop();
+    for (const [dx, dy] of DIRS) {
+      const k = key(x + dx, y + dy);
+      if (!seen.has(k) && s.blocks.has(k)) { seen.add(k); q.push([x + dx, y + dy]); }
+    }
+  }
+  return [...s.blocks].filter(([k]) => !seen.has(k));
+}
+function detach(s) { for (const [k, b] of unconnected(s)) { s.blocks.delete(k); spawnLoose(s, b, 0.9); } }
+function spawnLoose(s, b, kick) {
+  const p = toWorld(s, b.gx, b.gy);
+  const dx = p.x - s.x, dy = p.y - s.y, d = Math.hypot(dx, dy) || 1;
+  loose.push({ x: p.x, y: p.y, ...itemOf(b),
+    vx: s.vx + dx / d * kick + rand(-kick, kick) * 0.5, vy: s.vy + dy / d * kick + rand(-kick, kick) * 0.5,
+    a: s.a, va: rand(-0.04, 0.04), life: 1800, delay: s.isPlayer ? 90 : 25 });
+}
+function tryCollect(p) {
+  const l = toLocal(player, p.x, p.y);
+  let bd = 1e9;
+  for (const b of player.blocks.values()) bd = Math.min(bd, Math.hypot(l.x - b.gx, l.y - b.gy));
+  if (bd > 1.4) return false;
+  cargo.push(itemOf(p));
+  score += 10;
+  popup(p.x, p.y - 14, '+' + TYPES[p.type].name + (p.lvl > 1 ? ' lv' + p.lvl : ''), TYPES[p.type].color);
+  burst(p.x, p.y, TYPES[p.type].color, 10, 2);
+  return true;
+}
+
+// ---------- effects ----------
+function burst(x, y, color, n, sp) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * TAU, v = Math.random() * sp;
+    particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rand(20, 45), max: 45, color, size: rand(1.5, 3.5) });
+  }
+}
+function popup(x, y, text, color) { popups.push({ x, y, text, color, life: 80 }); }
+
+// ---------- update ----------
+function shipTick(s, dt, st) {
+  s.x += s.vx * dt; s.y += s.vy * dt;
+  const f = Math.pow(0.985, dt);
+  s.vx *= f; s.vy *= f;
+  const sp = Math.hypot(s.vx, s.vy), cap = s.isPlayer ? 9 : 5;
+  if (sp > cap) { s.vx *= cap / sp; s.vy *= cap / sp; }
+  let worst = null, wr = 1;
+  for (const b of s.blocks.values()) {
+    if (b.flash > 0) b.flash -= 0.08 * dt;
+    b.cool -= dt;
+    const r = b.hp / b.max;
+    if (r < wr) { wr = r; worst = b; }
+  }
+  updateTurrets(s, dt);
+  if (st.rp > 0 && worst) worst.hp = Math.min(worst.max, worst.hp + st.rp * 0.005 * dt);
+  if (s.shieldMax > 0) for (const b of s.blocks.values()) if (b.type === 'shield') {
+    b.shIdle += dt;
+    if (b.shFlash > 0) b.shFlash -= 0.06 * dt;
+    if (b.shIdle > 150 && b.sh < b.shMax) b.sh = Math.min(b.shMax, b.sh + 0.015 * lvlMult(b.lvl) * dt);
+  }
+}
+
+function update(dt) {
+  if (state !== 'play' && state !== 'over') return;
+
+  if (player.alive) {
+    const st = stats(player), { accel, turn } = shipPower(player, st);
+    if (keys.left) player.a -= turn * dt;
+    if (keys.right) player.a += turn * dt;
+    player.thrusting = !!keys.up;
+    if (keys.up) { player.vx += Math.cos(player.a) * accel * dt; player.vy += Math.sin(player.a) * accel * dt; }
+    if (keys.down) { player.vx -= Math.cos(player.a) * accel * 0.5 * dt; player.vy -= Math.sin(player.a) * accel * 0.5 * dt; }
+    fireWeapons(player, !!keys.fire);
+    shipTick(player, dt, st);
+    player.mp = st.mp;
+  }
+
+  for (const e of enemies) {
+    const st = stats(e), { accel, turn } = shipPower(e, st);
+    e.thrusting = false;
+    if (player.alive) {
+      const pd = Math.hypot(player.x - e.x, player.y - e.y);
+      e.pd = pd;
+      const th = threatLevel();
+      if (pd < th.notice) { e.sus += dt * th.rate; if (e.sus > 90) e.anger = Math.max(e.anger, 900); }   // you got too close
+      else e.sus = Math.max(0, e.sus - dt * 0.5);
+      if (e.anger > 0 && pd > 600) e.anger -= dt;                                          // calms down once you leave
+    } else e.anger = 0;
+    if (e.foe && !e.foe.alive) e.foe = null;
+    e.think -= dt;
+    if (e.think <= 0 || (e.target && !e.target.alive)) { pickTarget(e); e.think = 20; }
+    const t = turn * 0.6 * dt;
+    if (e.target) {
+      const tg = e.target, dx = tg.x - e.x, dy = tg.y - e.y, d = Math.hypot(dx, dy);
+      const diff = angDiff(Math.atan2(dy, dx), e.a);
+      e.a += clamp(diff, -t, t);
+      if (d > 320) { e.vx += Math.cos(e.a) * accel * 0.7 * dt; e.vy += Math.sin(e.a) * accel * 0.7 * dt; e.thrusting = true; }
+      else if (d < 190) { e.vx -= Math.cos(e.a) * accel * 0.4 * dt; e.vy -= Math.sin(e.a) * accel * 0.4 * dt; }
+      const sa = e.a + Math.PI / 2 * e.orbit;
+      e.vx += Math.cos(sa) * accel * 0.15 * dt; e.vy += Math.sin(sa) * accel * 0.15 * dt;
+      fireWeapons(e, Math.abs(diff) < 0.25 && d < 650);
+    } else {
+      // cruise around peacefully
+      if (e.pd < 550 && e.anger <= 0 && !threatLevel().bold) {   // small players get steered around; big ones get checked out
+        const ax = e.x - player.x, ay = e.y - player.y, al = Math.hypot(ax, ay) || 1;
+        e.wp = { x: e.x + ax / al * 700, y: e.y + ay / al * 700 };
+      }
+      else if (e.loot && !e.loot.gone) {
+        e.wp = { x: e.loot.x, y: e.loot.y };
+        if (Math.hypot(e.loot.x - e.x, e.loot.y - e.y) < e.r + S) {
+          const p = e.loot;
+          if (attachPart(e, itemOf(p), toLocal(e, p.x, p.y))) {
+            p.gone = true; loose.splice(loose.indexOf(p), 1);
+            if (player.alive && Math.hypot(e.x - player.x, e.y - player.y) < 900)
+              popup(e.x, e.y - e.r - 24, FACTIONS[e.faction].name + ' ship grabbed a ' + TYPES[p.type].name + '!', FACTIONS[e.faction].color);
+          }
+          e.loot = null;
+        }
+      }
+      else if (threatLevel().bold && e.pd < threatLevel().notice + 500) e.wp = { x: player.x, y: player.y };   // come check out the big ship
+      const dx = e.wp.x - e.x, dy = e.wp.y - e.y;
+      if (Math.hypot(dx, dy) < 120) { const a = rand(0, TAU), d = rand(500, 1100); e.wp = { x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d }; }
+      const diff = angDiff(Math.atan2(dy, dx), e.a);
+      e.a += clamp(diff, -t * 0.6, t * 0.6);
+      if (Math.abs(diff) < 0.6) { const go = e.loot ? 0.55 : 0.3; e.vx += Math.cos(e.a) * accel * go * dt; e.vy += Math.sin(e.a) * accel * go * dt; e.thrusting = true; }
+    }
+    shipTick(e, dt, st);
+  }
+
+  // keep space busy: spawn ships out of sight, clear away ones left far behind
+  if (state === 'play' && player.alive) {
+    elapsed += dt;
+    for (const e of enemies) if (Math.hypot(e.x - player.x, e.y - player.y) > 3800) e.alive = false;
+    enemies = enemies.filter(e => e.alive);
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+      spawnTimer = 90;
+      const near = enemies.filter(e => Math.hypot(e.x - player.x, e.y - player.y) < 2600).length;
+      if (near < 9) { const a = rand(0, TAU), d = rand(1300, 2300); spawnGroup(player.x + Math.cos(a) * d, player.y + Math.sin(a) * d); }
+    }
+    const tier = tierAt(player.x, player.y);
+    if (tier > wave) {
+      for (let tt = wave + 1; tt <= tier; tt++) {
+        const fresh = PART_ORDER.filter(k => UNLOCK[k] === tt).map(k => TYPES[k].name);
+        banner = { text: 'Danger zone ' + tier, sub: fresh.length ? 'New parts out here: ' + fresh.join(', ') : 'Tougher ships ahead', life: 170 };
+      }
+      wave = tier;
+    }
+  }
+
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    if (b.homing) {
+      let tg = b.target && b.target.alive ? b.target : null;
+      if (!tg && b.fromPlayer) {
+        let td = 750;
+        for (const s of enemies) { const d = Math.hypot(s.x - b.x, s.y - b.y); if (d < td) { td = d; tg = s; } }
+      }
+      let a = Math.atan2(b.vy, b.vx);
+      if (tg) a += clamp(angDiff(Math.atan2(tg.y - b.y, tg.x - b.x), a), -0.07 * dt, 0.07 * dt);
+      const ns = Math.min(b.maxSp, Math.hypot(b.vx, b.vy) + 0.12 * dt);
+      b.vx = Math.cos(a) * ns; b.vy = Math.sin(a) * ns;
+      if (Math.random() < 0.6) particles.push({ x: b.x, y: b.y, vx: rand(-.3, .3), vy: rand(-.3, .3), life: 18, max: 18, color: 'rgba(255,220,160,.8)', size: 2 });
+    }
+    b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+    if (b.life <= 0 || bulletHit(b)) bullets.splice(i, 1);
+  }
+
+  for (let i = loose.length - 1; i >= 0; i--) {
+    const p = loose[i];
+    if (player.alive && player.mp > 0 && p.delay <= 0) {
+      const dx = player.x - p.x, dy = player.y - p.y, d = Math.hypot(dx, dy);
+      if (d < 180 + player.mp * 130) { p.vx += dx / d * 0.12 * player.mp * dt; p.vy += dy / d * 0.12 * player.mp * dt; }
+    }
+    p.x += p.vx * dt; p.y += p.vy * dt; p.a += p.va * dt;
+    const f = Math.pow(0.99, dt); p.vx *= f; p.vy *= f;
+    p.life -= dt; p.delay -= dt;
+    const far = player.alive && Math.hypot(p.x - player.x, p.y - player.y) > 2600;
+    if (p.life <= 0 || far) { p.gone = true; loose.splice(i, 1); continue; }
+    if (player.alive && p.delay <= 0 && Math.hypot(p.x - player.x, p.y - player.y) < player.r + S && tryCollect(p)) { p.gone = true; loose.splice(i, 1); }
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = popups.length - 1; i >= 0; i--) {
+    popups[i].y -= 0.5 * dt; popups[i].life -= dt;
+    if (popups[i].life <= 0) popups.splice(i, 1);
+  }
+  if (banner.life > 0) banner.life -= dt;
+  if (hintCool > 0) hintCool -= dt;
+  if (lock && !lockValid()) {
+    if (lock.ship.alive) popup(lock.ship.x, lock.ship.y - lock.ship.r - 10, 'Target part destroyed!', '#ffd23f');
+    lock = null;
+  }
+
+  if (state === 'over') {
+    overTimer -= dt;
+    if (overTimer <= 0 && document.getElementById('over').classList.contains('hidden')) showOver();
+  }
+  if (player.alive) {
+    cam.x += (player.x + player.vx * 18 - cam.x) * 0.08 * dt;
+    cam.y += (player.y + player.vy * 18 - cam.y) * 0.08 * dt;
+  }
+}
+
+// ---------- drawing ----------
+function drawBlock(type, ratio, outline, flash, thrusting, lvl = 1, aim = 0, auto = false) {
+  const h = S / 2 - 0.8, col = TYPES[type].color, dark = 'rgba(0,0,0,.4)';
+  if (type === 'engine' && thrusting) {
+    const fl = rand(8, 15);
+    ctx.fillStyle = 'rgba(120,230,255,.75)';
+    ctx.beginPath(); ctx.moveTo(-h, -4); ctx.lineTo(-h - fl, 0); ctx.lineTo(-h, 4); ctx.fill();
+  }
+  ctx.fillStyle = col; ctx.fillRect(-h, -h, h * 2, h * 2);
+  ctx.fillStyle = dark; ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 1.6;
+  if (auto) { ctx.beginPath(); ctx.arc(0, 0, h - 2, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fill(); ctx.fillStyle = dark; }
+  const turns = WEAPONS[type] && aim;
+  if (turns) { ctx.save(); ctx.rotate(aim); }
+  switch (type) {
+    case 'gun': ctx.fillRect(0, -2.5, h + 5, 5); ctx.fillStyle = col; ctx.fillRect(h + 1, -2, 5, 4); break;
+    case 'laser':
+      ctx.fillRect(-h + 3, -1.3, h * 2 + 5, 2.6);
+      ctx.fillStyle = '#f4e2ff'; ctx.beginPath(); ctx.arc(h + 3, 0, 2.2, 0, TAU); ctx.fill(); break;
+    case 'scatter':
+      for (const a of [-0.45, 0, 0.45]) { ctx.save(); ctx.rotate(a); ctx.fillRect(0, -1.6, h + 4, 3.2); ctx.restore(); } break;
+    case 'cannon':
+      ctx.fillRect(-2, -4.5, h + 9, 9); ctx.fillStyle = '#d98a6a'; ctx.fillRect(h + 2, -3.5, 5, 7); break;
+    case 'missile':
+      for (const y of [-4, 4]) { ctx.fillStyle = '#f2ffd6'; ctx.fillRect(-4, y - 2, 9, 4); ctx.fillStyle = '#e04848'; ctx.fillRect(5, y - 2, 3, 4); } break;
+    case 'armor': ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 1; ctx.strokeRect(-h + 3, -h + 3, h * 2 - 6, h * 2 - 6); break;
+    case 'engine': ctx.fillRect(-h, -h + 3, 5, h * 2 - 6); break;
+    case 'core': ctx.fillStyle = '#fff6c8'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, TAU); ctx.fill(); break;
+    case 'shield': ctx.beginPath(); ctx.arc(0, 0, h - 3, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 2, 0, TAU); ctx.fillStyle = '#fff'; ctx.fill(); break;
+    case 'repair': ctx.fillStyle = '#fff'; ctx.fillRect(-1.8, -h + 3, 3.6, h * 2 - 6); ctx.fillRect(-h + 3, -1.8, h * 2 - 6, 3.6); break;
+    case 'radar':
+      ctx.save(); ctx.rotate(performance.now() / 500);
+      ctx.strokeStyle = '#3a4470'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.arc(-3, 0, 6, -1.1, 1.1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(5, 0); ctx.stroke();
+      ctx.fillStyle = '#ff5470'; ctx.beginPath(); ctx.arc(5, 0, 1.8, 0, TAU); ctx.fill();
+      ctx.restore(); break;
+    case 'scanner':
+      ctx.fillStyle = '#0b2a1a'; ctx.fillRect(-h + 3, -h + 3, h * 2 - 6, h * 2 - 6);
+      ctx.strokeStyle = 'rgba(90,255,150,.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, -h + 3); ctx.lineTo(0, h - 3); ctx.moveTo(-h + 3, 0); ctx.lineTo(h - 3, 0); ctx.stroke();
+      ctx.fillStyle = '#5aff96'; ctx.fillRect(2, -4, 2.5, 2.5); ctx.fillRect(-4, 2, 2.5, 2.5); break;
+    case 'magnet': ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(-1, 0, 4.5, Math.PI / 2, Math.PI * 1.5); ctx.lineTo(5, -4.5); ctx.moveTo(-1, 4.5); ctx.lineTo(5, 4.5); ctx.stroke(); break;
+  }
+  if (turns) ctx.restore();
+  if (ratio < 0.999) {
+    ctx.fillStyle = 'rgba(10,5,30,' + ((1 - ratio) * 0.55).toFixed(2) + ')';
+    ctx.fillRect(-h, -h, h * 2, h * 2);
+    ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-h + 2, -h + 4); ctx.lineTo(0, 1); ctx.lineTo(h - 3, -2);
+    if (ratio < 0.5) { ctx.moveTo(0, 1); ctx.lineTo(-2, h - 2); }
+    ctx.stroke();
+  }
+  for (let i = 0; i < lvl - 1; i++) { ctx.fillStyle = '#fff'; ctx.fillRect(-h + 2 + i * 4.5, h - 4.5, 3, 3); }
+  ctx.strokeStyle = outline; ctx.lineWidth = 1.6;
+  ctx.strokeRect(-h, -h, h * 2, h * 2);
+  if (flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + Math.min(flash, 1).toFixed(2) + ')'; ctx.fillRect(-h, -h, h * 2, h * 2); }
+}
+function drawShip(s) {
+  ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a);
+  const outline = s.isPlayer ? '#7dffa0' : FACTIONS[s.faction].color;
+  for (const b of s.blocks.values()) {
+    ctx.save(); ctx.translate(b.gx * S, b.gy * S);
+    drawBlock(b.type, b.hp / b.max, outline, b.flash, s.thrusting, b.lvl, b.aim, b.auto);
+    ctx.restore();
+  }
+  ctx.restore();
+  if (!s.isPlayer && (s.anger > 0 || s.sus > 0)) {
+    ctx.fillStyle = s.anger > 0 ? '#ff3d6e' : '#ffd23f'; ctx.textAlign = 'center'; ctx.font = '700 22px "Chakra Petch", system-ui, sans-serif';
+    ctx.fillText(s.anger > 0 ? '!' : '?', s.x, s.y - s.r - 6);
+  }
+  if (s.shieldMax > 0) for (const b of s.blocks.values()) {
+    if (b.type !== 'shield' || b.sh <= 0.05) continue;
+    const r = b.sh / b.shMax, fl = Math.max(0, b.shFlash), c = toWorld(s, b.gx, b.gy);
+    ctx.beginPath(); ctx.arc(c.x, c.y, b.shR * S, 0, TAU);
+    ctx.fillStyle = 'rgba(110,130,255,' + (0.05 + 0.06 * r + 0.14 * fl).toFixed(3) + ')'; ctx.fill();
+    ctx.strokeStyle = 'rgba(150,165,255,' + (0.25 + 0.4 * r + 0.4 * fl).toFixed(3) + ')'; ctx.lineWidth = 2; ctx.stroke();
+  }
+}
+function drawIndicator(x, y, color, size) {
+  const sx = (x - cam.x) * ZOOM + W / 2, sy = (y - cam.y) * ZOOM + H / 2, m = 22;
+  if (sx > 0 && sx < W && sy > 0 && sy < H) return;
+  const cx = clamp(sx, m, W - m), cy = clamp(sy, m + 80, H - m);
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.atan2(sy - H / 2, sx - W / 2));
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.moveTo(size, 0); ctx.lineTo(-size * 0.7, -size * 0.7); ctx.lineTo(-size * 0.7, size * 0.7); ctx.fill();
+  ctx.restore();
+}
+function drawRadar() {
+  if (!player.alive) return;
+  const RANGE = scanRange(player);
+  if (!RANGE) return;
+  const R = Math.min(70, W * 0.13);
+  const cx = W - R - 14, cy = 64 + R;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU);
+  ctx.fillStyle = 'rgba(12,10,40,.75)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(140,150,255,.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, R * threatLevel().notice / RANGE, 0, TAU); ctx.strokeStyle = 'rgba(255,61,110,.25)'; ctx.stroke();
+  ctx.clip();
+  const pt = (x, y) => [cx + (x - cam.x) / RANGE * R, cy + (y - cam.y) / RANGE * R];
+  // home marker
+  let [hx, hy] = pt(0, 0);
+  const hd = Math.hypot(hx - cx, hy - cy);
+  if (hd > R - 6) { hx = cx + (hx - cx) / hd * (R - 6); hy = cy + (hy - cy) / hd * (R - 6); }
+  ctx.fillStyle = '#7dffa0'; ctx.font = '700 11px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('⌂', hx, hy + 4);
+  for (const p of loose) { if (Math.hypot(p.x - player.x, p.y - player.y) > RANGE) continue; const [x, y] = pt(p.x, p.y); ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - 1, y - 1, 2, 2); }
+  for (const e of enemies) {
+    if (Math.hypot(e.x - player.x, e.y - player.y) > RANGE) continue;
+    const [x, y] = pt(e.x, e.y);
+    ctx.fillStyle = FACTIONS[e.faction].color;
+    ctx.beginPath(); ctx.arc(x, y, 2 + Math.min(3, e.blocks.size / 8), 0, TAU); ctx.fill();
+    if (e.anger > 0) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(x, y, 5.5, 0, TAU); ctx.stroke(); }
+  }
+  if (player.alive) { const [x, y] = pt(player.x, player.y); ctx.fillStyle = '#7dffa0'; ctx.fillRect(x - 2.5, y - 2.5, 5, 5); }
+  ctx.restore();
+}
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const g = ctx.createRadialGradient(W * 0.3, H * 0.2, 0, W * 0.5, H * 0.5, Math.max(W, H));
+  g.addColorStop(0, '#1d1650'); g.addColorStop(1, '#0b0920');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  for (const st of stars) {
+    const px = ((st.x - cam.x * st.z) % 2400 + 2400) % 2400, py = ((st.y - cam.y * st.z) % 2400 + 2400) % 2400;
+    if (px > W || py > H) continue;
+    ctx.fillStyle = 'rgba(220,225,255,' + (0.3 + st.z) + ')';
+    ctx.fillRect(px, py, st.s, st.s);
+  }
+  if (!player) return;
+  ctx.save();
+  ctx.translate(W / 2, H / 2); ctx.scale(ZOOM, ZOOM); ctx.translate(-cam.x, -cam.y);
+  const pulse = 0.55 + 0.45 * Math.sin(performance.now() / 180);
+  for (const p of loose) {
+    if (p.life < 300 && Math.floor(p.life / 10) % 2 === 0) continue;
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+    ctx.strokeStyle = 'rgba(255,255,255,' + (0.25 * pulse).toFixed(2) + ')'; ctx.lineWidth = 2;
+    ctx.strokeRect(-S / 2 - 3, -S / 2 - 3, S + 6, S + 6);
+    drawBlock(p.type, p.hp / p.max, 'rgba(255,255,255,.9)', 0, false, p.lvl);
+    ctx.restore();
+  }
+  for (const e of enemies) drawShip(e);
+  if (player.alive) drawShip(player);
+  if (lockValid()) {
+    const lp = toWorld(lock.ship, lock.gx, lock.gy), t = performance.now() / 300;
+    ctx.save(); ctx.translate(lp.x, lp.y); ctx.rotate(lock.ship.a + t * 0.5);
+    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2.5;
+    const k = S * 0.9 + Math.sin(t * 2) * 2, m = 6;
+    for (const [sx, sy] of [[-1,-1],[1,-1],[1,1],[-1,1]]) {
+      ctx.beginPath(); ctx.moveTo(sx * k, sy * (k - m)); ctx.lineTo(sx * k, sy * k); ctx.lineTo(sx * (k - m), sy * k); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  for (const b of bullets) {
+    ctx.fillStyle = b.color; ctx.strokeStyle = b.color;
+    if (b.beam) { ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(b.x - b.vx * 1.3, b.y - b.vy * 1.3); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+    else if (b.homing) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx)); ctx.fillRect(-5, -2, 10, 4); ctx.restore(); }
+    else { ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill(); }
+  }
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life / p.max);
+    ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'center'; ctx.font = '600 14px "Chakra Petch", system-ui, sans-serif';
+  for (const p of popups) { ctx.globalAlpha = Math.min(1, p.life / 30); ctx.fillStyle = p.color; ctx.fillText(p.text, p.x, p.y); }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  for (const p of loose) if (player.alive && Math.hypot(p.x - player.x, p.y - player.y) < 1600) drawIndicator(p.x, p.y, TYPES[p.type].color, 6);
+  for (const e of enemies) if (e.anger > 0) drawIndicator(e.x, e.y, '#ff3d6e', 10);
+  if (state === 'play' || state === 'over') drawRadar();
+  ctx.textAlign = 'center';
+  if (banner.life > 0) {
+    ctx.globalAlpha = Math.min(1, banner.life / 30);
+    ctx.fillStyle = '#ffd23f'; ctx.font = '700 44px "Chakra Petch", system-ui, sans-serif';
+    ctx.fillText(banner.text, W / 2, H * 0.3);
+    if (banner.sub) { ctx.fillStyle = '#eef0ff'; ctx.font = '600 18px "Chakra Petch", system-ui, sans-serif'; ctx.fillText(banner.sub, W / 2, H * 0.3 + 32); }
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ---------- ship builder ----------
+const edc = document.getElementById('edc'), edCtx = edc.getContext('2d');
+const editorEl = document.getElementById('editor');
+let selType = null, tool = 'add', hover = null, pending = null;
+
+const sellValue = it => Math.max(1, Math.round(TYPES[it.type].value * (0.4 + 0.6 * it.hp / it.max) * (1 + 0.6 * (it.lvl - 1))));
+const upgradeCost = b => b.type === 'core' ? 30 * b.lvl : Math.round(TYPES[b.type].value * 1.5 * b.lvl);
+const repairCost = b => Math.ceil(TYPES[b.type].value * 0.6 * (1 - b.hp / b.max) - 0.001);
+const ofType = t => cargo.filter(c => c.type === t);
+
+function openEditor() {
+  if (state !== 'play' || !player.alive) return;
+  state = 'edit';
+  for (const k in keys) keys[k] = false;
+  if (!selType || !ofType(selType).length) selType = PART_ORDER.find(t => ofType(t).length) || null;
+  pending = null;
+  setMsg(cargo.length ? '' : 'Cargo is empty. Break enemy ships and fly into their parts to collect them.');
+  editorEl.classList.remove('hidden');
+  renderEditor();
+  document.getElementById('doneBtn').focus();
+}
+function closeEditor() {
+  if (state !== 'edit') return;
+  editorEl.classList.add('hidden');
+  state = 'play';
+  last = performance.now();
+}
+function setMsg(t) { document.getElementById('edMsg').textContent = t; }
+function viewRadius() {
+  let ext = 0;
+  for (const b of player.blocks.values()) ext = Math.max(ext, Math.abs(b.gx), Math.abs(b.gy));
+  return Math.max(4, buildRadius(player) + 1, ext + 1);
+}
+function canPlace(gx, gy) {
+  const R = buildRadius(player);
+  return Math.abs(gx) <= R && Math.abs(gy) <= R && !player.blocks.has(key(gx, gy)) &&
+    DIRS.some(([dx, dy]) => player.blocks.has(key(gx + dx, gy + dy)));
+}
+function cellFromEvent(e) {
+  const V = viewRadius(), r = edc.getBoundingClientRect(), cs = r.width / (V * 2 + 1);
+  return [Math.floor((e.clientX - r.left) / cs) - V, Math.floor((e.clientY - r.top) / cs) - V];
+}
+function blockInfo(b) {
+  let t = TYPES[b.type].name + (b.auto ? ' (turret)' : '') + ', level ' + b.lvl + ', ' + Math.ceil(b.hp * 10) / 10 + '/' + b.max + ' HP';
+  if (tool === 'upgrade') t += b.lvl >= MAXLVL ? ' — max level' : ' — upgrade costs ⚙' + upgradeCost(b);
+  return t;
+}
+function edClick(gx, gy, isTouch) {
+  const b = player.blocks.get(key(gx, gy));
+  if (tool === 'add') {
+    if (b) { setMsg('That spot is taken. Use "Take off" to remove a part.'); return; }
+    if (!selType || !ofType(selType).length) { setMsg('Pick a part from your cargo first.'); return; }
+    if (!canPlace(gx, gy)) { setMsg(Math.max(Math.abs(gx), Math.abs(gy)) > buildRadius(player) ? 'That is outside your build area. Add more blocks to make it bigger!' : 'Parts have to touch your ship. Pick a glowing square.'); return; }
+    const items = ofType(selType).sort((a, c) => (c.lvl - a.lvl) || (c.hp / c.max - a.hp / a.max));
+    const it = items[0];
+    cargo.splice(cargo.indexOf(it), 1);
+    addBlock(player, gx, gy, it);
+    player.blocks.get(key(gx, gy)).flash = 1;
+    maxBlocks = Math.max(maxBlocks, player.blocks.size);
+    setMsg(TYPES[it.type].name + ' added.');
+  } else if (tool === 'remove') {
+    if (!b) return;
+    if (b.type === 'core') { setMsg("The core can't come off — it's the heart of your ship."); return; }
+    player.blocks.delete(key(gx, gy));
+    cargo.push(itemOf(b));
+    const lost = unconnected(player);
+    for (const [k, ob] of lost) { player.blocks.delete(k); cargo.push(itemOf(ob)); }
+    setMsg(lost.length ? 'Took off ' + (lost.length + 1) + ' parts — the others were only held on by that one.' : TYPES[b.type].name + ' moved to cargo.');
+  } else if (tool === 'upgrade') {
+    if (!b) return;
+    if (b.lvl >= MAXLVL) { setMsg('That ' + TYPES[b.type].name.toLowerCase() + ' is already max level.'); return; }
+    const cost = upgradeCost(b);
+    if (scrap < cost) { setMsg('You need ⚙' + (cost - scrap) + ' more scrap. Sell spare parts to get some.'); return; }
+    if (isTouch && pending !== key(gx, gy)) { pending = key(gx, gy); setMsg('Tap again to upgrade for ⚙' + cost + '.'); renderEditor(); return; }
+    scrap -= cost; b.lvl++; b.max = b.base * lvlMult(b.lvl); b.hp = b.max; b.flash = 1;
+    pending = null;
+    setMsg(TYPES[b.type].name + ' upgraded to level ' + b.lvl + '!' + (WEAPONS[b.type] ? ' It hits harder and fires faster.' : ' It is tougher now.'));
+  }
+  recalc(player);
+  hover = [gx, gy];
+  renderEditor();
+}
+edc.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') { hover = cellFromEvent(e); renderEditor(); } });
+edc.addEventListener('pointerleave', () => { hover = null; renderEditor(); });
+edc.addEventListener('pointerdown', e => { e.preventDefault(); const [gx, gy] = cellFromEvent(e); edClick(gx, gy, e.pointerType !== 'mouse'); });
+document.getElementById('tools').addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  tool = t.dataset.tool; pending = null;
+  setMsg({ add: 'Pick a part, then click a glowing square.', remove: 'Click a part on your ship to put it back in cargo.', upgrade: 'Click a part on your ship to upgrade it with scrap.' }[tool]);
+  renderEditor();
+});
+function sell(all) {
+  const items = ofType(selType).sort((a, c) => sellValue(a) - sellValue(c));
+  const list = all ? items : items.slice(0, 1);
+  let got = 0;
+  for (const it of list) { got += sellValue(it); cargo.splice(cargo.indexOf(it), 1); }
+  scrap += got;
+  setMsg('Sold ' + list.length + ' ' + TYPES[selType].name.toLowerCase() + (list.length > 1 ? ' parts' : '') + ' for ⚙' + got + '.');
+  if (!ofType(selType).length) selType = PART_ORDER.find(t => ofType(t).length) || null;
+  renderEditor();
+}
+document.getElementById('repairAll').addEventListener('click', () => {
+  let cost = 0;
+  for (const b of player.blocks.values()) cost += repairCost(b);
+  if (!cost || scrap < cost) return;
+  scrap -= cost;
+  for (const b of player.blocks.values()) { b.hp = b.max; }
+  setMsg('Ship repaired for ⚙' + cost + '.');
+  renderEditor();
+});
+
+function renderEditor() {
+  document.getElementById('edScrap').textContent = scrap;
+  document.querySelectorAll('#tools button').forEach(b => b.classList.toggle('on', b.dataset.tool === tool));
+
+  // cargo list
+  const parts = document.getElementById('edParts');
+  parts.innerHTML = '';
+  const owned = PART_ORDER.filter(t => ofType(t).length);
+  if (!owned.length) parts.innerHTML = '<div class="empty">Cargo is empty.</div>';
+  for (const t of owned) {
+    const btn = document.createElement('button');
+    btn.className = 'part' + (selType === t ? ' sel' : '');
+    btn.innerHTML = '<span class="sq" style="background:' + TYPES[t].color + '"></span>' + TYPES[t].name + '<span class="cnt">×' + ofType(t).length + '</span>';
+    btn.addEventListener('click', () => { selType = t; if (tool !== 'add') tool = 'add'; setMsg(''); renderEditor(); });
+    parts.appendChild(btn);
+  }
+
+  // selected part details + sell
+  const sel = document.getElementById('edSel');
+  if (selType && ofType(selType).length) {
+    const items = ofType(selType);
+    const cheapest = Math.min(...items.map(sellValue));
+    const total = items.reduce((a, it) => a + sellValue(it), 0);
+    const cracked = items.filter(it => it.hp < it.max - 0.01).length;
+    const lv = Math.max(...items.map(it => it.lvl));
+    sel.innerHTML = '<b style="color:' + TYPES[selType].color + '">' + TYPES[selType].name + '</b> — ' + TYPES[selType].desc +
+      '<br><span style="color:var(--dim)">You have ' + items.length + (cracked ? ' (' + cracked + ' cracked)' : '') + (lv > 1 ? ', best is level ' + lv : '') + '</span>' +
+      '<div class="btnRow"><button class="small" id="sell1">Sell one +⚙' + cheapest + '</button>' +
+      (items.length > 1 ? '<button class="small" id="sellAll">Sell all +⚙' + total + '</button>' : '') + '</div>';
+    document.getElementById('sell1').onclick = () => sell(false);
+    const sa = document.getElementById('sellAll'); if (sa) sa.onclick = () => sell(true);
+  } else sel.innerHTML = '';
+
+  // repair
+  let rc = 0;
+  for (const b of player.blocks.values()) rc += repairCost(b);
+  const rb = document.getElementById('repairAll');
+  rb.textContent = rc ? 'Repair whole ship ⚙' + rc : 'Ship is fully repaired';
+  rb.disabled = !rc || scrap < rc;
+
+  const st = stats(player), pw = shipPower(player, st);
+  document.getElementById('edStats').innerHTML =
+    'Blocks <b>' + st.n + '</b> &nbsp; Weapons <b>' + st.weapons + '</b> &nbsp; Armor <b>' + st.armor + '</b><br>' +
+    'Build area <b>' + (buildRadius(player) * 2 + 1) + '×' + (buildRadius(player) * 2 + 1) + '</b> <span style="font-size:13px">(grows every 5 blocks)</span><br>' +
+    (st.auto ? 'Turrets <b>' + st.auto + '</b><br>' : '') + (scanRange(player) ? 'Scanner range <b>' + scanRange(player) + '</b><br>' : '') +
+    'Speed <b>' + Math.round(pw.accel * 600) + '</b> &nbsp; Turning <b>' + Math.round(pw.turn * 1000) + '</b>' +
+    (st.shields ? ' &nbsp; Shield <b>' + Math.round(player.shieldMax) + '</b>' : '') +
+    (st.rp ? ' &nbsp; Repair <b>' + st.rp.toFixed(1) + '</b>' : '') +
+    (st.mp ? ' &nbsp; Magnet <b>' + st.mp.toFixed(1) + '</b>' : '');
+
+  // hover info
+  const info = document.getElementById('edInfo');
+  const hb = hover && player.blocks.get(key(hover[0], hover[1]));
+  info.textContent = hb ? blockInfo(hb) : '';
+
+  // grid
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const size = edc.clientWidth || 440;
+  if (edc.width !== Math.round(size * dpr)) { edc.width = Math.round(size * dpr); edc.height = Math.round(size * dpr); }
+  const V = viewRadius(), R = buildRadius(player), cs = size / (V * 2 + 1), c = edCtx;
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, size, size);
+  c.strokeStyle = 'rgba(140,150,255,.12)'; c.lineWidth = 1;
+  for (let i = 0; i <= V * 2 + 1; i++) {
+    c.beginPath(); c.moveTo(i * cs, 0); c.lineTo(i * cs, size); c.stroke();
+    c.beginPath(); c.moveTo(0, i * cs); c.lineTo(size, i * cs); c.stroke();
+  }
+  const cx = g => (g + V) * cs + cs / 2;
+  // outside the build area is dark
+  const a0 = (V - R) * cs, a1 = (V + R + 1) * cs;
+  c.fillStyle = 'rgba(0,0,0,.45)';
+  c.fillRect(0, 0, size, a0); c.fillRect(0, a1, size, size - a1); c.fillRect(0, a0, a0, a1 - a0); c.fillRect(a1, a0, size - a1, a1 - a0);
+  c.strokeStyle = 'rgba(125,255,160,.55)'; c.lineWidth = 2; c.strokeRect(a0, a0, a1 - a0, a1 - a0);
+  // radar coverage when pointing at a radar (or about to place one)
+  const showCover = (gx, gy, lvl) => {
+    const k = 1 + lvl;
+    c.fillStyle = 'rgba(233,238,252,.08)'; c.fillRect(cx(gx - k) - cs / 2, cx(gy - k) - cs / 2, (2 * k + 1) * cs, (2 * k + 1) * cs);
+    c.strokeStyle = 'rgba(233,238,252,.5)'; c.lineWidth = 1.5; c.setLineDash([5, 4]);
+    c.strokeRect(cx(gx - k) - cs / 2, cx(gy - k) - cs / 2, (2 * k + 1) * cs, (2 * k + 1) * cs); c.setLineDash([]);
+  };
+  if (hover) {
+    const hb3 = player.blocks.get(key(hover[0], hover[1]));
+    const showBubble = (gx, gy, lvl) => {
+      c.beginPath(); c.arc(cx(gx), cx(gy), shieldRadius(lvl) * cs, 0, TAU);
+      c.fillStyle = 'rgba(110,130,255,.15)'; c.fill(); c.strokeStyle = 'rgba(150,165,255,.8)'; c.lineWidth = 2; c.stroke();
+    };
+    if (hb3 && hb3.type === 'radar') showCover(hover[0], hover[1], hb3.lvl);
+    else if (hb3 && hb3.type === 'shield') showBubble(hover[0], hover[1], hb3.lvl);
+    else if (!hb3 && tool === 'add' && selType === 'radar' && canPlace(hover[0], hover[1])) showCover(hover[0], hover[1], 1);
+    else if (!hb3 && tool === 'add' && selType === 'shield' && canPlace(hover[0], hover[1])) showBubble(hover[0], hover[1], 1);
+  }
+  const canAdd = tool === 'add' && selType && ofType(selType).length;
+  if (canAdd) {
+    c.setLineDash([4, 3]);
+    for (let gx = -R; gx <= R; gx++) for (let gy = -R; gy <= R; gy++) {
+      if (!canPlace(gx, gy)) continue;
+      c.fillStyle = 'rgba(255,210,63,.12)'; c.fillRect(cx(gx) - cs / 2 + 2, cx(gy) - cs / 2 + 2, cs - 4, cs - 4);
+      c.strokeStyle = 'rgba(255,210,63,.45)'; c.strokeRect(cx(gx) - cs / 2 + 2, cx(gy) - cs / 2 + 2, cs - 4, cs - 4);
+    }
+    c.setLineDash([]);
+  }
+  for (const b of player.blocks.values()) if (b.type === 'shield') {
+    c.beginPath(); c.arc(cx(b.gx), cx(b.gy), shieldRadius(b.lvl) * cs, 0, TAU);
+    c.fillStyle = 'rgba(110,130,255,.07)'; c.fill(); c.strokeStyle = 'rgba(150,165,255,.3)'; c.lineWidth = 1; c.stroke();
+  }
+  ctx = c;
+  for (const b of player.blocks.values()) {
+    c.save(); c.translate(cx(b.gx), cx(b.gy)); c.scale(cs / S, cs / S);
+    drawBlock(b.type, b.hp / b.max, '#7dffa0', Math.max(0, b.flash), false, b.lvl, 0, b.auto);
+    c.restore();
+    if (tool === 'upgrade' && b.lvl < MAXLVL && scrap >= upgradeCost(b)) {
+      c.fillStyle = '#ffcf6b'; c.font = '700 ' + Math.round(cs * 0.42) + 'px "Chakra Petch", sans-serif'; c.textAlign = 'center';
+      c.fillText('▲', cx(b.gx) + cs * 0.3, cx(b.gy) - cs * 0.18);
+    }
+  }
+  if (hover) {
+    const [hx, hy] = hover, hb2 = player.blocks.get(key(hx, hy));
+    if (hb2 && (tool === 'remove' && hb2.type !== 'core')) {
+      c.strokeStyle = '#ff5470'; c.lineWidth = 3; c.strokeRect(cx(hx) - cs / 2 + 1, cx(hy) - cs / 2 + 1, cs - 2, cs - 2);
+    } else if (hb2 && tool === 'upgrade') {
+      c.strokeStyle = '#ffcf6b'; c.lineWidth = 3; c.strokeRect(cx(hx) - cs / 2 + 1, cx(hy) - cs / 2 + 1, cs - 2, cs - 2);
+    } else if (!hb2 && canAdd && canPlace(hx, hy)) {
+      c.save(); c.globalAlpha = 0.6; c.translate(cx(hx), cx(hy)); c.scale(cs / S, cs / S);
+      drawBlock(selType, 1, '#ffffff', 0, false, 1); c.restore();
+    }
+  }
+  ctx = mainCtx;
+  c.fillStyle = 'rgba(255,255,255,.35)';
+  c.beginPath(); c.moveTo(size - 6, size / 2); c.lineTo(size - 16, size / 2 - 8); c.lineTo(size - 16, size / 2 + 8); c.fill();
+}
+document.getElementById('doneBtn').addEventListener('click', closeEditor);
+document.getElementById('buildBtn').addEventListener('click', () => state === 'edit' ? closeEditor() : openEditor());
+
+// ---------- HUD ----------
+let hudTick = 0;
+function updateHud() {
+  if (!player || ++hudTick % 6) return;
+  const st = stats(player);
+  document.getElementById('score').textContent = score;
+  document.getElementById('wave').textContent = wave;
+  document.getElementById('scrap').textContent = scrap;
+  document.getElementById('nAll').textContent = st.n;
+  document.getElementById('nWep').textContent = st.weapons;
+  document.getElementById('nCargo').textContent = cargo.length;
+  document.getElementById('cargoHint').textContent = cargo.length && state === 'play' ? '— press E to build' : '';
+  const core = player.blocks.get('0,0');
+  document.getElementById('corefill').style.width = (core ? core.hp / core.max * 100 : 0) + '%';
+  document.getElementById('shieldbar').classList.toggle('off', !player.shieldMax);
+  document.getElementById('shieldfill').style.width = (player.shieldMax ? shieldTotal(player) / player.shieldMax * 100 : 0) + '%';
+  const li = document.getElementById('lockInfo');
+  if (lockValid()) {
+    const lb = lock.ship.blocks.get(key(lock.gx, lock.gy));
+    li.textContent = '🎯 ' + FACTIONS[lock.ship.faction].name + ' ' + TYPES[lb.type].name + ' — click empty space to cancel';
+  } else li.textContent = hasType(player, 'radar') && player.alive ? 'Click an enemy part to lock your turrets' : '';
+  canvas.style.cursor = hasType(player, 'radar') ? 'crosshair' : 'default';
+  const th = threatLevel();
+  const te = document.getElementById('threat');
+  te.textContent = th.name; te.style.color = th.color;
+  const bb = document.getElementById('buildBtn');
+  bb.style.display = (state === 'play' || state === 'edit') ? 'block' : 'none';
+  bb.classList.toggle('ready', cargo.length > 0 && state === 'play');
+}
+function getBest() { try { return +(localStorage.getItem('blockRaidersBest') || 0); } catch (e) { return 0; } }
+function saveBest() { try { if (score > getBest()) localStorage.setItem('blockRaidersBest', score); } catch (e) {} }
+function showOver() {
+  document.getElementById('overText').textContent = 'You survived ' + Math.max(1, Math.round(elapsed / 3600)) + ' min and reached danger zone ' + wave + ' with ' + score + ' points. Your biggest ship had ' + maxBlocks + ' blocks.';
+  document.getElementById('bestText').textContent = 'Best score: ' + Math.max(getBest(), score);
+  document.getElementById('over').classList.remove('hidden');
+  document.getElementById('againBtn').focus();
+}
+
+// ---------- picking a target part ----------
+let hintCool = 0;
+canvas.addEventListener('pointerdown', e => {
+  if (state !== 'play' || !player.alive) return;
+  const r = canvas.getBoundingClientRect();
+  const wx = (e.clientX - r.left - W / 2) / ZOOM + cam.x, wy = (e.clientY - r.top - H / 2) / ZOOM + cam.y;
+  let found = null, fd = 1.3;
+  for (const s of enemies) {
+    if (Math.hypot(wx - s.x, wy - s.y) > s.r + S) continue;
+    const l = toLocal(s, wx, wy);
+    for (const b of s.blocks.values()) { const d = Math.hypot(l.x - b.gx, l.y - b.gy); if (d < fd) { fd = d; found = { ship: s, gx: b.gx, gy: b.gy }; } }
+  }
+  if (!found) { if (lock) { lock = null; popup(player.x, player.y - player.r - 10, 'Target cleared', '#eef0ff'); } return; }
+  if (!hasType(player, 'radar')) {
+    if (hintCool <= 0) { popup(player.x, player.y - player.r - 10, 'Add a Radar block to lock onto parts', '#e9eefc'); hintCool = 60; }
+    return;
+  }
+  lock = found;
+  const b = found.ship.blocks.get(key(found.gx, found.gy));
+  popup(player.x, player.y - player.r - 10, 'Locked on: ' + TYPES[b.type].name, '#ffd23f');
+});
+
+// ---------- input ----------
+const MAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Space: 'fire' };
+window.addEventListener('keydown', e => {
+  if (e.code === 'KeyE' || e.code === 'KeyB') {
+    if (state === 'play') { openEditor(); e.preventDefault(); return; }
+    if (state === 'edit') { closeEditor(); e.preventDefault(); return; }
+  }
+  if (e.code === 'Escape' && state === 'edit') { closeEditor(); return; }
+  if (state === 'edit') return;
+  const k = MAP[e.code];
+  if (k) { keys[k] = true; e.preventDefault(); }
+  if ((e.code === 'Enter' || e.code === 'Space') && state === 'menu') newGame();
+});
+window.addEventListener('keyup', e => { const k = MAP[e.code]; if (k) keys[k] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+document.querySelectorAll('#touch button').forEach(btn => {
+  const k = btn.dataset.k;
+  const on = e => { e.preventDefault(); keys[k] = true; };
+  const off = e => { e.preventDefault(); keys[k] = false; };
+  btn.addEventListener('pointerdown', on);
+  btn.addEventListener('pointerup', off);
+  btn.addEventListener('pointerleave', off);
+  btn.addEventListener('pointercancel', off);
+});
+document.getElementById('startBtn').addEventListener('click', newGame);
+document.getElementById('againBtn').addEventListener('click', newGame);
+window.addEventListener('resize', resize);
+resize();
+
+// ---------- loop ----------
+function loop(t) {
+  const dt = Math.min((t - last) / 16.667, 3);
+  last = t;
+  update(dt);
+  draw();
+  updateHud();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
