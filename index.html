@@ -478,7 +478,7 @@ function Info(){
         ['',''],
         ['ARCADE MACHINES (left wall):','#fff'],
         ['  * SKY BOUND - your 3D flight game','#9fe'],
-        ['  * Snake  * Sky Pong  * Brick Bash  * Meteor Dodge','#9fe'],
+        ['  * Snake  * Sky Pong  * Brick Bash  * Block Raiders','#9fe'],
         ['VR ZONE: both headsets play Red Dust, Block Haven or Tiny Me','#9fe'],
         ['POOL TABLE: take turns with the mouse','#9fe'],
         ['CLAW MACHINES: try to win prizes!','#9fe'],
@@ -511,6 +511,7 @@ const MY_GAMES={
   skybound:{t:'✈ SKY BOUND',c:'#7fd8ff',u:'https://skybound-sage.vercel.app/',d:'Your 3D flight game! Fly planes, helicopters, gliders, an airship and rockets — all the way to the Moon.'},
   reddust:{t:'🚀 RED DUST',c:'#ff7a4a',u:'https://red-dust.vercel.app/',d:'Mars Mining Colony. Stranded in Jezero Crater — dig, build, keep breathing, and power the colony beacon.'},
   blockhaven:{t:'🧱 BLOCK HAVEN',c:'#3ddc84',u:'https://block-haven-taupe.vercel.app/',d:'Block survival on an island of hills, sea and caves. Dig, craft, farm and build with friends.'},
+  blockraiders:{t:'🚀 BLOCK RAIDERS',c:'#ffd23f',u:'https://claude.ai/artifact/SFrNXk1JEgejHLcZpv1nvP',d:'One ship against giant bosses built from blocks! Dodge the bullets, blast the boss apart block by block, then destroy its golden core.'},
   tinyme:{t:'🤏 TINY ME',c:'#ffb347',u:'https://tiny-me-game.vercel.app/',d:'Tiny Me in the Big House. You\'re no bigger than a thimble! Explore the giant house, find junk, build inventions — and don\'t let the cat see you.'}
 };
 const linkp=document.getElementById('linkp');let linkOpen=false;
@@ -618,7 +619,7 @@ const ARC=[
   {title:'SNAKE',kind:'snake',icon:'🐍',col:'#3ddc84',act:()=>pay(2,()=>startGame(Snake())),verb:'Play Snake (🪙 2)'},
   {title:'SKY PONG',kind:'pong',icon:'🏓',col:'#ff9f43',act:()=>pay(2,()=>startGame(Pong())),verb:'Play Sky Pong (🪙 2)'},
   {title:'BRICKS',kind:'bricks',icon:'🧱',col:'#ff5d73',act:()=>pay(2,()=>startGame(Bricks())),verb:'Play Brick Bash (🪙 2)'},
-  {title:'METEOR',kind:'meteor',icon:'☄️',col:'#b06bff',act:()=>pay(2,()=>startGame(Meteor())),verb:'Play Meteor Dodge (🪙 2)'},
+  {title:'BLOCK RAIDERS',kind:'raiders',icon:'🚀',col:'#ffd23f',act:()=>openLink(['blockraiders'],'🕹 BLOCK RAIDERS','Your space shooter:'),verb:'Play BLOCK RAIDERS 🚀'},
 ];
 // ---------- arcade helpers ----------
 const screens=[],neonSigns=[],clawBits=[],floorGlows=[];
@@ -632,6 +633,21 @@ function neonSign(text,col,w,x,y,z,ry,size){const m=new THREE.Mesh(new THREE.Pla
   m.position.set(x,y,z);m.rotation.y=ry||0;house.add(m);neonSigns.push(m);return m;}
 const tri=x=>{x-=Math.floor(x);return x<.5?x*2:2-x*2;};
 const SCREEN={
+  raiders(g,t){
+    g.fillStyle='#0d0b26';g.fillRect(0,0,256,200);
+    g.fillStyle='#fff';for(let k=0;k<30;k++){g.fillRect((k*53)%256,((k*37)+t*(1+k%3)*.5)%200,(k%3)?1:2,(k%3)?1:2);}
+    // a boss made of blocks with a golden core
+    const bx=128+Math.sin(t/40)*40,by=70;
+    const cols=['#ff5470','#7d8cff','#3ddc84','#b06bff'];
+    for(let i=-3;i<=3;i++)for(let j=-2;j<=1;j++){if(Math.abs(i)+Math.abs(j)>4)continue;if(((i*7+j*3+(t/20|0))%11)===0)continue;g.fillStyle=cols[(i+j+8)%4];g.fillRect(bx+i*11-5,by+j*11-5,10,10);}
+    g.fillStyle='#ffd23f';g.fillRect(bx-5,by-5,10,10);
+    // boss bullets
+    g.fillStyle='#ff5470';for(let k=0;k<5;k++){const yy=(by+10+((t*2+k*40)%120));g.beginPath();g.arc(bx-40+k*20,yy,3,0,7);g.fill();}
+    // your ship + lasers
+    const sx=128+Math.sin(t/25)*70;
+    g.fillStyle='#46f3ff';g.beginPath();g.moveTo(sx,165);g.lineTo(sx-12,185);g.lineTo(sx+12,185);g.fill();
+    g.fillStyle='#ffd23f';for(let k=0;k<3;k++)g.fillRect(sx-1,160-((t*4+k*30)%90),2,8);
+  },
   skybound(g,t){
     const gr=g.createLinearGradient(0,0,0,200);gr.addColorStop(0,'#2a7fff');gr.addColorStop(1,'#bfe8ff');g.fillStyle=gr;g.fillRect(0,0,256,200);
     g.fillStyle='#1e5fb0';g.fillRect(0,168,256,32);
