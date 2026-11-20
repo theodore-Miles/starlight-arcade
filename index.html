@@ -1285,6 +1285,8 @@ function updateWorld(dt){
   {const v=level===0&&me.y>=2.4?VENTS.find(v=>Math.hypot(v.x-me.x,v.z-me.z)<1.1):null;
    if(v)near={verb:me.holding!=null?'Climb into the vent with the '+PLANTS[me.holding].name+' 🕳':'Climb into the vent 🕳',act:()=>enterVent(v)};
    else if(me.holding!=null)near={verb:'Put the '+PLANTS[me.holding].name+' down '+PLANTS[me.holding].icon,act:dropPlant};}
+  if(level===0&&me.hHeld!=null&&me.holding==null&&!(me.hDrinkT>0)&&typeof HSODAS!=='undefined'){const sd=HSODAS[me.hHeld];near={verb:'Put the '+sd.name+' down '+sd.emo,act:dropHSoda};}
+  else if(level===0&&me.hHeld==null&&me.holding==null&&typeof HSODAS!=='undefined'){const dc=nearHDrop(facing);if(dc){const sd=HSODAS[dc.k];near={verb:'Pick up the '+sd.name+' '+sd.emo,act:()=>grabHDrop(dc)};}}
   {const lk=drawerLook();if(lk)near=lk;}
   if(near){promptEl.innerHTML='<kbd>E</kbd><kbd>🖱 click</kbd>';promptEl.append(near.verb);promptEl.style.display='block';}else promptEl.style.display='none';
   if(near&&(anyPress('KeyE','Enter')||clickUse)){clickUse=false;promptEl.style.display='none';near.act();}
@@ -1339,7 +1341,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,gs:me.lastSoda||null,hk:me.lastHackSend||null,tp:me.tpAt||0,hc:me.hHeld==null?-1:me.hHeld,fx:[performance.now()<(me.rainbowUntil||0)?1:0,performance.now()<(me.ghostUntil||0)?1:0,+mySize().toFixed(2)],sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sr:[STORE.open?1:0,STORE.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,gs:me.lastSoda||null,hk:me.lastHackSend||null,tp:me.tpAt||0,hc:me.hHeld==null?-1:me.hHeld,hd:me.hDrops.map(d=>[d.id,d.x,d.z,d.y,d.k]),hg:me.hGrab||null,fx:[performance.now()<(me.rainbowUntil||0)?1:0,performance.now()<(me.ghostUntil||0)?1:0,+mySize().toFixed(2)],sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sr:[STORE.open?1:0,STORE.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1405,6 +1407,12 @@ function upsertPeer(p){
         toast('🥤 '+who+' gave you a '+sd.name+' '+sd.emo+'!');addSys('🥤 '+who+' gave you a '+sd.name+' soda '+sd.emo+' — *gulp*');
         gulp();setTimeout(()=>sd.go(),1600);}}
   }else if(e.gsT===undefined)e.gsT=0;
+  e.hd=Array.isArray(pr.hd)?pr.hd.slice(0,6).filter(d=>Array.isArray(d)&&d.length===5&&Number.isInteger(d[0])&&Number.isInteger(d[4])&&d[4]>=0&&d[4]<HSODAS.length)
+    .map(d=>({id:d[0],x:clamp(num(d[1],0),-40,30),z:clamp(num(d[2],0),-70,40),y:clamp(num(d[3],0),0,6),k:d[4]})):null;
+  if(Array.isArray(pr.hg)&&pr.hg.length===3&&typeof pr.hg[0]==='string'&&Number.isInteger(pr.hg[1])&&typeof pr.hg[2]==='number'){
+    if(e.hgT===undefined)e.hgT=pr.hg[2];
+    else if(pr.hg[2]!==e.hgT){e.hgT=pr.hg[2];if(myPeer&&pr.hg[0]===myPeer){const n=me.hDrops.length;me.hDrops=me.hDrops.filter(d=>d.id!==pr.hg[1]);if(me.hDrops.length!==n)sendPresence(true);}}}
+  else if(e.hgT===undefined)e.hgT=0;
   e.hc=(Number.isInteger(pr.hc)&&pr.hc>=0&&pr.hc<HSODAS.length)?pr.hc:-1;
   e.fx=(Array.isArray(pr.fx)&&pr.fx.length===3)?[pr.fx[0]===1,pr.fx[1]===1,clamp(num(pr.fx[2],1),.3,2.2)]:null;
   if(typeof pr.tp==='number'&&isFinite(pr.tp)){
@@ -2438,15 +2446,19 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0,lastDrink:0,lastPw:0,lastHackP:0,};
    const gl=new THREE.PointLight(0xff3df2,.8,4);gl.position.set(0,1.6,1);vm.add(gl);
    houseCols.push({x:5.5,z:-55.8,hw:.42,hd:.65});
    houseInter.push({x:4.6,z:-55.8,verb:'Buy a HACKER SODA ⚡🥤',act:()=>startGame(HackerSodas())});}
-  // the exit: a real door with a glowing EXIT sign above it
-  const door=new THREE.Mesh(new THREE.BoxGeometry(1.1,2.2,.06),std(0x4a3426,{roughness:.6}));door.position.set(0,1.1,-54.04);g.add(door);
-  const dfr=std(0xd8d8de,{roughness:.6});
-  for(const [w,h,x,y] of [[.08,2.3,-.6,1.15],[.08,2.3,.6,1.15],[1.28,.08,0,2.3]]){const f=new THREE.Mesh(new THREE.BoxGeometry(w,h,.1),dfr);f.position.set(x,y,-54.04);g.add(f);}
-  const knob=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),std(0xd4af37,{metalness:.9,roughness:.25}));knob.position.set(-.4,1.05,-54.1);g.add(knob);
-  const ex=canvasTex(128,48,(c)=>{c.fillStyle='#1a0000';c.fillRect(0,0,128,48);c.font='bold 34px sans-serif';c.textAlign='center';c.fillStyle='#ff3b3b';c.shadowColor='#ff3b3b';c.shadowBlur=10;c.fillText('EXIT',64,36);});
-  const es=new THREE.Mesh(new THREE.PlaneGeometry(.5,.19),new THREE.MeshBasicMaterial({map:ex}));es.position.set(0,2.55,-54.03);es.rotation.y=Math.PI;g.add(es);
-  const portal={material:{}};LOUNGE.portal=portal;
-  houseInter.push({x:0,z:-54.9,verb:'Go back to the arcade 🚪',act:()=>teleportLounge(false)});
+  // the exit: a swirling PORTAL you just walk into
+  const swirl=canvasTex(256,256,(c)=>{const gr=c.createRadialGradient(128,128,8,128,128,128);gr.addColorStop(0,'#ffffff');gr.addColorStop(.25,'#c9a8ff');gr.addColorStop(.6,'#6b2bd9');gr.addColorStop(1,'rgba(30,0,80,0)');
+    c.fillStyle=gr;c.fillRect(0,0,256,256);c.strokeStyle='rgba(255,255,255,.55)';c.lineWidth=5;
+    for(let a=0;a<4;a++){c.beginPath();for(let t=0;t<80;t++){const r=t*1.5,an=a*Math.PI/2+t*.09;c.lineTo(128+Math.cos(an)*r,128+Math.sin(an)*r);}c.stroke();}});
+  const pg=new THREE.Group();pg.position.set(0,1.25,-54.08);pg.rotation.y=Math.PI;pg.scale.set(1,1.45,1);g.add(pg);
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(.85,48),new THREE.MeshBasicMaterial({map:swirl,transparent:true,depthWrite:false}));pg.add(disc);
+  const disc2=new THREE.Mesh(new THREE.CircleGeometry(.85,48),new THREE.MeshBasicMaterial({map:swirl,transparent:true,opacity:.6,depthWrite:false,blending:THREE.AdditiveBlending}));disc2.position.z=.01;pg.add(disc2);
+  const pring=new THREE.Mesh(new THREE.TorusGeometry(.88,.06,10,48),new THREE.MeshBasicMaterial({color:0xe6d0ff}));pg.add(pring);
+  const pl2=new THREE.PointLight(0xb06bff,1,5);pl2.position.set(0,1.3,-54.8);g.add(pl2);
+  const ex=canvasTex(256,48,(c)=>{c.clearRect(0,0,256,48);c.font='bold 30px sans-serif';c.textAlign='center';c.fillStyle='#f0e0ff';c.shadowColor='#b06bff';c.shadowBlur=12;c.fillText('🕹 TO THE ARCADE',128,36);});
+  const es=new THREE.Mesh(new THREE.PlaneGeometry(1.4,.26),new THREE.MeshBasicMaterial({map:ex,transparent:true}));es.position.set(0,2.75,-54.03);es.rotation.y=Math.PI;g.add(es);
+  const portal={material:{}};LOUNGE.portal=portal;LOUNGE.swirl=[disc,disc2];
+  
   setInterval(()=>{if(level!==0||me.z>-40)return;
     for(const l of LOUNGE.leds)if(Math.random()<.3)l.material.color.setHex(Math.random()<.8?0xb06bff:(Math.random()<.5?0xff3b3b:0xffd36e));
     portal.material.opacity=.55+Math.random()*.3;},180);
@@ -2530,6 +2542,8 @@ function aimSecCam(c){c.cam.rotation.set(c.bx+c.pit,c.by+c.yaw,0);
   c.cam.getWorldDirection(_sv);c.body.lookAt(c.cam.position.x+_sv.x,c.cam.position.y+_sv.y,c.cam.position.z+_sv.z);}
 function secCamTick(){
   const blink=Math.floor(performance.now()/600)%2===0;for(const c of SECCAM.cams)c.red.visible=blink;
+  if(LOUNGE.swirl&&level===0&&me.z<-40){LOUNGE.swirl[0].rotation.z+=.03;LOUNGE.swirl[1].rotation.z-=.05;
+    if(me.z>-54.75&&Math.abs(me.x)<.75&&me.y<2&&!game&&performance.now()>(me.matStart||0)+MAT_MS){teleportLounge(false);}}
   if(LOUNGE.globe&&level===0&&me.z<-40){LOUNGE.globe.rotation.y+=.01;LOUNGE.globe.rotation.x=Math.sin(performance.now()/2000)*.2;}
 }
 function secCamRender(){
@@ -2723,6 +2737,30 @@ function updateHCan(dt){
     HCAN.quaternion.copy(camera.quaternion);HCAN.rotateX(-.35*(1-k));HCAN.rotateZ(1.5*k);HCAN.rotateY(-.4);}
   else{meAv.updateMatrixWorld();meAv.localToWorld(_v.set(.55,.95,.12));HCAN.position.copy(_v);HCAN.quaternion.copy(meAv.quaternion);if(k)HCAN.rotateX(-1.2*k);}
   if(me.hDrinkT>0){me.hDrinkT-=dt;if(me.hDrinkT<=0){me.hDrinkT=0;const sd=HSODAS[me.hHeld];me.hHeld=null;HCAN.visible=false;updInv();sendPresence(true);if(sd)sd.go();}}
+}
+// ----- dropping hacker soda cans on the floor (anyone can pick them up) -----
+me.hDrops=[];let hDropId=1;const hGrabbed=new Map(),hDropMeshes=new Map();
+function dropHSoda(){if(me.hHeld==null)return;
+  const fx=Math.sin(me.ry),fz=Math.cos(me.ry);let x=me.x+fx*.8,z=me.z+fz*.8;if(blocked(x,z,true)){x=me.x;z=me.z;}
+  me.hDrops.push({id:hDropId++,x:+x.toFixed(2),z:+z.toFixed(2),y:+me.y.toFixed(2),k:me.hHeld});if(me.hDrops.length>6)me.hDrops.shift();
+  const sd=HSODAS[me.hHeld];me.hHeld=null;HCAN.visible=false;updInv();sendPresence(true);toast(sd.emo+' You put the '+sd.name+' down');}
+function allHDrops(){const L=[];for(const d of me.hDrops)L.push({own:null,key:'me:'+d.id,...d});
+  for(const [id,e] of peers)if(e.hd&&e.lv===0)for(const d of e.hd){const key=id+':'+d.id;if(!hGrabbed.has(key))L.push({own:id,key,...d});}
+  return L;}
+function nearHDrop(facing){let best=null,bd=1.5;for(const d of allHDrops()){const dd=Math.hypot(d.x-me.x,d.z-me.z);if(dd<bd&&Math.abs(d.y-me.y)<1.5&&facing(d.x,d.z)>.6){bd=dd;best=d;}}return best;}
+function grabHDrop(d){
+  if(d.own==null)me.hDrops=me.hDrops.filter(o=>o.id!==d.id);
+  else{hGrabbed.set(d.key,Date.now());me.hGrab=[d.own,d.id,Date.now()];}
+  holdHSoda(d.k);}
+function updateHDrops(){
+  const now=Date.now();for(const [k,t] of hGrabbed)if(now-t>15000)hGrabbed.delete(k);
+  const want=new Set();
+  if(level===0)for(const d of allHDrops()){want.add(d.key);let m=hDropMeshes.get(d.key);
+    if(!m){m=makeHCan();m.visible=true;colorHCan(m,d.k);scene.add(m);hDropMeshes.set(d.key,m);
+      const ring=new THREE.Mesh(new THREE.RingGeometry(.07,.11,20),new THREE.MeshBasicMaterial({color:new THREE.Color(HSODAS[d.k].col),transparent:true,opacity:.6}));
+      ring.rotation.x=-Math.PI/2;ring.position.y=-.074;m.add(ring);}
+    m.position.set(d.x,d.y+.076,d.z);m.rotation.y+=.01;}
+  for(const [k,m] of hDropMeshes)if(!want.has(k)){scene.remove(m);hDropMeshes.delete(k);}
 }
 function openSodaBag(){if(!me.sodaBag||!me.sodaBag.length){toast('🥤 You have no drinks saved. Buy some at the Hacker Soda machine in the Code Cave!');return;}startGame(SodaBag());}
 function SodaBag(){
@@ -3813,7 +3851,7 @@ function loop(){
   updateDarts(dt);
   updateCamera(dt);
   updateSpray(dt);
-  try{updateHCan(dt);}catch(e){}
+  try{updateHCan(dt);updateHDrops();}catch(e){}
   updateTools(dt);
   updateHelp();
   updateVend();updateSecrets();updateStore();updateVoiceVolumes();updateJuke();updateHockey3D();
