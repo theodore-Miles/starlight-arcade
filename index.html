@@ -1592,7 +1592,7 @@ function applyLights(announce){
 // ======================================================================
 // PAPER, PEN, PINS, BULLETIN BOARD, PAPER BALLS + TRASH CAN POINTS
 // ======================================================================
-function updInv(){const i=me.inv;document.getElementById('inv').textContent=(me.found&&me.found.length?'🎒'+me.found.join('')+'  ':'')+(me.gem?'💎  ':'')+(me.hasKey?'🔑  ':'')+(me.darts?'🎯x'+me.darts+'  ':'')+'🎯 '+me.dartPts+' dart pts  '+'📄'+i.paper+'  🖊'+(i.pen?'✓':'✗')+'  📌'+i.pins+'  '+(me.ball?'🗞 ball  ':'')+'🪙 '+me.score+' pts';}
+function updInv(){const i=me.inv;document.getElementById('inv').textContent=(me.sodaBag&&me.sodaBag.length?'🥤x'+me.sodaBag.length+' (B)  ':'')+(me.found&&me.found.length?'🎒'+me.found.join('')+'  ':'')+(me.gem?'💎  ':'')+(me.hasKey?'🔑  ':'')+(me.darts?'🎯x'+me.darts+'  ':'')+'🎯 '+me.dartPts+' dart pts  '+'📄'+i.paper+'  🖊'+(i.pen?'✓':'✗')+'  📌'+i.pins+'  '+(me.ball?'🗞 ball  ':'')+'🪙 '+me.score+' pts';}
 updInv();
 function takePaper(){const i=me.inv;if(i.paper>=5){toast('📄 You can only carry 5 sheets');return;}i.paper++;updInv();toast('📄 Took a sheet of paper! (R = scrunch it into a ball)');}
 function openDrawer(){const i=me.inv,got=[];if(!i.pen){i.pen=true;got.push('🖊 a pen');}
@@ -2679,26 +2679,51 @@ const HSODAS=[
   {name:'Rocket Fuel',emo:'🚀',col:'#ff5a36',price:30,what:'MEGA speed + jumps!',go(){me.rocketUntil=performance.now()+20000;toast('🚀 Rocket Fuel! MEGA speed and super jumps for 20 seconds!');}},
   {name:'Rainbow Pop',emo:'🌈',col:'#ff7ad9',price:10,what:'Glow every color!',go(){me.rainbowUntil=performance.now()+30000;toast('🌈 Rainbow Pop! You glow every color for 30 seconds!');}},
   {name:'Jetpack Juice',emo:'🎒',col:'#46f3ff',price:30,what:'Hold Space to FLY!',go(){me.jetUntil=performance.now()+20000;toast('🎒 Jetpack Juice! Hold SPACE to fly for 20 seconds!');}},
-  {name:'Backwards Berry',emo:'🙃',col:'#b06bff',price:5,what:'Walk backwards! (silly)',go(){me.backUntil=performance.now()+15000;toast('🙃 Backwards Berry! Everything is backwards for 15 seconds!');}},
+  {name:'Backwards Berry',emo:'🙃',col:'#b06bff',price:5,what:'Walk backwards!',go(){me.backUntil=performance.now()+15000;toast('🙃 Backwards Berry! Everything is backwards for 15 seconds!');}},
   {name:'Teleport Tonic',emo:'🌀',col:'#9dff6b',price:20,what:'Zap somewhere random!',go(){const S=[[0,-8,0,'Main Room'],[0,4.2,Math.PI,'Pool Table'],[-18.6,0,-Math.PI/2,'Game Room'],[6.8,8.8,0,'Vending Machine']];
     const t=S[Math.random()*S.length|0];materializeAt(t[0],t[1],t[2],t[3]);}},
+  {name:'SUPER DRINK',emo:'💥',col:'#ffd700',price:75,super:true,what:'ALL the powers!',go(){const n=performance.now()+25000;
+    me.rocketUntil=n;me.jetUntil=n;me.rainbowUntil=n;me.floatUntil=n;
+    toast('💥 SUPER DRINK!!! MEGA speed, super jumps, jetpack (hold Space), moon float AND rainbow for 25 seconds!');burp();}},
 ];
-function HackerSodas(){
-  let sel=0;const cw=200,ch=200,gx=(W-(cw*4+20*3))/2,gy=110;
-  const buy=k=>{const sd=HSODAS[k];closeGame();pay(sd.price,()=>{gulp();setTimeout(()=>sd.go(),600);});};
+// your drinks backpack: hacker sodas you bought and saved for later
+function openSodaBag(){if(!me.sodaBag||!me.sodaBag.length){toast('🥤 You have no drinks saved. Buy some at the Hacker Soda machine in the Code Cave!');return;}startGame(SodaBag());}
+function SodaBag(){
+  let sel=0;
+  const drink=i=>{const k=me.sodaBag.splice(i,1)[0];updInv();closeGame();gulp();setTimeout(()=>HSODAS[k].go(),600);};
   return{init(){},
-    update(){if(P.has('ArrowLeft')||P.has('KeyA'))sel=(sel+7)%8;if(P.has('ArrowRight')||P.has('KeyD'))sel=(sel+1)%8;
-      if(P.has('ArrowUp')||P.has('KeyW')||P.has('ArrowDown')||P.has('KeyS'))sel=(sel+4)%8;if(P.has('Enter')||P.has('Space'))buy(sel);},
+    update(){const n=me.sodaBag.length;if(!n){closeGame();return;}if(sel>=n)sel=n-1;
+      if(P.has('ArrowLeft')||P.has('KeyA'))sel=(sel+n-1)%n;if(P.has('ArrowRight')||P.has('KeyD'))sel=(sel+1)%n;if(P.has('Enter')||P.has('Space'))drink(sel);},
+    draw(){termBg('🎒 YOUR DRINKS');txt('Click a drink (or arrows + Enter) to drink it now',W/2,95,17,'#c9a8ff','center');
+      const n=me.sodaBag.length,cw=150,per=5;
+      me.sodaBag.forEach((k,i)=>{const sd=HSODAS[k],row=Math.floor(i/per),inRow=Math.min(per,n-row*per),x=(W-(inRow*cw+(inRow-1)*14))/2+(i%per)*(cw+14),y=130+row*200,on=i===sel,
+        inside=mouse.x>x&&mouse.x<x+cw&&mouse.y>y&&mouse.y<y+180;if(mouse.moved&&inside)sel=i;
+        ctx.fillStyle=on?'#2a1a5e':'#140a30';ctx.fillRect(x,y,cw,180);ctx.strokeStyle=on?sd.col:'#4a2a9e';ctx.lineWidth=on?4:2;ctx.strokeRect(x,y,cw,180);
+        ctx.fillStyle=sd.col;ctx.fillRect(x+cw/2-22,y+20,44,70);ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillRect(x+cw/2-16,y+26,6,58);
+        txt(sd.emo,x+cw/2,y+68,26,'#000','center');txt(sd.name,x+cw/2,y+120,16,'#fff','center');txt(sd.what,x+cw/2,y+146,13,'#c9a8ff','center',false);
+        if(mouse.clicked&&inside&&game)drink(i);});}};
+}
+function HackerSodas(){
+  let sel=0,msg='';const N=HSODAS.length,cw=168,ch=200,gap=12,gx=(W-(cw*5+gap*4))/2,gy=110;
+  me.sodaBag=me.sodaBag||[];
+  const buy=k=>{const sd=HSODAS[k];if(me.sodaBag.length>=10){msg='🎒 Your backpack is full! (10 drinks max) Drink some first with B';return;}
+    if(me.score<sd.price){msg='🪙 You need '+sd.price+' coins for '+sd.name+' — you have '+me.score;return;}
+    me.score-=sd.price;me.sodaBag.push(k);updInv();sendPresence(true);msg='✅ '+sd.emo+' '+sd.name+' is in your backpack! Press B any time to drink it';};
+  return{init(){},
+    update(){if(P.has('ArrowLeft')||P.has('KeyA'))sel=(sel+N-1)%N;if(P.has('ArrowRight')||P.has('KeyD'))sel=(sel+1)%N;
+      if(P.has('ArrowUp')||P.has('KeyW'))sel=Math.max(0,sel-5);if(P.has('ArrowDown')||P.has('KeyS'))sel=Math.min(N-1,sel+5);if(P.has('Enter')||P.has('Space'))buy(sel);},
     draw(){termBg('⚡ HACKER SODAS ⚡');txt('Super powers the normal machine doesn\'t have!  You have 🪙 '+me.score,W/2,92,17,'#c9a8ff','center');
-      HSODAS.forEach((sd,k)=>{const x=gx+(k%4)*(cw+20),y=gy+Math.floor(k/4)*(ch+20),on=k===sel,inside=mouse.x>x&&mouse.x<x+cw&&mouse.y>y&&mouse.y<y+ch;
+      HSODAS.forEach((sd,k)=>{const x=gx+(k%5)*(cw+gap),y=gy+Math.floor(k/5)*(ch+20),on=k===sel,inside=mouse.x>x&&mouse.x<x+cw&&mouse.y>y&&mouse.y<y+ch;
         if(mouse.moved&&inside)sel=k;
-        ctx.fillStyle=on?'#2a1a5e':'#140a30';ctx.fillRect(x,y,cw,ch);ctx.strokeStyle=on?sd.col:'#4a2a9e';ctx.lineWidth=on?4:2;ctx.strokeRect(x,y,cw,ch);
+        ctx.fillStyle=on?'#2a1a5e':'#140a30';ctx.fillRect(x,y,cw,ch);ctx.strokeStyle=on||sd.super?sd.col:'#4a2a9e';ctx.lineWidth=on?4:sd.super?3:2;ctx.strokeRect(x,y,cw,ch);
+        if(sd.super){ctx.fillStyle='hsla('+(T*4)%360+',90%,60%,.18)';ctx.fillRect(x,y,cw,ch);}
         ctx.fillStyle=sd.col;ctx.fillRect(x+cw/2-22,y+22,44,70);ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillRect(x+cw/2-16,y+28,6,58);ctx.fillStyle='#ccc';ctx.fillRect(x+cw/2-22,y+22,44,6);
         txt(sd.emo,x+cw/2,y+70,26,'#000','center');
-        txt(sd.name,x+cw/2,y+120,18,'#fff','center');txt(sd.what,x+cw/2,y+146,14,'#c9a8ff','center',false);
+        txt(sd.name,x+cw/2,y+120,17,sd.super?'#ffd700':'#fff','center');txt(sd.what,x+cw/2,y+146,14,'#c9a8ff','center',false);
         txt('🪙 '+sd.price,x+cw/2,y+182,20,me.score>=sd.price?'#ffd36e':'#ff6b6b','center');
         if(mouse.clicked&&inside&&game)buy(k);});
-      txt('Click a soda (or arrows + Enter) to buy and drink it',W/2,575,16,'#e6d0ff','center',false);}};
+      txt(msg||'Click a soda to buy it — it goes in your backpack. Press B any time to drink it!',W/2,575,16,msg.startsWith('✅')?'#7fffd4':msg?'#ff9d9d':'#e6d0ff','center',false);
+      txt('🎒 In your backpack: '+me.sodaBag.map(k=>HSODAS[k].emo).join(' '),W/2,605,15,'#c9a8ff','center',false);}};
 }
 function Teleporter(){
   const SPOTS=[['🕹 Main Room',0,-8,0],['🎮 Game Room',-18.6,0,-Math.PI/2],['🥤 Vending Machine',6.8,8.8,0],['🎱 Pool Table',0,4.2,Math.PI]];
@@ -3669,6 +3694,7 @@ function updateHelp(){
       if(held&&held.kind==='phone')k('F','talk on the phone');
       if(held&&held.kind==='duck')k('F','squeak');
       if(held&&held.kind==='soda'){k('F','drink');k('G','give to a player');}
+      if(me.sodaBag&&me.sodaBag.length)k('B','your drinks');
       if(held&&(held.kind==='mop'||held.kind==='vacuum'))k('hold F / click','power up & swing');
       if(me.ball)k('hold Q / click','throw paper ball');
       else if(me.darts>0)k('hold Q / click','throw dart');
@@ -3683,6 +3709,7 @@ const clock=new THREE.Clock();
 function loop(){
   requestAnimationFrame(loop); // keep going even if something below goes wrong
   const dt=Math.min(clock.getDelta(),.05);T++;
+  if(started&&!game&&!linkOpen&&!chatting&&!noteOpen&&P.has('KeyB'))openSodaBag();
   if(started&&!game&&!linkOpen&&!chatting&&!noteOpen&&P.has('KeyV')){thirdPerson=!thirdPerson;toast(thirdPerson?'📷 Third person view':'👀 First person view');}
   if(game){
     if(P.has('Escape'))closeGame();else{game.update();if(game)game.draw();}
