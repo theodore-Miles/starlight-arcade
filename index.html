@@ -1167,7 +1167,7 @@ function groundAt(x,z){let gy=0,b=false;if(level!==0)return{gy,b};
   return{gy,b};}
 function blocked(x,z){
   const R=.45;
-  if(level===0&&me.z<-40){if(x<-6+R||x>6-R||z<-66+R||z>-54-R)return true;}   // inside the HACKER LOUNGE
+  if(level===0&&me.z<-40){if(x<-6+R||x>6-R||z<-66+R||z>-54-R)return true;}   // inside the CODE CAVE
   else if(level===0){
     if(x<-17-R){
       if(x<-33+R)return true;
@@ -2300,8 +2300,8 @@ async function setVoice(on){
   cmdSay(on?'🎤 Your mic is ON — players near you can hear you! Type /speak again to turn it off.':'🔇 Your mic is OFF.');
 }
 // ======================================================================
-// HACKER LOUNGE: a secret room far away from the arcade. Type /hackerlounge to teleport in.
-const LOUNGE={x:0,z:-60,leds:[],lastHack:0,lastDrink:0,lastPw:0,lastHackP:0};
+// CODE CAVE (was the Hacker Lounge): a secret room far away from the arcade. Type /codecave to teleport in.
+const LOUNGE={x:0,z:-60,leds:[],lastHack:0,lastDrink:0,lastPw:0,lastHackP:0,lastSnake:0,lastBug:0,lastWall:0};
 (function(){
   const g=new THREE.Group();house.add(g);
   const matrix=(w,h,bg)=>canvasTex(w,h,(c)=>{c.fillStyle=bg;c.fillRect(0,0,w,h);c.font='bold 14px monospace';
@@ -2321,7 +2321,7 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0,lastDrink:0,lastPw:0,lastHackP:0};
     const m=new THREE.Mesh(new THREE.PlaneGeometry(w,4.2),wm);m.position.set(x,2.1,z);m.rotation.y=ry;g.add(m);}
   // neon sign
   const sign=canvasTex(512,96,(c)=>{c.fillStyle='rgba(0,0,0,0)';c.clearRect(0,0,512,96);c.font='bold 58px monospace';c.textAlign='center';
-    c.shadowColor='#b06bff';c.shadowBlur=18;c.fillStyle='#e6d0ff';c.fillText('HACKER LOUNGE',256,68);});
+    c.shadowColor='#b06bff';c.shadowBlur=18;c.fillStyle='#e6d0ff';c.fillText('CODE CAVE',256,68);});
   const sm=new THREE.Mesh(new THREE.PlaneGeometry(6,1.1),new THREE.MeshBasicMaterial({map:sign,transparent:true}));sm.position.set(0,3.4,-65.95);g.add(sm);
   const lA=new THREE.PointLight(0xb06bff,1.1,14);lA.position.set(0,3.6,-62);g.add(lA);
   const lB=new THREE.PointLight(0x46f3ff,.7,10);lB.position.set(0,3.4,-56);g.add(lB);
@@ -2397,6 +2397,21 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0,lastDrink:0,lastPw:0,lastHackP:0};
    const gl=new THREE.PointLight(0xff3df2,.8,4);gl.position.set(0,1.6,1);vm.add(gl);
    houseCols.push({x:5.5,z:-55.8,hw:.42,hd:.65});
    houseInter.push({x:4.6,z:-55.8,verb:'Buy a HACKER SODA ⚡🥤',act:()=>startGame(HackerSodas())});}
+  // four new game kiosks
+  const kiosk=(x,z,ry,title,col,verb,make)=>{const k=new THREE.Group();k.position.set(x,0,z);k.rotation.y=ry;g.add(k);
+    const c=new THREE.Color(col).getHex();
+    const bd=new THREE.Mesh(new THREE.BoxGeometry(.8,1.9,.6),std(0x150b33,{metalness:.5,roughness:.4}));bd.position.y=.95;k.add(bd);
+    const tr=new THREE.Mesh(new THREE.BoxGeometry(.84,.06,.64),new THREE.MeshBasicMaterial({color:c}));tr.position.y=1.93;k.add(tr);
+    const sc=canvasTex(200,170,(q)=>{q.fillStyle='#06021a';q.fillRect(0,0,200,170);q.strokeStyle=col;q.lineWidth=6;q.strokeRect(3,3,194,164);
+      q.font='bold 22px monospace';q.textAlign='center';q.fillStyle=col;q.shadowColor=col;q.shadowBlur=10;title.split('\n').forEach((l,i)=>q.fillText(l,100,70+i*40));});
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(.66,.56),new THREE.MeshBasicMaterial({map:sc}));m.position.set(0,1.45,.31);k.add(m);
+    const pl=new THREE.PointLight(c,.5,3);pl.position.set(0,1.5,.8);k.add(pl);
+    houseCols.push({x,z,hw:Math.abs(Math.sin(ry))>.5?.32:.42,hd:Math.abs(Math.sin(ry))>.5?.42:.32});
+    houseInter.push({x:x+Math.sin(ry)*.9,z:z+Math.cos(ry)*.9,verb,act:()=>startGame(make())});};
+  kiosk(-5.6,-57.0,Math.PI/2,'🐍\nSNAKE','#46f3ff','Play Code Snake 🐍',CaveSnake);
+  kiosk(-5.6,-62.6,Math.PI/2,'🎹\nSYNTH','#ff7ad9','Play the Cave Synth 🎹',Synth);
+  kiosk(3.4,-61.4,-Math.PI/2,'🧱\nFIREWALL','#ffd36e','Play Firewall 🧱',Firewall);
+  kiosk(3.4,-56.6,-Math.PI/2,'🐛\nBUG SQUASH','#9dff6b','Play Bug Squash 🐛',BugSquash);
   // the glowing exit portal on the front wall
   const portal=new THREE.Mesh(new THREE.CircleGeometry(1,32),new THREE.MeshBasicMaterial({color:0xb06bff,transparent:true,opacity:.75}));
   portal.position.set(0,1.3,-54.05);portal.rotation.y=Math.PI;portal.scale.y=1.4;g.add(portal);LOUNGE.portal=portal;
@@ -2504,7 +2519,7 @@ function teleportLounge(into){
   if(game)closeGame();
   if(level!==0)goLevel(0);
   me.inVent=false;me.hiding=null;me.crouch=false;me.vy=0;me.y=0;
-  if(into)materializeAt(0,-55.6,Math.PI,'','💻 You materialized in the secret HACKER LOUNGE! (type /hackerlounge again to go back)');
+  if(into)materializeAt(0,-55.6,Math.PI,'','💻 You materialized in the secret CODE CAVE! (type /codecave again to go back)');
   else materializeAt(0,-8,0,'','🕹 You materialized back in the arcade!');
 }
 // ----- HACKER LOUNGE computers -----
@@ -2638,7 +2653,7 @@ function materializeAt(x,z,ry,label,msg){
   tpBeam(me.x,me.y,me.z,true);
   me.x=x;me.z=z;me.ry=ry;me.y=0;me.vy=0;me.pitch=-.08;snapCam=true;
   me.matStart=performance.now();me.tpAt=Date.now();tpBeam(x,0,z,false);shimmer();sendPresence(true);
-  setTimeout(()=>toast(msg||('🌐 You materialized at the '+label+'! (type /hackerlounge to come back)')),MAT_MS*.8);
+  setTimeout(()=>toast(msg||('🌐 You materialized at the '+label+'! (type /codecave to come back)')),MAT_MS*.8);
 }
 // ----- HACKER SODAS: expensive sodas with brand new powers -----
 function mySize(){const n=performance.now();return n<(me.tinyUntil||0)?.45:n<(me.giantUntil||0)?1.8:1;}
@@ -2670,6 +2685,82 @@ function HackerSodas(){
         if(mouse.clicked&&inside&&game)buy(k);});
       txt('Click a soda (or arrows + Enter) to buy and drink it',W/2,575,16,'#e6d0ff','center',false);}};
 }
+// ----- CODE CAVE games: snake, bug squash, firewall memory, synth -----
+function caveReward(key,coins,what){if(coins<=0)return'';const l=Math.ceil((LOUNGE[key]+90000-Date.now())/1000);
+  if(l>0)return'(prizes come back in '+l+'s)';LOUNGE[key]=Date.now();me.score+=coins;updInv();sendPresence(true);toast(what+' +🪙 '+coins);return'+🪙 '+coins+'!';}
+function beep(f,len,type,vol){try{const ac=window._ac||(window._ac=new (window.AudioContext||window.webkitAudioContext)());const o=ac.createOscillator(),g=ac.createGain(),t0=ac.currentTime;
+  o.type=type||'square';o.frequency.value=f;g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol||.12,t0+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+(len||.15));
+  o.connect(g);g.connect(ac.destination);o.start(t0);o.stop(t0+(len||.15)+.02);}catch(e){}}
+function CaveSnake(){
+  const CW=30,CH=18,S=28,ox=(W-CW*S)/2,oy=90;let sn,dir,nd,food,tick,state,msg;
+  const place=()=>{do food=[Math.random()*CW|0,Math.random()*CH|0];while(sn.some(p=>p[0]===food[0]&&p[1]===food[1]));};
+  const reset=()=>{sn=[[8,9],[7,9],[6,9]];dir=[1,0];nd=[1,0];tick=0;state='play';msg='';place();};
+  return{init(){reset();},
+    update(){if(state!=='play'){if(P.has('Enter')||P.has('Space'))reset();return;}
+      if((P.has('ArrowUp')||P.has('KeyW'))&&dir[1]!==1)nd=[0,-1];if((P.has('ArrowDown')||P.has('KeyS'))&&dir[1]!==-1)nd=[0,1];
+      if((P.has('ArrowLeft')||P.has('KeyA'))&&dir[0]!==1)nd=[-1,0];if((P.has('ArrowRight')||P.has('KeyD'))&&dir[0]!==-1)nd=[1,0];
+      if(++tick<Math.max(4,8-Math.floor(sn.length/6)))return;tick=0;dir=nd;
+      const h=[sn[0][0]+dir[0],sn[0][1]+dir[1]];
+      if(h[0]<0||h[1]<0||h[0]>=CW||h[1]>=CH||sn.some(p=>p[0]===h[0]&&p[1]===h[1])){state='over';beep(110,.5,'sawtooth');
+        msg=caveReward('lastSnake',Math.min(6,Math.floor((sn.length-3)/3)),'🐍 Snake!');return;}
+      sn.unshift(h);if(h[0]===food[0]&&h[1]===food[1]){beep(880,.08);place();}else sn.pop();},
+    draw(){termBg('🐍 CODE SNAKE');ctx.fillStyle='#0a0626';ctx.fillRect(ox,oy,CW*S,CH*S);ctx.strokeStyle='#b06bff';ctx.lineWidth=3;ctx.strokeRect(ox,oy,CW*S,CH*S);
+      txt('🍕',ox+food[0]*S+S/2,oy+food[1]*S+S-5,22,'#000','center');
+      sn.forEach((p,i)=>{ctx.fillStyle=i?'#46f3ff':'#ff3df2';ctx.fillRect(ox+p[0]*S+2,oy+p[1]*S+2,S-4,S-4);});
+      txt('Length: '+sn.length+'   (arrows / WASD)',ox,oy-10,16,'#c9a8ff','left',false);
+      if(state==='over'){ctx.fillStyle='rgba(6,2,26,.8)';ctx.fillRect(ox,oy,CW*S,CH*S);txt('💥 CRASH!',W/2,280,46,'#ff3df2','center');
+        txt('Length '+sn.length+'  '+msg,W/2,330,22,'#ffd36e','center');txt('Press Enter to play again',W/2,380,18,'#c9a8ff','center');}}};
+}
+function BugSquash(){
+  let bugs,score,end,state,msg;
+  const reset=()=>{bugs=[];score=0;end=performance.now()+20000;state='play';msg='';};
+  return{init(){reset();},
+    update(){if(state!=='play'){if(P.has('Enter')||P.has('Space'))reset();return;}
+      const now=performance.now();if(now>end){state='over';msg=caveReward('lastBug',Math.min(6,Math.floor(score/5)),'🐛 Bug Squash!');return;}
+      if(bugs.length<5&&Math.random()<.05)bugs.push({x:80+Math.random()*800,y:130+Math.random()*420,vx:(Math.random()-.5)*5,vy:(Math.random()-.5)*5,born:now,gold:Math.random()<.1});
+      for(const b of bugs){b.x+=b.vx;b.y+=b.vy;if(b.x<60||b.x>900)b.vx*=-1;if(b.y<120||b.y>570)b.vy*=-1;}
+      bugs=bugs.filter(b=>now-b.born<3500);
+      if(mouse.clicked)for(let i=bugs.length-1;i>=0;i--){const b=bugs[i];if(Math.hypot(mouse.x-b.x,mouse.y-b.y)<30){score+=b.gold?3:1;bugs.splice(i,1);beep(b.gold?1200:600,.08);break;}}},
+    draw(){termBg('🐛 BUG SQUASH');const t=Math.max(0,(end-performance.now())/1000);
+      txt('Click the bugs before they crash the computer!   Squashed: '+score+'   ⏱ '+t.toFixed(1),W/2,95,17,'#c9a8ff','center');
+      for(const b of bugs)txt(b.gold?'🪲':'🐛',b.x,b.y+14,40,'#000','center');
+      if(state==='over'){txt('⏰ TIME!',W/2,280,46,'#ff3df2','center');txt('You squashed '+score+' bugs  '+msg,W/2,330,22,'#ffd36e','center');txt('Press Enter to play again',W/2,380,18,'#c9a8ff','center');}}};
+}
+function Firewall(){
+  const C=['#ff3b3b','#46f3ff','#ffd36e','#3ddc84'],F=[330,440,550,660],pads=[[230,140],[490,140],[230,350],[490,350]];
+  let seq,pos,state,flash,flashT,show,msg;
+  const next=()=>{seq.push(Math.random()*4|0);pos=0;state='show';show={i:0,t:performance.now()+700};};
+  const reset=()=>{seq=[];msg='';flash=-1;next();};
+  const hit=i=>{flash=i;flashT=performance.now()+250;beep(F[i],.25,'triangle');
+    if(i===seq[pos]){pos++;if(pos===seq.length){state='wait';setTimeout(()=>{if(state==='wait')next();},700);}}
+    else{state='over';beep(90,.6,'sawtooth');msg=caveReward('lastWall',Math.min(6,seq.length-3),'🧱 Firewall!');}};
+  return{init(){reset();},
+    update(){const now=performance.now();
+      if(state==='over'){if(P.has('Enter')||P.has('Space'))reset();return;}
+      if(state==='show'){if(now>show.t){if(show.i>=seq.length){state='input';return;}const i=seq[show.i];flash=i;flashT=now+400;beep(F[i],.35,'triangle');show.i++;show.t=now+650;}return;}
+      if(state!=='input')return;
+      for(let i=0;i<4;i++)if(P.has('Digit'+(i+1)))hit(i);
+      if(mouse.clicked)pads.forEach(([x,y],i)=>{if(state==='input'&&mouse.x>x&&mouse.x<x+240&&mouse.y>y&&mouse.y<y+190)hit(i);});},
+    draw(){termBg('🧱 FIREWALL');const now=performance.now();if(now>flashT)flash=-1;
+      txt(state==='show'?'Watch the pattern…':state==='input'?'Your turn! Click the blocks (or 1-4) in the same order':'',W/2,100,18,'#c9a8ff','center');
+      txt('Level '+seq.length,W/2,125,16,'#ffd36e','center',false);
+      pads.forEach(([x,y],i)=>{ctx.globalAlpha=flash===i?1:.3;ctx.fillStyle=C[i];ctx.fillRect(x,y,240,190);ctx.globalAlpha=1;ctx.strokeStyle=C[i];ctx.lineWidth=3;ctx.strokeRect(x,y,240,190);txt(String(i+1),x+120,y+110,40,'#fff','center');});
+      if(state==='over'){ctx.fillStyle='rgba(6,2,26,.85)';ctx.fillRect(0,130,W,440);txt('🔥 FIREWALL BROKEN!',W/2,300,42,'#ff3b3b','center');
+        txt('You reached level '+seq.length+'  '+msg,W/2,350,22,'#ffd36e','center');txt('Press Enter to play again',W/2,400,18,'#c9a8ff','center');}}};
+}
+function Synth(){
+  const keys=['KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK'],lab='ASDFGHJK',notes=[262,294,330,349,392,440,494,523];
+  let lit={},wave=0;const waves=['square','sine','sawtooth','triangle'],bars=new Array(48).fill(0);
+  const play=i=>{beep(notes[i]*(K.ShiftLeft?2:1),.35,waves[wave],.15);lit[i]=performance.now()+200;for(let k=0;k<bars.length;k++)bars[k]=Math.max(bars[k],Math.random()*200*(1-Math.abs(k/bars.length-i/8)));};
+  return{init(){},
+    update(){keys.forEach((k,i)=>{if(P.has(k))play(i);});if(P.has('Space'))wave=(wave+1)%4;
+      if(mouse.clicked)keys.forEach((k,i)=>{const x=120+i*92;if(mouse.x>x&&mouse.x<x+86&&mouse.y>360&&mouse.y<560)play(i);});
+      for(let k=0;k<bars.length;k++)bars[k]*=.9;},
+    draw(){termBg('🎹 CAVE SYNTH');
+      bars.forEach((b,k)=>{ctx.fillStyle='hsl('+(k*7+T)%360+',90%,60%)';ctx.fillRect(120+k*15.3,320-b,12,b);});
+      keys.forEach((k,i)=>{const x=120+i*92,on=performance.now()<(lit[i]||0);ctx.fillStyle=on?'#ff3df2':'#f0e0ff';ctx.fillRect(x,360,86,200);txt(lab[i],x+43,540,24,on?'#fff':'#2a1a5e','center');});
+      txt('Press A S D F G H J K (or click) to play · hold Shift = high notes · Space = change sound ('+waves[wave]+')',W/2,600,15,'#c9a8ff','center',false);}};
+}
 function Teleporter(){
   const SPOTS=[['🕹 Main Room',0,-8,0],['🎮 Game Room',-18.6,0,-Math.PI/2],['🥤 Vending Machine',6.8,8.8,0],['🎱 Pool Table',0,4.2,Math.PI]];
   return{init(){},update(){},
@@ -2680,7 +2771,7 @@ function runCommand(cmd){
   const parts=cmd.trim().split(/\s+/);const c=parts[0].toLowerCase();
   if(c==='/speak'||c==='/talk'||c==='/mic'){setVoice(!VOICE.on);return;}
   if(c==='/mute'){setVoice(false);return;}
-  if(/^\/(hack|haker|hacer)/.test(c)){teleportLounge(!(level===0&&me.z<-40));return;}
+  if(/^\/(code|cave|kode|hack|haker|hacer)/.test(c)){teleportLounge(!(level===0&&me.z<-40));return;}
   if(c==='/give'){
     let n=NaN,rest=parts.slice(1);
     if(rest.length&&/^\d+$/.test(rest[0])){n=+rest[0];rest=rest.slice(1);}
@@ -2719,7 +2810,7 @@ function runCommand(cmd){
     me.lastWhisper=[p.id,text,Date.now()];sendPresence(true);
     addWhisper('🤫 You whisper to '+nm+': ',text);return;
   }
-  if(c==='/help'){cmdSay('Commands: /give 10 PlayerName · /give 10 all · /whisper PlayerName message · /speak (turn your mic on/off) · /hackerlounge 🤫');return;}
+  if(c==='/help'){cmdSay('Commands: /give 10 PlayerName · /give 10 all · /whisper PlayerName message · /speak (turn your mic on/off) · /codecave 🤫');return;}
   cmdSay('Unknown command. Try /help');
 }
 // ======================================================================
