@@ -2284,27 +2284,27 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0};
   const matrix=(w,h,bg)=>canvasTex(w,h,(c)=>{c.fillStyle=bg;c.fillRect(0,0,w,h);c.font='bold 14px monospace';
     let seed=3;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
     for(let x=0;x<w;x+=12)for(let y=0;y<h;y+=15){const v=rnd();if(v<.45)continue;
-      c.fillStyle=v>.93?'#d6ffe0':'rgba(40,255,110,'+(.25+v*.6)+')';c.fillText(String.fromCharCode(v>.7?48+Math.floor(rnd()*2):0x30A0+Math.floor(rnd()*90)),x,y+13);}});
+      c.fillStyle=v>.93?'#f0e0ff':'rgba(150,110,255,'+(.25+v*.6)+')';c.fillText(String.fromCharCode(v>.7?48+Math.floor(rnd()*2):0x30A0+Math.floor(rnd()*90)),x,y+13);}});
   // floor: dark with a green grid
-  const ft=canvasTex(256,256,(c)=>{c.fillStyle='#03110a';c.fillRect(0,0,256,256);c.strokeStyle='#19ff6a';c.lineWidth=3;c.strokeRect(0,0,256,256);});
+  const ft=canvasTex(256,256,(c)=>{c.fillStyle='#0a0420';c.fillRect(0,0,256,256);c.strokeStyle='#b06bff';c.lineWidth=3;c.strokeRect(0,0,256,256);});
   ft.wrapS=ft.wrapT=THREE.RepeatWrapping;ft.repeat.set(6,5);
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(12,12),std(0xffffff,{map:ft,emissive:0xffffff,emissiveMap:ft,emissiveIntensity:.35}));
   fl.rotation.x=-Math.PI/2;fl.position.set(0,0,-60);g.add(fl);
-  const ceil=new THREE.Mesh(new THREE.PlaneGeometry(12,12),std(0x020805));ceil.rotation.x=Math.PI/2;ceil.position.set(0,4.2,-60);g.add(ceil);
+  const ceil=new THREE.Mesh(new THREE.PlaneGeometry(12,12),std(0x05020f));ceil.rotation.x=Math.PI/2;ceil.position.set(0,4.2,-60);g.add(ceil);
   // walls covered in falling green code
-  const wt=matrix(512,256,'#010a05');
+  const wt=matrix(512,256,'#06021a');
   const wm=std(0xffffff,{map:wt,emissive:0xffffff,emissiveMap:wt,emissiveIntensity:.8});
   for(const [x,z,ry,w] of [[0,-66,0,12],[0,-54,Math.PI,12],[-6,-60,Math.PI/2,12],[6,-60,-Math.PI/2,12]]){
     const m=new THREE.Mesh(new THREE.PlaneGeometry(w,4.2),wm);m.position.set(x,2.1,z);m.rotation.y=ry;g.add(m);}
   // neon sign
   const sign=canvasTex(512,96,(c)=>{c.fillStyle='rgba(0,0,0,0)';c.clearRect(0,0,512,96);c.font='bold 58px monospace';c.textAlign='center';
-    c.shadowColor='#19ff6a';c.shadowBlur=18;c.fillStyle='#b8ffcf';c.fillText('HACKER LOUNGE',256,68);});
+    c.shadowColor='#b06bff';c.shadowBlur=18;c.fillStyle='#e6d0ff';c.fillText('HACKER LOUNGE',256,68);});
   const sm=new THREE.Mesh(new THREE.PlaneGeometry(6,1.1),new THREE.MeshBasicMaterial({map:sign,transparent:true}));sm.position.set(0,3.4,-65.95);g.add(sm);
-  const lA=new THREE.PointLight(0x19ff6a,1.1,14);lA.position.set(0,3.6,-62);g.add(lA);
+  const lA=new THREE.PointLight(0xb06bff,1.1,14);lA.position.set(0,3.6,-62);g.add(lA);
   const lB=new THREE.PointLight(0x46f3ff,.7,10);lB.position.set(0,3.4,-56);g.add(lB);
   const box=(w,h,d,col,x,y,z,o)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),std(col,o||{}));m.position.set(x,y,z);g.add(m);return m;};
   // hacker desks with glowing code screens
-  const scr=matrix(256,160,'#001a08');
+  const scr=matrix(256,160,'#0a0626');
   const desks=[[-3.6,-64.6],[0,-64.6],[3.6,-64.6]];
   desks.forEach(([x,z],i)=>{
     box(2.6,.1,1.1,0x161a1e,x,.95,z,{metalness:.6,roughness:.3});
@@ -2320,20 +2320,20 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0};
     box(.9,3,1.6,0x0c0f12,5.4,1.5,z,{metalness:.7,roughness:.35});
     houseCols.push({x:5.4,z,hw:.45,hd:.8});
     for(let r=0;r<10;r++)for(let k=0;k<4;k++){
-      const led=new THREE.Mesh(new THREE.BoxGeometry(.03,.06,.06),new THREE.MeshBasicMaterial({color:0x19ff6a}));
+      const led=new THREE.Mesh(new THREE.BoxGeometry(.03,.06,.06),new THREE.MeshBasicMaterial({color:0xb06bff}));
       led.position.set(4.94,.4+r*.26,z-.5+k*.32);g.add(led);LOUNGE.leds.push(led);}}
   // comfy couch + beanbags
-  box(3,.5,.95,0x103a22,-3.4,.25,-54.75);box(3,1,.32,0x103a22,-3.4,.6,-54.25);
-  box(.3,.75,.95,0x0b2a18,-5.05,.38,-54.75);box(.3,.75,.95,0x0b2a18,-1.75,.38,-54.75);
-  for(const x of [-4.2,-2.6]){const pl=box(.55,.12,.4,0x1b5c38,x,.56,-54.8);pl.rotation.y=.2;}   // pillows
+  box(3,.5,.95,0x2a1a5e,-3.4,.25,-54.75);box(3,1,.32,0x2a1a5e,-3.4,.6,-54.25);
+  box(.3,.75,.95,0x1c1140,-5.05,.38,-54.75);box(.3,.75,.95,0x1c1140,-1.75,.38,-54.75);
+  for(const x of [-4.2,-2.6]){const pl=box(.55,.12,.4,0x4a2a9e,x,.56,-54.8);pl.rotation.y=.2;}   // pillows
   houseCols.push({x:-3.4,z:-54.7,hw:1.65,hd:.5,top:.5});
   // glowing neon strips along the floor and the ceiling
-  for(const [y,col] of [[.04,0x19ff6a],[4.15,0x46f3ff]]){const nm=new THREE.MeshBasicMaterial({color:col});
+  for(const [y,col] of [[.04,0xb06bff],[4.15,0x46f3ff]]){const nm=new THREE.MeshBasicMaterial({color:col});
     for(const [x,z,w,d] of [[0,-65.95,12,.06],[0,-54.05,12,.06],[-5.95,-60,.06,12],[5.95,-60,.06,12]]){
       const m=new THREE.Mesh(new THREE.BoxGeometry(w,.06,d),nm);m.position.set(x,y,z);g.add(m);}}
   // round rug + a spinning hologram globe in the middle
-  const rug=new THREE.Mesh(new THREE.CircleGeometry(1.7,40),std(0x061f12,{roughness:.95}));rug.rotation.x=-Math.PI/2;rug.position.set(-.6,.015,-60.2);g.add(rug);
-  const rr=new THREE.Mesh(new THREE.RingGeometry(1.55,1.7,48),new THREE.MeshBasicMaterial({color:0x19ff6a}));rr.rotation.x=-Math.PI/2;rr.position.set(-.6,.02,-60.2);g.add(rr);
+  const rug=new THREE.Mesh(new THREE.CircleGeometry(1.7,40),std(0x150b33,{roughness:.95}));rug.rotation.x=-Math.PI/2;rug.position.set(-.6,.015,-60.2);g.add(rug);
+  const rr=new THREE.Mesh(new THREE.RingGeometry(1.55,1.7,48),new THREE.MeshBasicMaterial({color:0xb06bff}));rr.rotation.x=-Math.PI/2;rr.position.set(-.6,.02,-60.2);g.add(rr);
   const ped=new THREE.Mesh(new THREE.CylinderGeometry(.35,.45,.8,20),std(0x14181c,{metalness:.8,roughness:.3}));ped.position.set(-.6,.4,-60.2);g.add(ped);
   const ptop=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.05,24),new THREE.MeshBasicMaterial({color:0x46f3ff}));ptop.position.set(-.6,.82,-60.2);g.add(ptop);
   houseCols.push({x:-.6,z:-60.2,r:.45,top:.85});
@@ -2342,24 +2342,24 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0};
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(.5,.36,.75,20,1,true),new THREE.MeshBasicMaterial({color:0x46f3ff,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false}));
   beam.position.set(-.6,1.2,-60.2);g.add(beam);
   // hacker posters
-  [['ACCESS\nGRANTED','#19ff6a',-3.3],['01101000\n01101001','#46f3ff',3.3]].forEach(([t,c,x])=>{
-    const tx=canvasTex(256,180,(k)=>{k.fillStyle='#020a06';k.fillRect(0,0,256,180);k.strokeStyle=c;k.lineWidth=6;k.strokeRect(6,6,244,168);
+  [['ACCESS\nGRANTED','#b06bff',-3.3],['01101000\n01101001','#46f3ff',3.3]].forEach(([t,c,x])=>{
+    const tx=canvasTex(256,180,(k)=>{k.fillStyle='#08041a';k.fillRect(0,0,256,180);k.strokeStyle=c;k.lineWidth=6;k.strokeRect(6,6,244,168);
       k.font='bold 34px monospace';k.textAlign='center';k.fillStyle=c;k.shadowColor=c;k.shadowBlur=12;t.split('\n').forEach((l,i)=>k.fillText(l,128,78+i*46));});
     const m=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.05),new THREE.MeshBasicMaterial({map:tx}));m.position.set(x,2.5,-54.06);m.rotation.y=Math.PI;g.add(m);});
-  for(const [x,z,c] of [[-3,-57.5,0x6b2bd9],[-2.4,-61.4,0x19a85a]]){
+  for(const [x,z,c] of [[-3,-57.5,0x6b2bd9],[-2.4,-61.4,0xff3df2]]){
     const b=new THREE.Mesh(new THREE.SphereGeometry(.6,16,12),std(c));b.scale.y=.6;b.position.set(x,.36,z);g.add(b);
     houseCols.push({x,z,r:.55,top:.6});}
   // snack table with energy drinks
   box(1.2,.5,.8,0x222428,1.8,.25,-58.5,{metalness:.5});houseCols.push({x:1.8,z:-58.5,hw:.6,hd:.4,top:.5});
-  for(let i=0;i<4;i++){const c=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.2,10),std([0x19ff6a,0x46f3ff,0xff3df2,0xffd36e][i],{emissive:[0x19ff6a,0x46f3ff,0xff3df2,0xffd36e][i],emissiveIntensity:.4}));
+  for(let i=0;i<4;i++){const c=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.2,10),std([0xb06bff,0x46f3ff,0xff3df2,0xffd36e][i],{emissive:[0xb06bff,0x46f3ff,0xff3df2,0xffd36e][i],emissiveIntensity:.4}));
     c.position.set(1.4+i*.27,.6,-58.5+(i%2?.15:-.15));g.add(c);}
   // the glowing exit portal on the front wall
-  const portal=new THREE.Mesh(new THREE.CircleGeometry(1,32),new THREE.MeshBasicMaterial({color:0x19ff6a,transparent:true,opacity:.75}));
+  const portal=new THREE.Mesh(new THREE.CircleGeometry(1,32),new THREE.MeshBasicMaterial({color:0xb06bff,transparent:true,opacity:.75}));
   portal.position.set(0,1.3,-54.05);portal.rotation.y=Math.PI;portal.scale.y=1.4;g.add(portal);LOUNGE.portal=portal;
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.05,.07,8,40),new THREE.MeshBasicMaterial({color:0xb8ffcf}));ring.position.copy(portal.position);ring.scale.y=1.4;g.add(ring);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.05,.07,8,40),new THREE.MeshBasicMaterial({color:0xe6d0ff}));ring.position.copy(portal.position);ring.scale.y=1.4;g.add(ring);
   houseInter.push({x:0,z:-54.9,verb:'Teleport back to the arcade 🌀',act:()=>teleportLounge(false)});
   setInterval(()=>{if(level!==0||me.z>-40)return;
-    for(const l of LOUNGE.leds)if(Math.random()<.3)l.material.color.setHex(Math.random()<.8?0x19ff6a:(Math.random()<.5?0xff3b3b:0xffd36e));
+    for(const l of LOUNGE.leds)if(Math.random()<.3)l.material.color.setHex(Math.random()<.8?0xb06bff:(Math.random()<.5?0xff3b3b:0xffd36e));
     portal.material.opacity=.55+Math.random()*.3;},180);
 })();
 // SECURITY CAMERAS: sit at the security computer in the Hacker Lounge to watch the other rooms
@@ -2376,12 +2376,12 @@ const SECCAM={cams:[],viewing:false,sel:-1};
     const lens=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.06,12),std(0x111111));lens.rotation.x=Math.PI/2;lens.position.z=.21;body.add(lens);
     const red=new THREE.Mesh(new THREE.SphereGeometry(.025,8,6),new THREE.MeshBasicMaterial({color:0xff2020}));red.position.set(.06,.06,.2);body.add(red);
     body.lookAt(...look);
-    SECCAM.cams.push({name,cam,red});});
+    SECCAM.cams.push({name,cam,red,body});});
   // the SECURITY STATION on the left wall of the lounge
   const box=(w,h,d,col,x,y,z,o)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),std(col,o||{}));m.position.set(x,y,z);g.add(m);return m;};
   box(1.1,.1,2.6,0x161a1e,-5.3,.95,-60,{metalness:.6,roughness:.3});
   box(.9,.95,.08,0x0b0d10,-5.3,.47,-61.2);box(.9,.95,.08,0x0b0d10,-5.3,.47,-58.8);
-  const snow=canvasTex(160,100,(c)=>{c.fillStyle='#0a1a12';c.fillRect(0,0,160,100);for(let i=0;i<500;i++){const v=Math.random()*120|0;c.fillStyle='rgb('+v+','+(v+60)+','+v+')';c.fillRect(Math.random()*160,Math.random()*100,2,2);}
+  const snow=canvasTex(160,100,(c)=>{c.fillStyle='#100a24';c.fillRect(0,0,160,100);for(let i=0;i<500;i++){const v=Math.random()*120|0;c.fillStyle='rgb('+v+','+v+','+(v+60)+')';c.fillRect(Math.random()*160,Math.random()*100,2,2);}
     c.font='bold 14px monospace';c.fillStyle='#ff3b3b';c.fillText('● REC',8,18);});
   for(const [z,ry] of [[-60.75,.25],[-60,0],[-59.25,-.25]]){
     const sc=new THREE.Group();sc.position.set(-5.65,1.6,z);sc.rotation.y=Math.PI/2+ry;g.add(sc);
@@ -2406,18 +2406,18 @@ function CamViewer(){
       if(mouse.clicked){if(SECCAM.sel>=0)SECCAM.sel=-1;else CAM_CELLS.forEach(([x,y,w,h],i)=>{if(mouse.x>x&&mouse.x<x+w&&mouse.y>y&&mouse.y<y+h)SECCAM.sel=i;});}
     },
     draw(){
-      const W=960,H=640;ctx.fillStyle='#020a06';ctx.fillRect(0,0,W,H);
-      ctx.font='bold 22px monospace';ctx.textAlign='left';ctx.fillStyle='#19ff6a';ctx.fillText('📹 SECURITY CAMERAS',20,38);
+      const W=960,H=640;ctx.fillStyle='#08041a';ctx.fillRect(0,0,W,H);
+      ctx.font='bold 22px monospace';ctx.textAlign='left';ctx.fillStyle='#b06bff';ctx.fillText('📹 SECURITY CAMERAS',20,38);
       if(T%60<30){ctx.fillStyle='#ff3b3b';ctx.beginPath();ctx.arc(W-90,31,7,0,7);ctx.fill();}
       ctx.fillStyle='#ff3b3b';ctx.font='bold 18px monospace';ctx.fillText('REC',W-76,38);
       const cells=SECCAM.sel>=0?[[20,62,920,554]]:CAM_CELLS;
       cells.forEach(([x,y,w,h],k)=>{const i=SECCAM.sel>=0?SECCAM.sel:k;
-        ctx.clearRect(x,y,w,h);ctx.strokeStyle='#19ff6a';ctx.lineWidth=3;ctx.strokeRect(x-2,y-2,w+4,h+4);
+        ctx.clearRect(x,y,w,h);ctx.strokeStyle='#b06bff';ctx.lineWidth=3;ctx.strokeRect(x-2,y-2,w+4,h+4);
         ctx.font='bold 16px monospace';ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x,y,ctx.measureText(SECCAM.cams[i].name).width+40,26);
         ctx.fillStyle='#ffffff';ctx.fillText(SECCAM.cams[i].name,x+28,y+19);ctx.fillStyle='#ff3b3b';ctx.beginPath();ctx.arc(x+15,y+13,5,0,7);ctx.fill();
         // a bit of scan-line fuzz so it feels like a real camera
-        ctx.fillStyle='rgba(25,255,106,.05)';for(let l=(T*2)%8;l<h;l+=8)ctx.fillRect(x,y+l,w,2);});
-      ctx.font='14px monospace';ctx.fillStyle='#8f8';ctx.textAlign='center';
+        ctx.fillStyle='rgba(176,107,255,.06)';for(let l=(T*2)%8;l<h;l+=8)ctx.fillRect(x,y+l,w,2);});
+      ctx.font='14px monospace';ctx.fillStyle='#c9a8ff';ctx.textAlign='center';
       ctx.fillText(SECCAM.sel>=0?'Click or press 0 = see all cameras · Esc = get up':'Click a camera or press 1-4 to make it big · Esc = get up',W/2,H-8);
     }
   };
@@ -2431,12 +2431,12 @@ function secCamRender(){
   const r=mini.getBoundingClientRect(),sx=r.width/960,sy=r.height/640;
   const cells=SECCAM.sel>=0?[[20,62,920,554]]:CAM_CELLS;
   renderer.setScissorTest(true);
-  const hv=hand.visible;hand.visible=false;
+  const hv=hand.visible;hand.visible=false;for(const c of SECCAM.cams)c.body.visible=false;
   cells.forEach(([x,y,w,h],k)=>{const c=SECCAM.cams[SECCAM.sel>=0?SECCAM.sel:k].cam;
     const px=r.left+x*sx,py=r.top+y*sy,pw=w*sx,ph=h*sy,by=innerHeight-py-ph;
     renderer.setViewport(px,by,pw,ph);renderer.setScissor(px,by,pw,ph);
     c.aspect=pw/ph;c.updateProjectionMatrix();renderer.render(scene,c);});
-  hand.visible=hv;
+  hand.visible=hv;for(const c of SECCAM.cams)c.body.visible=true;
   renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);
 }
 function teleportLounge(into){
