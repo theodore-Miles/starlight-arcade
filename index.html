@@ -2309,42 +2309,32 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0,lastDrink:0,lastPw:0,lastHackP:0,};
     let seed=3;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
     for(let x=0;x<w;x+=12)for(let y=0;y<h;y+=15){const v=rnd();if(v<.45)continue;
       c.fillStyle=v>.93?'#f0e0ff':'rgba(150,110,255,'+(.25+v*.6)+')';c.fillText(String.fromCharCode(v>.7?48+Math.floor(rnd()*2):0x30A0+Math.floor(rnd()*90)),x,y+13);}});
-  // ---- the CAVE: rocky walls, stone floor with glowing cracks, stalactites, crystals ----
+  // ---- a real room: carpet, painted walls with baseboards, a ceiling with light panels ----
   let rs=11;const rnd3=()=>(rs=(rs*16807)%2147483647)/2147483647;
-  const stoneTex=canvasTex(512,512,(c)=>{c.fillStyle='#1d1830';c.fillRect(0,0,512,512);
-    for(let i=0;i<260;i++){const v=20+rnd3()*30|0;c.fillStyle='rgb('+v+','+(v-4)+','+(v+18)+')';c.beginPath();c.ellipse(rnd3()*512,rnd3()*512,10+rnd3()*40,8+rnd3()*30,rnd3()*3,0,7);c.fill();}
-    c.strokeStyle='rgba(8,4,16,.8)';c.lineWidth=3;for(let i=0;i<40;i++){c.beginPath();let x=rnd3()*512,y=rnd3()*512;c.moveTo(x,y);for(let k=0;k<5;k++){x+=(rnd3()-.5)*70;y+=(rnd3()-.5)*70;c.lineTo(x,y);}c.stroke();}});
-  const glowTex=(w,h,n,runes)=>canvasTex(w,h,(c)=>{c.fillStyle='#000';c.fillRect(0,0,w,h);c.lineCap='round';
-    for(let i=0;i<n;i++){const col=rnd3()<.6?'176,107,255':'70,243,255';c.strokeStyle='rgba('+col+',.9)';c.shadowColor='rgb('+col+')';c.shadowBlur=8;c.lineWidth=1.5+rnd3()*2;
-      c.beginPath();let x=rnd3()*w,y=rnd3()*h;c.moveTo(x,y);for(let k=0;k<6;k++){x+=(rnd3()-.5)*90;y+=(rnd3()-.5)*60;c.lineTo(x,y);}c.stroke();
-      if(runes){c.font='bold 16px monospace';c.fillStyle='rgba('+col+',.9)';for(let k=0;k<4;k++)c.fillText(rnd3()<.5?'0':'1',x+k*11,y+(rnd3()-.5)*8);}}});
-  stoneTex.wrapS=stoneTex.wrapT=THREE.RepeatWrapping;
-  const floorGlow=glowTex(512,512,26,false);floorGlow.wrapS=floorGlow.wrapT=THREE.RepeatWrapping;
-  const fmap=stoneTex.clone();fmap.needsUpdate=true;fmap.repeat.set(3,3);floorGlow.repeat.set(3,3);
-  const fl=new THREE.Mesh(new THREE.PlaneGeometry(12,12),std(0xffffff,{map:fmap,emissive:0xffffff,emissiveMap:floorGlow,emissiveIntensity:.9,roughness:.9}));
+  const carpet=canvasTex(256,256,(c)=>{c.fillStyle='#34384a';c.fillRect(0,0,256,256);
+    for(let i=0;i<6000;i++){const v=40+rnd3()*30|0;c.fillStyle='rgba('+v+','+(v+4)+','+(v+20)+',.5)';c.fillRect(rnd3()*256,rnd3()*256,1.5,1.5);}});
+  carpet.wrapS=carpet.wrapT=THREE.RepeatWrapping;carpet.repeat.set(5,5);
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(12,12),std(0xffffff,{map:carpet,roughness:1}));
   fl.rotation.x=-Math.PI/2;fl.position.set(0,0,-60);g.add(fl);
-  // bumpy rock: a plane pushed outward with smooth lumps (never into the room)
-  const rock=(w,h,sx,sy,seed)=>{const geo=new THREE.PlaneGeometry(w,h,Math.round(w*3),Math.round(h*3)),pa=geo.attributes.position;
-    for(let i=0;i<pa.count;i++){const x=pa.getX(i),y=pa.getY(i),ex=Math.min(1,(w/2-Math.abs(x))*2),ey=Math.min(1,(h/2-Math.abs(y))*2);
-      const n=Math.sin(x*1.7+seed)*Math.cos(y*2.1+seed*2)+.6*Math.sin(x*3.9+y*2.7+seed*3)+.3*Math.sin(x*7.3-y*5.1+seed);
-      pa.setZ(i,-(.25+.2*n)*Math.max(0,Math.min(ex,ey)));}
-    geo.computeVertexNormals();return geo;};
-  const wallGlow=glowTex(512,256,9,true);
-  const rockMat=std(0xffffff,{map:stoneTex,emissive:0xffffff,emissiveMap:wallGlow,emissiveIntensity:.8,roughness:.95,flatShading:true});
-  [[0,-66,0,12],[0,-54,Math.PI,12],[-6,-60,Math.PI/2,12],[6,-60,-Math.PI/2,12]].forEach(([x,z,ry,w],i)=>{
-    const m=new THREE.Mesh(rock(w,4.2,0,0,i*1.7),rockMat);m.position.set(x,2.1,z);m.rotation.y=ry;g.add(m);});
-  const ceil=new THREE.Mesh(rock(12,12,0,0,9),std(0x241d38,{roughness:1,flatShading:true}));ceil.rotation.x=Math.PI/2;ceil.position.set(0,4.2,-60);g.add(ceil);
-  // stalactites hanging from the ceiling
-  const stalM=std(0x2c2444,{roughness:.9,flatShading:true});
-  for(let i=0;i<26;i++){const len=.3+rnd3()*.55,st=new THREE.Mesh(new THREE.ConeGeometry(.08+rnd3()*.12,len,6),stalM);
-    st.rotation.x=Math.PI;st.position.set(-5.6+rnd3()*11.2,4.2-len/2,-65.6+rnd3()*11.2);g.add(st);
-    if(rnd3()<.3){const tip=new THREE.Mesh(new THREE.SphereGeometry(.03,6,4),new THREE.MeshBasicMaterial({color:rnd3()<.5?0xb06bff:0x46f3ff}));tip.position.set(st.position.x,4.2-len-.02,st.position.z);g.add(tip);}}
+  const paint=canvasTex(256,256,(c)=>{c.fillStyle='#3b3f4c';c.fillRect(0,0,256,256);
+    for(let i=0;i<2500;i++){const v=rnd3()<.5?'255,255,255':'0,0,0';c.fillStyle='rgba('+v+',.025)';c.fillRect(rnd3()*256,rnd3()*256,3,3);}});
+  paint.wrapS=paint.wrapT=THREE.RepeatWrapping;paint.repeat.set(4,1.4);
+  const wallM=std(0xffffff,{map:paint,roughness:.9});
+  for(const [x,z,ry] of [[0,-66,0],[0,-54,Math.PI],[-6,-60,Math.PI/2],[6,-60,-Math.PI/2]]){
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(12,4.2),wallM);m.position.set(x,2.1,z);m.rotation.y=ry;g.add(m);
+    const nx=Math.sin(ry),nz=Math.cos(ry);   // baseboard + ceiling trim, pushed a bit into the room
+    const bb=new THREE.Mesh(new THREE.BoxGeometry(12,.14,.03),std(0x1d1f26,{roughness:.6}));bb.position.set(x+nx*.015,.07,z+nz*.015);bb.rotation.y=ry;g.add(bb);
+    const tr=new THREE.Mesh(new THREE.BoxGeometry(12,.08,.05),std(0xd8d8de,{roughness:.6}));tr.position.set(x+nx*.025,4.16,z+nz*.025);tr.rotation.y=ry;g.add(tr);}
+  const ceil=new THREE.Mesh(new THREE.PlaneGeometry(12,12),std(0xcfd0d6,{roughness:.95}));ceil.rotation.x=Math.PI/2;ceil.position.set(0,4.2,-60);g.add(ceil);
+  for(const [x,z] of [[-3,-63],[3,-63],[-3,-57],[3,-57]]){
+    const pn=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.4),new THREE.MeshBasicMaterial({color:0xfff6e6}));pn.rotation.x=Math.PI/2;pn.position.set(x,4.19,z);g.add(pn);
+    const fr=new THREE.Mesh(new THREE.BoxGeometry(1.5,.03,1.5),std(0xe6e6ea));fr.position.set(x,4.2,z);g.add(fr);}
   // neon sign
   const sign=canvasTex(512,96,(c)=>{c.fillStyle='rgba(0,0,0,0)';c.clearRect(0,0,512,96);c.font='bold 58px monospace';c.textAlign='center';
     c.shadowColor='#b06bff';c.shadowBlur=18;c.fillStyle='#e6d0ff';c.fillText('CODE CAVE',256,68);});
   const sm=new THREE.Mesh(new THREE.PlaneGeometry(6,1.1),new THREE.MeshBasicMaterial({map:sign,transparent:true}));sm.position.set(0,3.4,-65.95);g.add(sm);
-  const lA=new THREE.PointLight(0xb06bff,1.3,14);lA.position.set(0,3.4,-62);g.add(lA);
-  const lB=new THREE.PointLight(0x46f3ff,.7,10);lB.position.set(0,3.4,-56);g.add(lB);
+  const lA=new THREE.PointLight(0xfff1dc,1.2,16);lA.position.set(0,3.8,-62.5);g.add(lA);
+  const lB=new THREE.PointLight(0xfff1dc,1,14);lB.position.set(0,3.8,-56.5);g.add(lB);
   const box=(w,h,d,col,x,y,z,o)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),std(col,o||{}));m.position.set(x,y,z);g.add(m);return m;};
   // hacker desks with glowing code screens
   const scr=matrix(256,160,'#0a0626');
@@ -2375,23 +2365,35 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0,lastDrink:0,lastPw:0,lastHackP:0,};
   box(.3,.75,.95,0x1c1140,-5.05,.38,-54.75);box(.3,.75,.95,0x1c1140,-1.75,.38,-54.75);
   for(const x of [-4.2,-2.6]){const pl=box(.55,.12,.4,0x4a2a9e,x,.56,-54.8);pl.rotation.y=.2;}   // pillows
   houseCols.push({x:-3.4,z:-54.7,hw:1.65,hd:.5,top:.5});
-  // glowing crystal clusters and cave mushrooms
-  const crystal=(x,z,sc,col,light,solid)=>{const c=new THREE.Group();c.position.set(x,0,z);g.add(c);
-    const m=std(col,{emissive:col,emissiveIntensity:.9,roughness:.15,metalness:.1,transparent:true,opacity:.88,flatShading:true});
-    for(let i=0;i<6;i++){const h=(.35+rnd3()*.6)*sc,cr=new THREE.Mesh(new THREE.OctahedronGeometry(1,0),m);cr.scale.set(.09*sc,h,.09*sc);
-      cr.position.set((rnd3()-.5)*.35*sc,h*.55,(rnd3()-.5)*.35*sc);cr.rotation.set((rnd3()-.5)*.7,rnd3()*3,(rnd3()-.5)*.7);c.add(cr);}
-    if(light){const l=new THREE.PointLight(col,.8,5);l.position.y=.8;c.add(l);}
-    if(solid)houseCols.push({x,z,r:.3*sc});};
-  crystal(-5.5,-65.5,1.3,0xb06bff,true,true);crystal(5.5,-65.5,1.1,0x46f3ff,false,true);crystal(5.5,-54.6,1,0xff3df2,false,true);
-  crystal(-5.6,-54.5,.8,0x46f3ff,false,false);crystal(-5.5,-57.2,1.2,0x46f3ff,true,true);crystal(-5.5,-62.7,1,0xff3df2,false,true);
-  crystal(3.6,-61.5,1.4,0xb06bff,true,true);crystal(3.7,-56.7,.9,0x46f3ff,false,true);
-  for(const [x,z,col] of [[-4.6,-65.6,0x46f3ff],[1.8,-65.6,0xff3df2],[-1.8,-65.6,0x46f3ff],[5.5,-57.8,0xb06bff],[-5.6,-56.3,0xff3df2],[2.6,-54.4,0x46f3ff],[4.2,-62.4,0xff3df2]]){
-    for(let k=0;k<3;k++){const hgt=.12+rnd3()*.18,ms=new THREE.Group();ms.position.set(x+(rnd3()-.5)*.4,0,z+(rnd3()-.5)*.3);g.add(ms);
-      const stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.035,hgt,6),std(0xdcd0ff));stem.position.y=hgt/2;ms.add(stem);
-      const cap=new THREE.Mesh(new THREE.SphereGeometry(.09+rnd3()*.06,10,6,0,Math.PI*2,0,Math.PI/2),std(col,{emissive:col,emissiveIntensity:1.1}));cap.position.y=hgt;ms.add(cap);}}
+  // real furniture: a bookshelf, plants, a lamp table and a filing cabinet
+  const box2=(w,h,d,col,x,y,z,o)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),std(col,o||{}));m.position.set(x,y,z);g.add(m);return m;};
+  // bookshelf on the left wall
+  box2(.4,2.2,1.6,0x5a3d2b,-5.78,1.1,-57.2,{roughness:.8});
+  for(let sh=0;sh<4;sh++){box2(.38,.04,1.5,0x6b4a35,-5.74,.3+sh*.52,-57.2);
+    let z=-57.9;while(z<-56.5){const w=.05+rnd3()*.06,h=.28+rnd3()*.14;box2(.26,h,w,[0xa23b3b,0x2e5d9e,0x3c8d5a,0xd8b44a,0x6d4aa8,0xe0e0e0][rnd3()*6|0],-5.68,.32+sh*.52+h/2,z+w/2);z+=w+.01;}}
+  houseCols.push({x:-5.78,z:-57.2,hw:.22,hd:.8});
+  // filing cabinet
+  box2(.6,1.3,.55,0x7c818c,-5.65,.65,-62.7,{metalness:.6,roughness:.4});
+  for(let d=0;d<3;d++){box2(.02,.35,.45,0x6b707a,-5.34,.25+d*.42,-62.7);box2(.04,.03,.18,0xc8c8c8,-5.32,.37+d*.42,-62.7,{metalness:.9});}
+  houseCols.push({x:-5.65,z:-62.7,hw:.3,hd:.28});
+  // potted plants in the corners
+  const plant=(x,z,sc)=>{const pot=new THREE.Mesh(new THREE.CylinderGeometry(.22*sc,.17*sc,.42*sc,14),std(0xd9d2c5,{roughness:.7}));pot.position.set(x,.21*sc,z);g.add(pot);
+    const lm=std(0x2f7a3a,{roughness:.8});
+    for(let i=0;i<9;i++){const lf=new THREE.Mesh(new THREE.SphereGeometry(.2*sc,8,6),lm);lf.scale.set(.5,1.6,.25);const a=i/9*6.28;
+      lf.position.set(x+Math.cos(a)*.13*sc,(.6+rnd3()*.35)*sc,z+Math.sin(a)*.13*sc);lf.rotation.set(Math.sin(a)*.5,a,Math.cos(a)*.5);g.add(lf);}
+    houseCols.push({x,z,r:.25*sc});};
+  plant(-5.45,-65.45,1.3);plant(5.45,-65.45,1.1);plant(5.45,-54.55,1.2);plant(-5.5,-54.45,.9);
+  // side table with a lamp
+  box2(.6,.06,.6,0x5a3d2b,3.6,.6,-61.5);for(const [a,b] of [[-.25,-.25],[.25,-.25],[-.25,.25],[.25,.25]])box2(.05,.6,.05,0x4a3022,3.6+a,.3,-61.5+b);
+  const lampBase=new THREE.Mesh(new THREE.CylinderGeometry(.06,.1,.35,12),std(0x2a2a2a,{metalness:.5}));lampBase.position.set(3.6,.8,-61.5);g.add(lampBase);
+  const shade=new THREE.Mesh(new THREE.CylinderGeometry(.14,.24,.26,16,1,true),std(0xf3e6c8,{emissive:0xffd9a0,emissiveIntensity:.6,side:THREE.DoubleSide}));shade.position.set(3.6,1.08,-61.5);g.add(shade);
+  const ll=new THREE.PointLight(0xffd9a0,.6,5);ll.position.set(3.6,1.05,-61.5);g.add(ll);
+  houseCols.push({x:3.6,z:-61.5,hw:.3,hd:.3});
+  // a small waste bin
+  const bin=new THREE.Mesh(new THREE.CylinderGeometry(.16,.13,.38,14,1,true),std(0x3a3d45,{side:THREE.DoubleSide,metalness:.4}));bin.position.set(3.7,.19,-56.7);g.add(bin);
   // round rug + a spinning hologram globe in the middle
-  const rug=new THREE.Mesh(new THREE.CircleGeometry(1.7,40),std(0x150b33,{roughness:.95}));rug.rotation.x=-Math.PI/2;rug.position.set(-.6,.015,-60.2);g.add(rug);
-  const rr=new THREE.Mesh(new THREE.RingGeometry(1.55,1.7,48),new THREE.MeshBasicMaterial({color:0xb06bff}));rr.rotation.x=-Math.PI/2;rr.position.set(-.6,.02,-60.2);g.add(rr);
+  const rug=new THREE.Mesh(new THREE.CircleGeometry(1.7,40),std(0x23263a,{roughness:1}));rug.rotation.x=-Math.PI/2;rug.position.set(-.6,.015,-60.2);g.add(rug);
+  const rr=new THREE.Mesh(new THREE.RingGeometry(1.55,1.7,48),std(0x8a8fa3,{roughness:1}));rr.rotation.x=-Math.PI/2;rr.position.set(-.6,.02,-60.2);g.add(rr);
   const ped=new THREE.Mesh(new THREE.CylinderGeometry(.35,.45,.8,20),std(0x14181c,{metalness:.8,roughness:.3}));ped.position.set(-.6,.4,-60.2);g.add(ped);
   const ptop=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.05,24),new THREE.MeshBasicMaterial({color:0x46f3ff}));ptop.position.set(-.6,.82,-60.2);g.add(ptop);
   houseCols.push({x:-.6,z:-60.2,r:.45,top:.85});
@@ -2427,11 +2429,15 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0,lastDrink:0,lastPw:0,lastHackP:0,};
    const gl=new THREE.PointLight(0xff3df2,.8,4);gl.position.set(0,1.6,1);vm.add(gl);
    houseCols.push({x:5.5,z:-55.8,hw:.42,hd:.65});
    houseInter.push({x:4.6,z:-55.8,verb:'Buy a HACKER SODA ⚡🥤',act:()=>startGame(HackerSodas())});}
-  // the glowing exit portal on the front wall
-  const portal=new THREE.Mesh(new THREE.CircleGeometry(1,32),new THREE.MeshBasicMaterial({color:0xb06bff,transparent:true,opacity:.75}));
-  portal.position.set(0,1.3,-54.05);portal.rotation.y=Math.PI;portal.scale.y=1.4;g.add(portal);LOUNGE.portal=portal;
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.05,.07,8,40),new THREE.MeshBasicMaterial({color:0xe6d0ff}));ring.position.copy(portal.position);ring.scale.y=1.4;g.add(ring);
-  houseInter.push({x:0,z:-54.9,verb:'Teleport back to the arcade 🌀',act:()=>teleportLounge(false)});
+  // the exit: a real door with a glowing EXIT sign above it
+  const door=new THREE.Mesh(new THREE.BoxGeometry(1.1,2.2,.06),std(0x4a3426,{roughness:.6}));door.position.set(0,1.1,-54.04);g.add(door);
+  const dfr=std(0xd8d8de,{roughness:.6});
+  for(const [w,h,x,y] of [[.08,2.3,-.6,1.15],[.08,2.3,.6,1.15],[1.28,.08,0,2.3]]){const f=new THREE.Mesh(new THREE.BoxGeometry(w,h,.1),dfr);f.position.set(x,y,-54.04);g.add(f);}
+  const knob=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),std(0xd4af37,{metalness:.9,roughness:.25}));knob.position.set(-.4,1.05,-54.1);g.add(knob);
+  const ex=canvasTex(128,48,(c)=>{c.fillStyle='#1a0000';c.fillRect(0,0,128,48);c.font='bold 34px sans-serif';c.textAlign='center';c.fillStyle='#ff3b3b';c.shadowColor='#ff3b3b';c.shadowBlur=10;c.fillText('EXIT',64,36);});
+  const es=new THREE.Mesh(new THREE.PlaneGeometry(.5,.19),new THREE.MeshBasicMaterial({map:ex}));es.position.set(0,2.55,-54.03);es.rotation.y=Math.PI;g.add(es);
+  const portal={material:{}};LOUNGE.portal=portal;
+  houseInter.push({x:0,z:-54.9,verb:'Go back to the arcade 🚪',act:()=>teleportLounge(false)});
   setInterval(()=>{if(level!==0||me.z>-40)return;
     for(const l of LOUNGE.leds)if(Math.random()<.3)l.material.color.setHex(Math.random()<.8?0xb06bff:(Math.random()<.5?0xff3b3b:0xffd36e));
     portal.material.opacity=.55+Math.random()*.3;},180);
