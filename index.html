@@ -2323,8 +2323,29 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0};
       const led=new THREE.Mesh(new THREE.BoxGeometry(.03,.06,.06),new THREE.MeshBasicMaterial({color:0x19ff6a}));
       led.position.set(4.94,.4+r*.26,z-.5+k*.32);g.add(led);LOUNGE.leds.push(led);}}
   // comfy couch + beanbags
-  box(1,.5,3.6,0x103a22,-5.3,.25,-59.5);box(.35,1,3.6,0x103a22,-5.65,.6,-59.5);
-  houseCols.push({x:-5.3,z:-59.5,hw:.5,hd:1.8,top:.5});
+  box(3,.5,.95,0x103a22,-3.4,.25,-54.75);box(3,1,.32,0x103a22,-3.4,.6,-54.25);
+  box(.3,.75,.95,0x0b2a18,-5.05,.38,-54.75);box(.3,.75,.95,0x0b2a18,-1.75,.38,-54.75);
+  for(const x of [-4.2,-2.6]){const pl=box(.55,.12,.4,0x1b5c38,x,.56,-54.8);pl.rotation.y=.2;}   // pillows
+  houseCols.push({x:-3.4,z:-54.7,hw:1.65,hd:.5,top:.5});
+  // glowing neon strips along the floor and the ceiling
+  for(const [y,col] of [[.04,0x19ff6a],[4.15,0x46f3ff]]){const nm=new THREE.MeshBasicMaterial({color:col});
+    for(const [x,z,w,d] of [[0,-65.95,12,.06],[0,-54.05,12,.06],[-5.95,-60,.06,12],[5.95,-60,.06,12]]){
+      const m=new THREE.Mesh(new THREE.BoxGeometry(w,.06,d),nm);m.position.set(x,y,z);g.add(m);}}
+  // round rug + a spinning hologram globe in the middle
+  const rug=new THREE.Mesh(new THREE.CircleGeometry(1.7,40),std(0x061f12,{roughness:.95}));rug.rotation.x=-Math.PI/2;rug.position.set(-.6,.015,-60.2);g.add(rug);
+  const rr=new THREE.Mesh(new THREE.RingGeometry(1.55,1.7,48),new THREE.MeshBasicMaterial({color:0x19ff6a}));rr.rotation.x=-Math.PI/2;rr.position.set(-.6,.02,-60.2);g.add(rr);
+  const ped=new THREE.Mesh(new THREE.CylinderGeometry(.35,.45,.8,20),std(0x14181c,{metalness:.8,roughness:.3}));ped.position.set(-.6,.4,-60.2);g.add(ped);
+  const ptop=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.05,24),new THREE.MeshBasicMaterial({color:0x46f3ff}));ptop.position.set(-.6,.82,-60.2);g.add(ptop);
+  houseCols.push({x:-.6,z:-60.2,r:.45,top:.85});
+  const globe=new THREE.Mesh(new THREE.SphereGeometry(.55,14,10),new THREE.MeshBasicMaterial({color:0x46f3ff,wireframe:true,transparent:true,opacity:.8}));
+  globe.position.set(-.6,1.6,-60.2);g.add(globe);LOUNGE.globe=globe;
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.5,.36,.75,20,1,true),new THREE.MeshBasicMaterial({color:0x46f3ff,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false}));
+  beam.position.set(-.6,1.2,-60.2);g.add(beam);
+  // hacker posters
+  [['ACCESS\nGRANTED','#19ff6a',-3.3],['01101000\n01101001','#46f3ff',3.3]].forEach(([t,c,x])=>{
+    const tx=canvasTex(256,180,(k)=>{k.fillStyle='#020a06';k.fillRect(0,0,256,180);k.strokeStyle=c;k.lineWidth=6;k.strokeRect(6,6,244,168);
+      k.font='bold 34px monospace';k.textAlign='center';k.fillStyle=c;k.shadowColor=c;k.shadowBlur=12;t.split('\n').forEach((l,i)=>k.fillText(l,128,78+i*46));});
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.05),new THREE.MeshBasicMaterial({map:tx}));m.position.set(x,2.5,-54.06);m.rotation.y=Math.PI;g.add(m);});
   for(const [x,z,c] of [[-3,-57.5,0x6b2bd9],[-2.4,-61.4,0x19a85a]]){
     const b=new THREE.Mesh(new THREE.SphereGeometry(.6,16,12),std(c));b.scale.y=.6;b.position.set(x,.36,z);g.add(b);
     houseCols.push({x,z,r:.55,top:.6});}
@@ -2341,40 +2362,82 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0};
     for(const l of LOUNGE.leds)if(Math.random()<.3)l.material.color.setHex(Math.random()<.8?0x19ff6a:(Math.random()<.5?0xff3b3b:0xffd36e));
     portal.material.opacity=.55+Math.random()*.3;},180);
 })();
-// SECURITY CAMERAS in the Hacker Lounge: live views of the other rooms on a wall of screens
-const SECCAM={cams:[],i:0};
+// SECURITY CAMERAS: sit at the security computer in the Hacker Lounge to watch the other rooms
+const SECCAM={cams:[],viewing:false,sel:-1};
 (function(){
   const g=new THREE.Group();house.add(g);
   const views=[['CAM 1 · MAIN ROOM',[14.5,4.9,-10.3],[0,0,1.5]],['CAM 2 · GAME ROOM',[-17.6,4.6,6.4],[-27,0,-1.5]],
                ['CAM 3 · STAFF STORAGE',[24.6,3.5,2.9],[19.5,0,9]],['CAM 4 · VENDING & POOL',[-15,4.9,10.5],[4,0,-2]]];
-  views.forEach(([name,pos,look],i)=>{
-    const rt=new THREE.WebGLRenderTarget(320,200);rt.texture.encoding=THREE.sRGBEncoding;
+  views.forEach(([name,pos,look])=>{
     const cam=new THREE.PerspectiveCamera(70,1.6,.1,60);cam.position.set(...pos);cam.lookAt(...look);
-    const col=i%2,row=Math.floor(i/2),z=-60.4+col*1.8,y=3.3-row*1.1;
-    const frame=new THREE.Mesh(new THREE.BoxGeometry(.08,1.04,1.68),std(0x0a0a0a,{metalness:.6,roughness:.4}));frame.position.set(-5.95,y,z);g.add(frame);
-    const scr=new THREE.Mesh(new THREE.PlaneGeometry(1.56,.94),new THREE.MeshBasicMaterial({map:rt.texture,toneMapped:false}));
-    scr.position.set(-5.9,y,z);scr.rotation.y=Math.PI/2;g.add(scr);
-    const lab=canvasTex(256,32,(c)=>{c.clearRect(0,0,256,32);c.font='bold 17px monospace';c.fillStyle='#ff3b3b';c.beginPath();c.arc(12,16,6,0,7);c.fill();
-      c.fillStyle='#ffffff';c.shadowColor='#000';c.shadowBlur=4;c.fillText(name,24,22);});
-    const lm=new THREE.Mesh(new THREE.PlaneGeometry(.78,.1),new THREE.MeshBasicMaterial({map:lab,transparent:true}));
-    lm.position.set(-5.89,y+.38,z-.36);lm.rotation.y=Math.PI/2;g.add(lm);
     // a little camera on the wall of the room it watches
     const body=new THREE.Group();body.position.set(...pos);house.add(body);
     const bx=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.38),std(0xdddddd,{metalness:.4}));body.add(bx);
     const lens=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.06,12),std(0x111111));lens.rotation.x=Math.PI/2;lens.position.z=.21;body.add(lens);
     const red=new THREE.Mesh(new THREE.SphereGeometry(.025,8,6),new THREE.MeshBasicMaterial({color:0xff2020}));red.position.set(.06,.06,.2);body.add(red);
     body.lookAt(...look);
-    SECCAM.cams.push({rt,cam,red});});
-  const sign=canvasTex(256,40,(c)=>{c.clearRect(0,0,256,40);c.font='bold 24px monospace';c.textAlign='center';c.shadowColor='#19ff6a';c.shadowBlur=10;c.fillStyle='#b8ffcf';c.fillText('📹 SECURITY CAMS',128,28);});
-  const sm=new THREE.Mesh(new THREE.PlaneGeometry(1.8,.28),new THREE.MeshBasicMaterial({map:sign,transparent:true}));sm.position.set(-5.9,3.98,-59.5);sm.rotation.y=Math.PI/2;g.add(sm);
+    SECCAM.cams.push({name,cam,red});});
+  // the SECURITY STATION on the left wall of the lounge
+  const box=(w,h,d,col,x,y,z,o)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),std(col,o||{}));m.position.set(x,y,z);g.add(m);return m;};
+  box(1.1,.1,2.6,0x161a1e,-5.3,.95,-60,{metalness:.6,roughness:.3});
+  box(.9,.95,.08,0x0b0d10,-5.3,.47,-61.2);box(.9,.95,.08,0x0b0d10,-5.3,.47,-58.8);
+  const snow=canvasTex(160,100,(c)=>{c.fillStyle='#0a1a12';c.fillRect(0,0,160,100);for(let i=0;i<500;i++){const v=Math.random()*120|0;c.fillStyle='rgb('+v+','+(v+60)+','+v+')';c.fillRect(Math.random()*160,Math.random()*100,2,2);}
+    c.font='bold 14px monospace';c.fillStyle='#ff3b3b';c.fillText('● REC',8,18);});
+  for(const [z,ry] of [[-60.75,.25],[-60,0],[-59.25,-.25]]){
+    const sc=new THREE.Group();sc.position.set(-5.65,1.6,z);sc.rotation.y=Math.PI/2+ry;g.add(sc);
+    const fr=new THREE.Mesh(new THREE.BoxGeometry(.72,.5,.05),std(0x050505));sc.add(fr);
+    const pm=new THREE.Mesh(new THREE.PlaneGeometry(.66,.44),new THREE.MeshBasicMaterial({map:snow}));pm.position.z=.03;sc.add(pm);}
+  box(.3,.04,.8,0x222222,-4.95,1.02,-60);
+  box(.6,.5,.6,0x2a0f3a,-4.2,.25,-60);box(.1,.6,.6,0x2a0f3a,-3.92,.75,-60);
+  const sign=canvasTex(256,40,(c)=>{c.clearRect(0,0,256,40);c.font='bold 24px monospace';c.textAlign='center';c.shadowColor='#ff3b3b';c.shadowBlur=10;c.fillStyle='#ffd0d0';c.fillText('📹 SECURITY',128,28);});
+  const sm=new THREE.Mesh(new THREE.PlaneGeometry(1.8,.28),new THREE.MeshBasicMaterial({map:sign,transparent:true}));sm.position.set(-5.93,2.35,-60);sm.rotation.y=Math.PI/2;g.add(sm);
+  houseCols.push({x:-5.3,z:-60,hw:.55,hd:1.3,top:1});
+  houseInter.push({x:-4.4,z:-60,verb:'Use the security computer 📹',act:()=>startGame(CamViewer())});
 })();
+// the camera viewer: the 3D views are drawn right on top of the screen, the overlay only draws the frames and labels
+const CAM_CELLS=[[20,62,450,270],[490,62,450,270],[20,346,450,270],[490,346,450,270]];
+function CamViewer(){
+  return{
+    init(){SECCAM.viewing=true;SECCAM.sel=-1;},
+    onClose(){SECCAM.viewing=false;},
+    update(){
+      for(let i=0;i<4;i++)if(P.has('Digit'+(i+1)))SECCAM.sel=i;
+      if(P.has('Digit0')||P.has('Space'))SECCAM.sel=-1;
+      if(mouse.clicked){if(SECCAM.sel>=0)SECCAM.sel=-1;else CAM_CELLS.forEach(([x,y,w,h],i)=>{if(mouse.x>x&&mouse.x<x+w&&mouse.y>y&&mouse.y<y+h)SECCAM.sel=i;});}
+    },
+    draw(){
+      const W=960,H=640;ctx.fillStyle='#020a06';ctx.fillRect(0,0,W,H);
+      ctx.font='bold 22px monospace';ctx.textAlign='left';ctx.fillStyle='#19ff6a';ctx.fillText('📹 SECURITY CAMERAS',20,38);
+      if(T%60<30){ctx.fillStyle='#ff3b3b';ctx.beginPath();ctx.arc(W-90,31,7,0,7);ctx.fill();}
+      ctx.fillStyle='#ff3b3b';ctx.font='bold 18px monospace';ctx.fillText('REC',W-76,38);
+      const cells=SECCAM.sel>=0?[[20,62,920,554]]:CAM_CELLS;
+      cells.forEach(([x,y,w,h],k)=>{const i=SECCAM.sel>=0?SECCAM.sel:k;
+        ctx.clearRect(x,y,w,h);ctx.strokeStyle='#19ff6a';ctx.lineWidth=3;ctx.strokeRect(x-2,y-2,w+4,h+4);
+        ctx.font='bold 16px monospace';ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x,y,ctx.measureText(SECCAM.cams[i].name).width+40,26);
+        ctx.fillStyle='#ffffff';ctx.fillText(SECCAM.cams[i].name,x+28,y+19);ctx.fillStyle='#ff3b3b';ctx.beginPath();ctx.arc(x+15,y+13,5,0,7);ctx.fill();
+        // a bit of scan-line fuzz so it feels like a real camera
+        ctx.fillStyle='rgba(25,255,106,.05)';for(let l=(T*2)%8;l<h;l+=8)ctx.fillRect(x,y+l,w,2);});
+      ctx.font='14px monospace';ctx.fillStyle='#8f8';ctx.textAlign='center';
+      ctx.fillText(SECCAM.sel>=0?'Click or press 0 = see all cameras · Esc = get up':'Click a camera or press 1-4 to make it big · Esc = get up',W/2,H-8);
+    }
+  };
+}
 function secCamTick(){
   const blink=Math.floor(performance.now()/600)%2===0;for(const c of SECCAM.cams)c.red.visible=blink;
-  if(level!==0||me.z>-40||!SECCAM.cams.length)return;
-  const c=SECCAM.cams[SECCAM.i=(SECCAM.i+1)%SECCAM.cams.length];   // refresh one screen per frame
+  if(LOUNGE.globe&&level===0&&me.z<-40){LOUNGE.globe.rotation.y+=.01;LOUNGE.globe.rotation.x=Math.sin(performance.now()/2000)*.2;}
+}
+function secCamRender(){
+  if(!SECCAM.viewing||!game)return;
+  const r=mini.getBoundingClientRect(),sx=r.width/960,sy=r.height/640;
+  const cells=SECCAM.sel>=0?[[20,62,920,554]]:CAM_CELLS;
+  renderer.setScissorTest(true);
   const hv=hand.visible;hand.visible=false;
-  renderer.setRenderTarget(c.rt);renderer.render(scene,c.cam);renderer.setRenderTarget(null);
+  cells.forEach(([x,y,w,h],k)=>{const c=SECCAM.cams[SECCAM.sel>=0?SECCAM.sel:k].cam;
+    const px=r.left+x*sx,py=r.top+y*sy,pw=w*sx,ph=h*sy,by=innerHeight-py-ph;
+    renderer.setViewport(px,by,pw,ph);renderer.setScissor(px,by,pw,ph);
+    c.aspect=pw/ph;c.updateProjectionMatrix();renderer.render(scene,c);});
   hand.visible=hv;
+  renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);
 }
 function teleportLounge(into){
   if(game)closeGame();
@@ -3416,6 +3479,7 @@ function loop(){
   sendPresence(false);
   try{secCamTick();}catch(e){}
   renderer.render(scene,camera);
+  try{secCamRender();}catch(e){renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);}
   P.clear();mouse.clicked=false;clickUse=false;
   
 }
