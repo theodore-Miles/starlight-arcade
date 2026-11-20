@@ -1324,7 +1324,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,gs:me.lastSoda||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sr:[STORE.open?1:0,STORE.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,gs:me.lastSoda||null,hk:me.lastHackSend||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sr:[STORE.open?1:0,STORE.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1390,6 +1390,10 @@ function upsertPeer(p){
         toast('🥤 '+who+' gave you a '+sd.name+' '+sd.emo+'!');addSys('🥤 '+who+' gave you a '+sd.name+' soda '+sd.emo+' — *gulp*');
         gulp();setTimeout(()=>sd.go(),1600);}}
   }else if(e.gsT===undefined)e.gsT=0;
+  if(Array.isArray(pr.hk)&&pr.hk.length===3&&typeof pr.hk[0]==='string'&&Number.isInteger(pr.hk[1])&&pr.hk[1]>=0&&pr.hk[1]<6&&typeof pr.hk[2]==='number'){
+    if(e.hkT===undefined)e.hkT=pr.hk[2];
+    else if(pr.hk[2]!==e.hkT){e.hkT=pr.hk[2];if(myPeer&&pr.hk[0]===myPeer)getHacked(pr.hk[1],e.nm||names.get(e.by)||'Someone');}
+  }else if(e.hkT===undefined)e.hkT=0;
   {const nm=typeof pr.nm==='string'?cleanName(pr.nm):'';if(nm!==e.nm){e.nm=nm;setLabel(e.av.userData.label,(nm||names.get(e.by)||'Player').slice(0,18));}}
   if(Array.isArray(pr.dr)&&pr.dr.length===7&&pr.dr.every(n=>typeof n==='number'&&isFinite(n))){
     if(e.drT===undefined)e.drT=pr.dr[6];
@@ -2286,7 +2290,7 @@ async function setVoice(on){
 }
 // ======================================================================
 // HACKER LOUNGE: a secret room far away from the arcade. Type /hackerlounge to teleport in.
-const LOUNGE={x:0,z:-60,leds:[],lastHack:0};
+const LOUNGE={x:0,z:-60,leds:[],lastHack:0,lastDrink:0,lastPw:0,lastHackP:0};
 (function(){
   const g=new THREE.Group();house.add(g);
   const matrix=(w,h,bg)=>canvasTex(w,h,(c)=>{c.fillStyle=bg;c.fillRect(0,0,w,h);c.font='bold 14px monospace';
@@ -2322,7 +2326,12 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0};
     box(.9,.04,.3,0x222222,x,1.02,z+.15);                         // keyboard
     box(.6,.5,.6,0x2a0f3a,x,.25,z+1.1);box(.6,.6,.1,0x2a0f3a,x,.75,z+1.38);   // gamer chair
     houseCols.push({x,z,hw:1.3,hd:.55,top:1});
-    houseInter.push({x,z:z+1.1,verb:'Hack the mainframe 💻',act:()=>hackMainframe()});});
+    const D=[['💻 HACK A PLAYER','Hack a player — give them a power! 💻',()=>startGame(HackPlayer())],
+             ['⌨️ MAINFRAME','Hack the mainframe ⌨️',()=>startGame(Mainframe())],
+             ['🔐 PASSWORD','Crack the secret password 🔐',()=>startGame(Password())]][i];
+    const lt=canvasTex(320,48,(c)=>{c.clearRect(0,0,320,48);c.font='bold 28px monospace';c.textAlign='center';c.shadowColor='#b06bff';c.shadowBlur=12;c.fillStyle='#f0e0ff';c.fillText(D[0],160,34);});
+    const lm=new THREE.Mesh(new THREE.PlaneGeometry(2,.3),new THREE.MeshBasicMaterial({map:lt,transparent:true}));lm.position.set(x,2.45,-65.94);g.add(lm);
+    houseInter.push({x,z:z+1.1,verb:D[1],act:D[2]});});
   // server racks with blinking lights
   for(const z of [-63.6,-61.2,-58.8]){
     box(.9,3,1.6,0x0c0f12,5.4,1.5,z,{metalness:.7,roughness:.35});
@@ -2361,6 +2370,10 @@ const LOUNGE={x:0,z:-60,leds:[],lastHack:0};
   box(1.2,.5,.8,0x222428,1.8,.25,-58.5,{metalness:.5});houseCols.push({x:1.8,z:-58.5,hw:.6,hd:.4,top:.5});
   for(let i=0;i<4;i++){const c=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.2,10),std([0xb06bff,0x46f3ff,0xff3df2,0xffd36e][i],{emissive:[0xb06bff,0x46f3ff,0xff3df2,0xffd36e][i],emissiveIntensity:.4}));
     c.position.set(1.4+i*.27,.6,-58.5+(i%2?.15:-.15));g.add(c);}
+  houseInter.push({x:1.8,z:-57.7,verb:'Chug an energy drink ⚡',act:()=>{const l=Math.ceil((LOUNGE.lastDrink+60000-Date.now())/1000);
+    if(l>0){toast('🥤 Too much energy! Wait '+l+'s for another one');return;}LOUNGE.lastDrink=Date.now();gulp();
+    me.boostUntil=performance.now()+15000;toast('⚡ HACKER ENERGY! Super speed for 15 seconds!');}});
+  houseInter.push({x:-.6,z:-59.1,verb:'Use the hologram teleporter 🌐',act:()=>startGame(Teleporter())});
   // the glowing exit portal on the front wall
   const portal=new THREE.Mesh(new THREE.CircleGeometry(1,32),new THREE.MeshBasicMaterial({color:0xb06bff,transparent:true,opacity:.75}));
   portal.position.set(0,1.3,-54.05);portal.rotation.y=Math.PI;portal.scale.y=1.4;g.add(portal);LOUNGE.portal=portal;
@@ -2472,12 +2485,96 @@ function teleportLounge(into){
   else{me.x=0;me.z=-8;me.ry=0;toast('🌀 Teleported back to the arcade!');}
   me.pitch=-.08;snapCam=true;sendPresence(true);
 }
-function hackMainframe(){
-  const now=Date.now(),left=Math.ceil((LOUNGE.lastHack+120000-now)/1000);
-  const lines=['ACCESS GRANTED 🔓','Downloading the high scores… 📈','Bypassing the firewall… 🔥🧱','Hacking the claw machine… 🧸','Uploading cat videos… 🐱'];
-  if(left>0){toast('⏳ The mainframe is rebooting… try again in '+left+'s');return;}
-  LOUNGE.lastHack=now;me.score+=5;updInv();sendPresence(true);
-  toast('💻 '+lines[Math.floor(Math.random()*lines.length)]+'  +🪙 5');
+// ----- HACKER LOUNGE computers -----
+const SILLY=['I LOVE PICKLES 🥒','I am a chicken. BAWK BAWK 🐔','My socks smell like cheese 🧀','I can\'t stop dancing 💃','Beep boop, I am a robot 🤖','Who stole my pants?! 👖','I think I am a banana 🍌'];
+const HACKS=[
+  {n:'Super speed',e:'⚡',go:()=>SODAS[0].go()},
+  {n:'Super jump',e:'🦘',go:()=>SODAS[1].go()},
+  {n:'Moon float',e:'🌙',go:()=>SODAS[2].go()},
+  {n:'Giant burp',e:'🍇',go:()=>SODAS[3].go()},
+  {n:'Silly talk',e:'🤪',go:()=>{const t=SILLY[Math.random()*SILLY.length|0];me.say=t;me.sayAt=Date.now();addChat(me.name||'You',me.color,t);sendPresence(true);toast('🤪 You got hacked into saying something silly!');}},
+  {n:'Mystery',e:'❓',go:()=>HACKS[Math.random()*5|0].go()},
+];
+function getHacked(k,who){const h=HACKS[k];toast('💻 HACKED! '+who+' gave you '+h.n+' '+h.e);addSys('💻 '+who+' hacked you: '+h.n+' '+h.e);setTimeout(()=>h.go(),1300);}
+const btn=(x,y,w,h,label,on,col)=>{ctx.fillStyle=on?(col||'#b06bff'):'#1a1040';ctx.fillRect(x,y,w,h);ctx.strokeStyle=col||'#b06bff';ctx.lineWidth=2;ctx.strokeRect(x,y,w,h);
+  txt(label,x+w/2,y+h/2+7,18,on?'#fff':'#e6d0ff','center');return mouse.clicked&&mouse.x>x&&mouse.x<x+w&&mouse.y>y&&mouse.y<y+h;};
+const termBg=(title)=>{ctx.fillStyle='#06021a';ctx.fillRect(0,0,W,H);ctx.fillStyle='rgba(176,107,255,.05)';for(let l=(T*2)%8;l<H;l+=8)ctx.fillRect(0,l,W,2);
+  ctx.font='bold 28px monospace';ctx.fillStyle='#e6d0ff';ctx.textAlign='center';ctx.shadowColor='#b06bff';ctx.shadowBlur=14;ctx.fillText(title,W/2,52);ctx.shadowBlur=0;ctx.textAlign='left';
+  txt('Esc = get up',W/2,H-14,14,'#9a86c9','center',false);};
+function HackPlayer(){
+  let who=0,pw=0,msg='';
+  const list=()=>{const L=[{id:null,nm:'Me ('+(me.name||'You')+')'}];for(const [id,e] of peers)L.push({id,nm:(e.nm||names.get(e.by)||'Player')});return L.slice(0,8);};
+  return{init(){},update(){},
+    draw(){termBg('💻 HACK A PLAYER');const L=list();if(who>=L.length)who=0;
+      txt('1. PICK A PLAYER',60,105,18,'#c9a8ff');txt('2. PICK A POWER',520,105,18,'#c9a8ff');
+      L.forEach((p,i)=>{if(btn(60,120+i*50,380,42,p.nm.slice(0,22),i===who))who=i;});
+      HACKS.forEach((h,i)=>{if(btn(520,120+i*50,380,42,h.e+'  '+h.n,i===pw,'#46f3ff'))pw=i;});
+      const left=Math.ceil((LOUNGE.lastHackP+20000-Date.now())/1000);
+      if(btn(330,530,300,52,left>0?'⏳ Recharging '+left+'s':'🚀 HACK!  (🪙 2)',left<=0,'#ff3df2')&&left<=0){
+        const t=L[who];
+        pay(2,()=>{LOUNGE.lastHackP=Date.now();
+          if(!t.id){getHacked(pw,'You');msg='You hacked yourself 😄';}
+          else{me.lastHackSend=[t.id,pw,Date.now()];sendPresence(true);msg='✅ ACCESS GRANTED — '+t.nm+' got '+HACKS[pw].n+' '+HACKS[pw].e;}});}
+      if(msg)txt(msg,W/2,505,17,'#7fffd4','center');}};
+}
+function Mainframe(){
+  const CH='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const mk=()=>Array.from({length:6},()=>CH[Math.random()*CH.length|0]).join('');
+  let code,typed,done,end,state,shake=0;
+  const reset=()=>{code=mk();typed='';done=0;end=performance.now()+25000;state='play';};
+  return{init(){reset();},
+    update(){
+      if(state!=='play'){if(P.has('Enter')||P.has('Space'))reset();return;}
+      if(performance.now()>end){state='lose';return;}
+      for(const k of P){let ch=null;if(/^Key[A-Z]$/.test(k))ch=k[3];else if(/^Digit\d$/.test(k))ch=k[5];
+        if(k==='Backspace'){typed=typed.slice(0,-1);continue;}
+        if(!ch)continue;
+        if(ch===code[typed.length]){typed+=ch;if(typed===code){done++;typed='';code=mk();
+          if(done>=3){state='win';const l=Math.ceil((LOUNGE.lastHack+120000-Date.now())/1000);
+            if(l>0)state='winNo';else{LOUNGE.lastHack=Date.now();me.score+=6;updInv();sendPresence(true);toast('⌨️ MAINFRAME HACKED! +🪙 6');}}}}
+        else shake=10;}
+    },
+    draw(){termBg('⌨️ HACK THE MAINFRAME');
+      if(state==='play'){const t=Math.max(0,(end-performance.now())/1000);
+        txt('Type the codes as fast as you can! Code '+(done+1)+' of 3',W/2,120,20,'#c9a8ff','center');
+        txt('⏱ '+t.toFixed(1)+'s',W/2,160,24,t<6?'#ff3b3b':'#ffd36e','center');
+        const sx=shake>0?(Math.random()-.5)*shake:0;if(shake>0)shake--;
+        ctx.font='bold 72px monospace';ctx.textAlign='center';
+        for(let i=0;i<6;i++){ctx.fillStyle=i<typed.length?'#3ddc84':'#f0e0ff';ctx.fillText(code[i],W/2-200+i*80+sx,320);}
+        ctx.textAlign='left';
+        ctx.fillStyle='#46f3ff';ctx.fillRect(W/2-240,350,480*done/3,12);ctx.strokeStyle='#46f3ff';ctx.strokeRect(W/2-240,350,480,12);}
+      else{const m={win:['🔓 ACCESS GRANTED!','+🪙 6'],winNo:['🔓 ACCESS GRANTED!','(the mainframe pays out again in '+Math.ceil((LOUNGE.lastHack+120000-Date.now())/1000)+'s)'],lose:['🚫 ACCESS DENIED','Too slow!']}[state];
+        txt(m[0],W/2,280,46,state==='lose'?'#ff3b3b':'#3ddc84','center');txt(m[1],W/2,330,22,'#ffd36e','center');
+        txt('Press Enter to hack again',W/2,400,18,'#c9a8ff','center');}}};
+}
+function Password(){
+  let secret,guess,tries,hist,state;
+  const reset=()=>{secret=1+Math.random()*99|0;guess='';tries=7;hist=[];state='play';};
+  return{init(){reset();},
+    update(){
+      if(state!=='play'){if(P.has('Enter')||P.has('Space'))reset();return;}
+      for(const k of P){if(/^(Digit|Numpad)\d$/.test(k)&&guess.length<2)guess+=k.slice(-1);
+        if(k==='Backspace')guess=guess.slice(0,-1);
+        if(k==='Enter'&&guess){const n=+guess;guess='';tries--;
+          if(n===secret){state='win';const l=Math.ceil((LOUNGE.lastPw+90000-Date.now())/1000);
+            if(l<=0){LOUNGE.lastPw=Date.now();me.score+=4;updInv();sendPresence(true);toast('🔐 PASSWORD CRACKED! +🪙 4');}else state='winNo';}
+          else{hist.push([n,n<secret?'too LOW ⬆':'too HIGH ⬇']);if(tries<=0)state='lose';}}}
+    },
+    draw(){termBg('🔐 CRACK THE PASSWORD');
+      if(state==='play'){txt('The password is a number from 1 to 99. Type a guess and press Enter!',W/2,115,19,'#c9a8ff','center');
+        txt('Tries left: '+'🔑'.repeat(tries),W/2,155,20,'#ffd36e','center');
+        ctx.fillStyle='#1a1040';ctx.fillRect(W/2-90,185,180,80);ctx.strokeStyle='#46f3ff';ctx.lineWidth=3;ctx.strokeRect(W/2-90,185,180,80);
+        txt(guess+(T%40<20?'_':''),W/2,245,52,'#f0e0ff','center');
+        hist.slice(-6).forEach(([n,h],i)=>txt(n+'  →  '+h,W/2,310+i*32,20,h.includes('LOW')?'#46f3ff':'#ff7a4a','center'));}
+      else{const m={win:['🔓 CRACKED IT!','The password was '+secret+'  +🪙 4'],winNo:['🔓 CRACKED IT!','(pays out again in '+Math.ceil((LOUNGE.lastPw+90000-Date.now())/1000)+'s)'],lose:['🚫 LOCKED OUT','The password was '+secret]}[state];
+        txt(m[0],W/2,280,46,state==='lose'?'#ff3b3b':'#3ddc84','center');txt(m[1],W/2,330,22,'#ffd36e','center');
+        txt('Press Enter to try a new password',W/2,400,18,'#c9a8ff','center');}}};
+}
+function Teleporter(){
+  const SPOTS=[['🕹 Main Room',0,-8,0],['🎮 Game Room',-18.6,0,-Math.PI/2],['🥤 Vending Machine',6.8,8.8,0],['🎱 Pool Table',0,4.2,Math.PI]];
+  return{init(){},update(){},
+    draw(){termBg('🌐 HOLOGRAM TELEPORTER');txt('Where do you want to go?',W/2,120,20,'#c9a8ff','center');
+      SPOTS.forEach(([n,x,z,ry],i)=>{if(btn(W/2-200,160+i*80,400,62,n,false,'#46f3ff')){closeGame();
+        me.x=x;me.z=z;me.ry=ry;me.y=0;me.vy=0;me.pitch=-.08;snapCam=true;sendPresence(true);toast('🌐 Zap! You teleported to the '+n.slice(2)+'! (type /hackerlounge to come back)');}});}};
 }
 function runCommand(cmd){
   const parts=cmd.trim().split(/\s+/);const c=parts[0].toLowerCase();
