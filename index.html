@@ -1283,6 +1283,7 @@ function updateWorld(dt){
   if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='phone')toast(PHONE_LINES[Math.random()*PHONE_LINES.length|0]);
   if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='duck')squeak(true);
   if(P.has('KeyF')&&me.holding!=null&&PLANTS[me.holding].kind==='soda'&&!(me.drinkT>0)){me.drinkT=.7;gulp();}
+  if(P.has('KeyG')&&me.holding!=null&&PLANTS[me.holding].kind==='soda'&&!(me.drinkT>0))giveSoda();
 }
 
 // camera
@@ -1323,7 +1324,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sr:[STORE.open?1:0,STORE.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,gs:me.lastSoda||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sr:[STORE.open?1:0,STORE.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1348,7 +1349,7 @@ function upsertPeer(p){
     peers.set(p.peer,e);
   }
   if(e.color!==color){e.color=color;e.av.userData.mat.color.set(color);}
-  e.tx=clamp(num(pr.x,0),-40,40);e.ty=clamp(num(pr.y,0),0,10);e.tz=clamp(num(pr.z,0),-40,40);e.try=num(pr.ry,0);
+  e.tx=clamp(num(pr.x,0),-40,40);e.ty=clamp(num(pr.y,0),0,10);e.tz=clamp(num(pr.z,0),-70,40);e.try=num(pr.ry,0);
   e.lv=num(pr.lv,0)|0;e.v=!!pr.v;e.hid=(pr.hid==='pit'||pr.hid==='booth'||pr.hid==='box')?pr.hid:'';e.cr=!!pr.cr;e.pu=(pr.pu===1||pr.pu===-1)?pr.pu:0;e.hp=(Number.isInteger(pr.hp)&&pr.hp>=0&&pr.hp<PLANTS.length)?pr.hp:-1;
   {const vo=pr.vo===1;if(vo&&!e.vo&&e.vo!==undefined)addSys('🎤 '+(e.nm||names.get(e.by)||'A player')+' turned on their mic — go near them to hear!');e.vo=vo;}
   e.vg=num(pr.vg,0);
@@ -1382,6 +1383,13 @@ function upsertPeer(p){
       if(pr.gv[0]==='all'||(myPeer&&pr.gv[0]===myPeer)){const n=clamp(pr.gv[1],1,1000);me.score+=n;updInv();sendPresence(true);
         const who=(e.nm||names.get(e.by)||'Someone');toast('🎁 '+who+' gave you '+n+' points!');addSys('🎁 '+who+' gave you '+n+' points!');}}
   }else if(e.gvT===undefined)e.gvT=0;
+  if(Array.isArray(pr.gs)&&pr.gs.length===3&&typeof pr.gs[0]==='string'&&Number.isInteger(pr.gs[1])&&pr.gs[1]>=0&&pr.gs[1]<SODAS.length&&typeof pr.gs[2]==='number'){
+    if(e.gsT===undefined)e.gsT=pr.gs[2];
+    else if(pr.gs[2]!==e.gsT){e.gsT=pr.gs[2];
+      if(myPeer&&pr.gs[0]===myPeer){const sd=SODAS[pr.gs[1]],who=(e.nm||names.get(e.by)||'Someone');
+        toast('🥤 '+who+' gave you a '+sd.name+' '+sd.emo+'!');addSys('🥤 '+who+' gave you a '+sd.name+' soda '+sd.emo+' — *gulp*');
+        gulp();setTimeout(()=>sd.go(),1600);}}
+  }else if(e.gsT===undefined)e.gsT=0;
   {const nm=typeof pr.nm==='string'?cleanName(pr.nm):'';if(nm!==e.nm){e.nm=nm;setLabel(e.av.userData.label,(nm||names.get(e.by)||'Player').slice(0,18));}}
   if(Array.isArray(pr.dr)&&pr.dr.length===7&&pr.dr.every(n=>typeof n==='number'&&isFinite(n))){
     if(e.drT===undefined)e.drT=pr.dr[6];
@@ -3360,6 +3368,18 @@ function drinkSoda(){
   p.x=SODA_EMPTY.x;p.z=SODA_EMPTY.z;p.y=0;p.t=Date.now();p.held=false;me.holding=null;   // empty can: the machine restocks it later
   sendPresence(true);sd.go();
 }
+// give the soda you're holding to the closest player: they drink it and get its power!
+function giveSoda(){
+  const p=PLANTS[me.holding];if(!p||p.kind!=='soda')return;
+  let best=null,bd=3;
+  for(const [id,e] of peers){if(e.lv!==level||!!e.v!==!!me.inVent||Math.abs(e.ty-me.y)>2.5)continue;
+    const d=Math.hypot(e.tx-me.x,e.tz-me.z);if(d<bd){bd=d;best={id,e};}}
+  if(!best){toast('🥤 Walk right up to a player (closer than 3 m) to give them your soda');return;}
+  const sd=SODAS[p.flav],nm=best.e.nm||names.get(best.e.by)||'Player';
+  p.x=SODA_EMPTY.x;p.z=SODA_EMPTY.z;p.y=0;p.t=Date.now();p.held=false;me.holding=null;
+  me.lastSoda=[best.id,p.flav,Date.now()];sendPresence(true);
+  toast('🎁 You gave '+nm+' a '+sd.name+' '+sd.emo+' — they get '+sd.what.replace(/!$/,'')+'!');
+}
 function sodaStock(k){return PLANTS.filter(p=>p.kind==='soda'&&p.flav===k&&sodaParked(p)&&!p.held).length;}
 function sodaWait(k){let w=0;for(const p of PLANTS)if(p.kind==='soda'&&p.flav===k&&!p.held){const l=sodaRestockLeft(p);if(l>0&&(!w||l<w))w=l;}return w;}
 function SodaMachine(){
@@ -3421,7 +3441,7 @@ function updateHelp(){
       if(held&&held.kind==='spray')k('F','spray');
       if(held&&held.kind==='phone')k('F','talk on the phone');
       if(held&&held.kind==='duck')k('F','squeak');
-      if(held&&held.kind==='soda')k('F','drink');
+      if(held&&held.kind==='soda'){k('F','drink');k('G','give to a player');}
       if(held&&(held.kind==='mop'||held.kind==='vacuum'))k('hold F / click','power up & swing');
       if(me.ball)k('hold Q / click','throw paper ball');
       else if(me.darts>0)k('hold Q / click','throw dart');
