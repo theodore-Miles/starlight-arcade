@@ -238,7 +238,6 @@ function Snake(){
   let s,d,nd,f,t,over,score;const C=30,CW=32,CH=19,OY=58;
   const rf=()=>{let p;do{p={x:Math.random()*CW|0,y:Math.random()*CH|0};}while(s.some(q=>q.x===p.x&&q.y===p.y));return p;};
   return{
-    result(){return{done:!!over,score};},
     init(){s=[{x:10,y:9},{x:9,y:9},{x:8,y:9}];d={x:1,y:0};nd=d;f=rf();t=0;over=false;score=0;},
     update(){
       if(over){if(P.has('Space'))this.init();return;}
@@ -290,7 +289,6 @@ function Pong(){
 function Bricks(){
   let px,ball,br,lives,score,stuck,msg;
   return{
-    result(){return{done:!!msg,score};},
     init(){px=W/2-60;lives=3;score=0;msg=null;br=[];
       for(let r=0;r<6;r++)for(let c=0;c<12;c++)br.push({x:20+c*77,y:80+r*28,a:1,col:`hsl(${r*50},85%,60%)`});
       this.serve();},
@@ -908,7 +906,7 @@ function makeClaw(x,col){
   // stand on top of it; crouch into the knee space from behind
   houseCols.push({x:12,z:-8.3,hw:1.75,hd:.65,top:1.1,surf:1.1,under:1});
   houseCols.push({x:10.625,z:-8.3,hw:.375,hd:.65,leg:1},{x:13.075,z:-8.3,hw:.675,hd:.65,leg:1},{x:11.7,z:-7.69,hw:.7,hd:.05,leg:1});
-  houseInter.push({x:11.2,z:-9.8,cond:()=>me.z<-9.05,verb:'Use the computer 💻 (💰 challenges + info)',act:()=>startGame(ChallengeBoard())});
+  houseInter.push({x:11.2,z:-9.8,cond:()=>me.z<-9.05,verb:'Use the Info Computer 💻',act:()=>startGame(Info())});
   houseInter.push({x:11.2,z:-6.9,cond:()=>me.z>-8,verb:'Take a sheet of paper 📄',act:()=>takePaper()});
 
   // ---- VR zone (front right) ----
@@ -1170,7 +1168,15 @@ function groundAt(x,z){let gy=0,b=false;if(level!==0)return{gy,b};
 function blocked(x,z){
   const R=.45;
   if(level===0){
-    if(x<-17-R){if(x<-33+R||z<-7+R||z>7-R)return true;}            // inside the GAME ROOM
+    if(x<-17-R){
+      if(x<-33+R)return true;
+      for(const [k,sd] of [[0,1],[1,-1]]){const edge=sd*7;
+        if(sd*z>edge*sd-R){                                       // reaching past the north / south wall…
+          if(!(x>-25.75+R&&x<-24.25-R&&sd*z<8.9-R))return true;     // only through the hidden doorway
+          if(!SECRETS[k].open){const inside=sd*me.z>7.15;
+            if(inside){if(sd*z<7.3&&sd*z<sd*me.z)return true;}       // can't walk out through a shut poster
+            else if(sd*z>sd*me.z)return true;}}}                     // …or in
+    }            // inside the GAME ROOM
     else if(x<-16+R){if(!(z>-.8+R&&z<.8-R))return true;}          // the doorway to the GAME ROOM
     if(x>-17&&z<-11+R)return true;
     if(x>-17&&z>11-R){if(!(x>6.25+R&&x<7.35-R&&z<13.4-R))return true;}   // the little nook behind the vending machine
@@ -1288,7 +1294,7 @@ function updateCamera(dt){
     // third person: camera floats behind you
     const tx=me.x,ty=me.y+me.eye*.85,tz=me.z;
     let cx=tx-fx*4.2,cy=ty-fy*4.2+.7,cz=tz-fz*4.2;
-    if(level===0){if(me.x<-16.8){cx=clamp(cx,-32.7,-17.3);cz=clamp(cz,-6.7,6.7);cy=clamp(cy,.3,5.1);}else if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
+    if(level===0){if(me.x<-16.8){if(inSecret(me.x,me.z)){cx=clamp(cx,-25.6,-24.4);cz=me.z>0?clamp(cz,7.3,8.7):clamp(cz,-8.7,-7.3);}else{cx=clamp(cx,-32.7,-17.3);cz=clamp(cz,-6.7,6.7);}cy=clamp(cy,.3,5.1);}else if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
     camPos.set(cx,cy,cz);camLook.set(tx+fx*3,ty+fy*3,tz+fz*3);
   }else{
     camPos.set(me.x,me.y+me.eye+bob,me.z);
@@ -1313,7 +1319,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],cg:me.chal?{id:me.chal.id,g:me.chal.g,tg:me.chal.tg,bet:me.chal.bet,taker:me.chal.taker,st:me.chal.st}:null,ct:me.take?{cid:me.take.cid,owner:me.take.owner,t:me.take.t,res:me.take.res}:null,ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1347,10 +1353,7 @@ function upsertPeer(p){
   {const a=pr.ah,ok=v=>Array.isArray(v)&&v.every(n=>typeof n==='number'&&isFinite(n));
    e.ah=(a&&typeof a==='object'&&(a.seat===0||a.seat===1)&&ok(a.pad)&&a.pad.length===2)?{tb:a.tb===1?1:0,seat:a.seat,opp:typeof a.opp==='string'?a.opp:null,pad:a.pad,
      k:ok(a.k)&&a.k.length===4?a.k:null,op:ok(a.op)&&a.op.length===2?a.op:null,sc:ok(a.sc)&&a.sc.length===2?a.sc.map(n=>clamp(n|0,0,99)):null,over:a.over===1}:null;}
-  {const c=pr.cg;e.cg=(c&&typeof c==='object'&&typeof c.id==='string'&&c.id.length<=20&&CH_GAMES[c.g]&&Number.isInteger(c.tg)&&Number.isInteger(c.bet)&&c.bet>=1&&c.bet<=50&&(c.st==='open'||c.st==='taken'))?
-     {id:c.id,g:c.g,tg:clamp(c.tg,1,5000),bet:c.bet,taker:typeof c.taker==='string'?c.taker:null,st:c.st}:null;
-   const t=pr.ct;e.ct=(t&&typeof t==='object'&&typeof t.cid==='string'&&typeof t.owner==='string'&&typeof t.t==='number')?
-     {cid:t.cid,owner:t.owner,t:t.t,res:(t.res&&typeof t.res==='object')?{win:t.res.win===true,score:Number.isFinite(t.res.score)?t.res.score|0:0}:null}:null;}
+  if(Array.isArray(pr.sd)&&pr.sd.length===3&&typeof pr.sd[2]==='number'&&isFinite(pr.sd[2])&&pr.sd[2]>secretsT){secretsT=pr.sd[2];SECRETS[0].open=pr.sd[0]===1;SECRETS[1].open=pr.sd[1]===1;}
   if(Array.isArray(pr.vm)&&pr.vm.length===2&&typeof pr.vm[1]==='number'&&isFinite(pr.vm[1])&&pr.vm[1]>VEND.t){VEND.t=pr.vm[1];VEND.open=!!pr.vm[0];}
   if(Array.isArray(pr.bb)&&pr.bb.length===2&&typeof pr.bb[1]==='number'&&isFinite(pr.bb[1])&&pr.bb[1]>bbState.t){bbState.t=pr.bb[1];bbState.open=!!pr.bb[0];}
   if(Array.isArray(pr.sf)&&pr.sf.length===2&&typeof pr.sf[1]==='number'&&isFinite(pr.sf[1])&&pr.sf[1]>safe.t){safe.t=pr.sf[1];safe.open=!!pr.sf[0];}
@@ -2545,6 +2548,14 @@ function squeak(force){
 // GAME ROOM: a new room through the doorway in the left wall
 // ======================================================================
 const inGameRoom=(x,z)=>x<-17&&x>-33&&z>-7&&z<7;
+// two secret hiding rooms behind posters in the GAME ROOM (index 0 = behind SKY BOUND, 1 = behind BLOCK HAVEN)
+const SECRETS=[{open:false,ang:0,door:null,light:null,openA:1.4,z:7.0},{open:false,ang:0,door:null,light:null,openA:-1.4,z:-7.0}];
+let secretsT=0;
+const inSecret=(x,z)=>x>-25.75&&x<-24.25&&(z>7.15||z<-7.15)&&Math.abs(z)<8.9;
+function setSecret(k,open){SECRETS[k].open=open;secretsT=Date.now();sendPresence(true);}
+function updateSecrets(){
+  for(const S of SECRETS){if(!S.door)continue;S.ang+=((S.open?S.openA:0)-S.ang)*.12;S.door.rotation.y=S.ang;if(S.light)S.light.intensity=Math.min(1,Math.abs(S.ang)/1.2)*.6;}
+}
 (function buildGameRoom(){
   const noShadow=m=>{m.castShadow=false;return m;};
   const OX=-25,OZ=0,OW=16,OD=14,OH=5.4;
@@ -2555,7 +2566,11 @@ const inGameRoom=(x,z)=>x<-17&&x>-33&&z>-7&&z<7;
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(OW,OD),fm);fl.rotation.x=-Math.PI/2;fl.position.set(OX,.003,OZ);fl.receiveShadow=true;house.add(fl);
   const wallPiece=house.children.find(o=>o.isMesh&&Math.abs(o.position.z+11.75)<.01);
   const wm=wallPiece?wallPiece.material:std(0x1a1238);
-  noShadow(box(OW+.6,OH,.3,wm,OX,OH/2,7.15,house));noShadow(box(OW+.6,OH,.3,wm,OX,OH/2,-7.15,house));noShadow(box(.3,OH,OD+.6,wm,-33.15,OH/2,OZ,house));
+  for(const zz of [7.15,-7.15]){noShadow(box(7.55,OH,.3,wm,-29.525,OH/2,zz,house));noShadow(box(7.55,OH,.3,wm,-20.475,OH/2,zz,house));noShadow(box(1.5,OH-3.7,.3,wm,-25,3.7+(OH-3.7)/2,zz,house));
+    // the tiny secret room behind it
+    const sd=zz>0?1:-1,nk=std(0x0d0820,{roughness:1});
+    box(1.7,3.7,.12,nk,-25,1.85,zz+sd*1.8,house);box(.12,3.7,1.8,nk,-25.85,1.85,zz+sd*.9,house);box(.12,3.7,1.8,nk,-24.15,1.85,zz+sd*.9,house);box(1.7,.12,1.8,nk,-25,3.76,zz+sd*.9,house);
+    const lt=new THREE.PointLight(0x46f3ff,0,2.2);lt.position.set(-25,3.2,zz+sd*.9);house.add(lt);SECRETS[zz>0?0:1].light=lt;}noShadow(box(.3,OH,OD+.6,wm,-33.15,OH/2,OZ,house));
   const ceil=new THREE.Mesh(new THREE.PlaneGeometry(OW+.6,OD+.6),byW(33.5).material);ceil.rotation.x=Math.PI/2;ceil.position.set(OX,OH,OZ);house.add(ceil);
   const strip=(m,w,d,x,y,z)=>{const s=new THREE.Mesh(new THREE.BoxGeometry(w,.06,d),m);s.position.set(x,y,z);house.add(s);};
   [[new THREE.MeshBasicMaterial({color:0x46f3ff}),.14],[new THREE.MeshBasicMaterial({color:0xff3df2}),5.1]].forEach(([m,y])=>{strip(m,OW,.06,OX,y,6.97);strip(m,OW,.06,OX,y,-6.97);strip(m,.06,OD,-32.97,y,OZ);});
@@ -2565,12 +2580,12 @@ const inGameRoom=(x,z)=>x<-17&&x>-33&&z>-7&&z<7;
   const poster=(title,sub,c1,c2,draw,x,z,ry)=>{const t=canvasTex(256,360,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,c1);gr.addColorStop(1,c2);g.fillStyle=gr;g.fillRect(0,0,w,h);
       draw(g,w,h);g.fillStyle='rgba(0,0,0,.45)';g.fillRect(0,h-90,w,90);g.fillStyle='#fff';g.textAlign='center';g.font='900 34px system-ui';g.fillText(title,w/2,h-50,w-20);g.font='bold 15px system-ui';g.fillStyle='#ffd36e';g.fillText(sub,w/2,h-20,w-20);});
     const p=new THREE.Mesh(new THREE.PlaneGeometry(1.5,2.1),new THREE.MeshBasicMaterial({map:t,color:0xdddddd}));p.position.set(x,2.6,z);p.rotation.y=ry;house.add(p);
-    const fr=new THREE.Mesh(new THREE.PlaneGeometry(1.64,2.24),new THREE.MeshBasicMaterial({color:new THREE.Color(c1)}));fr.position.copy(p.position);fr.rotation.y=ry;fr.translateZ(-.01);house.add(fr);};
+    const fr=new THREE.Mesh(new THREE.PlaneGeometry(1.64,2.24),new THREE.MeshBasicMaterial({color:new THREE.Color(c1)}));fr.position.copy(p.position);fr.rotation.y=ry;fr.translateZ(-.01);house.add(fr);return {p,fr};};
   poster('BLOCK RAIDERS','space · ships · blocks','#1d1650','#0b0920',g=>{const cs=['#ff5470','#7d8cff','#3ddc84','#c86bff'];for(let i=-2;i<=2;i++)for(let j=-2;j<=1;j++)if(Math.abs(i)+Math.abs(j)<4){g.fillStyle=cs[(i+j+8)%4];g.fillRect(128+i*26-12,110+j*26-12,24,24);}g.fillStyle='#ffd23f';g.fillRect(116,98,24,24);g.fillStyle='#46f3ff';g.beginPath();g.moveTo(128,200);g.lineTo(108,240);g.lineTo(148,240);g.fill();},-29,6.97,Math.PI);
-  poster('SKY BOUND','fly to the Moon!','#2a7fff','#bfe8ff',g=>{g.fillStyle='#fff';for(const [x,y] of [[60,90],[190,140],[90,200]]){g.beginPath();g.arc(x,y,22,0,7);g.arc(x+24,y,18,0,7);g.fill();}g.fillStyle='#ff5d73';g.fillRect(100,150,70,16);g.fillRect(126,126,16,64);g.fillStyle='#ffd36e';g.beginPath();g.arc(210,50,22,0,7);g.fill();},-25,6.97,Math.PI);
+  const posterN=poster('SKY BOUND','fly to the Moon!','#2a7fff','#bfe8ff',g=>{g.fillStyle='#fff';for(const [x,y] of [[60,90],[190,140],[90,200]]){g.beginPath();g.arc(x,y,22,0,7);g.arc(x+24,y,18,0,7);g.fill();}g.fillStyle='#ff5d73';g.fillRect(100,150,70,16);g.fillRect(126,126,16,64);g.fillStyle='#ffd36e';g.beginPath();g.arc(210,50,22,0,7);g.fill();},-25,6.97,Math.PI);
   poster('TINY ME','in the Big House','#ffcf8a','#c97a3a',g=>{g.fillStyle='#8a3a2a';g.beginPath();g.moveTo(40,140);g.lineTo(128,60);g.lineTo(216,140);g.fill();g.fillStyle='#e8b070';g.fillRect(56,140,144,110);g.fillStyle='#ffd36e';g.beginPath();g.arc(128,232,5,0,7);g.fill();g.fillStyle='#4fc3ff';g.fillRect(124,237,8,12);},-21,6.97,Math.PI);
   poster('RED DUST','Mars mining colony','#ff7a4a','#4a1a10',g=>{g.fillStyle='#ffb07a';g.beginPath();g.arc(170,90,40,0,7);g.fill();g.fillStyle='#8a3a20';g.beginPath();g.moveTo(0,250);g.lineTo(70,180);g.lineTo(130,230);g.lineTo(200,170);g.lineTo(256,240);g.lineTo(256,270);g.lineTo(0,270);g.fill();g.fillStyle='#ddd';g.fillRect(60,200,40,26);g.beginPath();g.arc(80,200,20,Math.PI,0);g.fill();},-29,-6.97,0);
-  poster('BLOCK HAVEN','dig · craft · build','#3ddc84','#1a6a3a',g=>{for(let i=0;i<8;i++)for(let j=0;j<4;j++){g.fillStyle=j===0?'#3ddc84':j<2?'#8a5a2a':'#777';g.fillRect(i*32,160+j*26,31,25);}g.fillStyle='#5a3a1a';g.fillRect(170,80,16,80);g.fillStyle='#2a9a4a';g.fillRect(146,50,64,50);},-25,-6.97,0);
+  const posterS=poster('BLOCK HAVEN','dig · craft · build','#3ddc84','#1a6a3a',g=>{for(let i=0;i<8;i++)for(let j=0;j<4;j++){g.fillStyle=j===0?'#3ddc84':j<2?'#8a5a2a':'#777';g.fillRect(i*32,160+j*26,31,25);}g.fillStyle='#5a3a1a';g.fillRect(170,80,16,80);g.fillStyle='#2a9a4a';g.fillRect(146,50,64,50);},-25,-6.97,0);
   poster('ISLAND SETTLERS','build · trade · explore','#7fd8ff','#1e6cff',g=>{g.fillStyle='#ffe08a';g.beginPath();g.ellipse(128,180,90,40,0,0,7);g.fill();g.fillStyle='#3ddc84';g.beginPath();g.ellipse(128,170,60,26,0,0,7);g.fill();g.fillStyle='#8a5a2a';g.fillRect(150,110,8,50);g.fillStyle='#2a9a4a';g.beginPath();g.arc(154,108,24,0,7);g.fill();},-21,-6.97,0);
   const ICONS={
     joystick:g=>{g.beginPath();g.rect(-40,20,80,24);g.stroke();g.beginPath();g.moveTo(0,20);g.lineTo(-10,-20);g.stroke();g.beginPath();g.arc(-12,-30,12,0,7);g.stroke();g.beginPath();g.arc(26,30,5,0,7);g.stroke();},
@@ -2586,6 +2601,18 @@ const inGameRoom=(x,z)=>x<-17&&x>-33&&z>-7&&z<7;
       g.shadowColor=col;g.shadowBlur=14;ICONS[name](g);ICONS[name](g);});
     const m=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.1),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
     m.position.set(x,4.3,z);m.rotation.y=ry;house.add(m);};
+  [[posterN,7.0,1.4,0],[posterS,-7.0,-1.4,1]].forEach(([ps,zz,openA,k])=>{
+    const h=new THREE.Group();h.position.set(-25.75,0,zz);house.add(h);
+    const door=box(1.5,3.7,.08,wm,.75,1.85,0,h);
+    for(const m of [ps.p,ps.fr]){house.remove(m);m.position.set(m.position.x+25.75,m.position.y,m.position.z-zz-(zz>0?.05:-.05));h.add(m);}
+    h.rotation.z=0;ps.p.rotation.z=.035;ps.fr.rotation.z=.035;     // just a little crooked…
+    SECRETS[k].door=h;SECRETS[k].openA=openA;
+    const sd=zz>0?1:-1;
+    houseInter.push({x:-25,z:zz-sd*.45,cond:()=>sd*me.z<7,get verb(){return SECRETS[k].open?'Close the poster 🖼':'Straighten the crooked poster 🖼';},
+      act:()=>{if(!SECRETS[k].open){setSecret(k,true);toast('😮 The poster swings open… there\'s a secret room behind it!');}else setSecret(k,false);}});
+    houseInter.push({x:-25,z:zz+sd*.35,cond:()=>sd*me.z>7.2,get verb(){return SECRETS[k].open?'Pull the poster shut (hide) 🤫':'Open the poster door';},
+      act:()=>{setSecret(k,!SECRETS[k].open);if(SECRETS[k].open)toast('🚪 Poster open');else toast('🤫 Shh… nobody knows you\'re in here');}});
+  });
   [['joystick','#ff3df2',-31],['star','#46f3ff',-27],['coin','#ffd36e',-23],['bolt','#3ddc84',-19]].forEach(([n,c,x])=>neonIcon(n,c,x,6.96,Math.PI));
   [['trophy','#ffd36e',-31],['heart','#ff5d73',-27],['rocket','#46f3ff',-23],['pad','#ff3df2',-19]].forEach(([n,c,x])=>neonIcon(n,c,x,-6.96,0));
 })();
@@ -2732,7 +2759,6 @@ function SkeeBall(){
   let balls,score,aim,charging,power,pdir,roll,over,last,paid;
   const ringScore=(x,y)=>{for(const [hx,hy] of HOLES)if(Math.hypot(x-hx,y-hy)<16)return 100;const d=Math.hypot(x-CX,y-CY);for(const [r,s] of RINGS)if(d<r)return s;return 0;};
   return{
-    result(){return{done:!!over,score};},
     init(){balls=9;score=0;aim=0;charging=false;power=0;pdir=1;roll=null;over=false;last=null;paid=false;},
     update(){
       if(over){if(P.has('Space')||P.has('Enter'))this.init();return;}
@@ -2915,108 +2941,6 @@ function AirHockey(tid){tid=tid|0;
   };
 }
 // ======================================================================
-// CHALLENGE BOARD (on the info desk computer): bet coins on a challenge!
-// Post a challenge with coins on it. Someone takes it and puts in the same coins.
-// If they reach the target score they win ALL the coins; if not, you do.
-// ======================================================================
-const CH_GAMES={
-  skee:{name:'Skee-Ball',icon:'🎳',step:50,def:200,min:50,max:900,mk:()=>SkeeBall()},
-  snake:{name:'Snake',icon:'🐍',step:5,def:15,min:5,max:200,mk:()=>Snake()},
-  bricks:{name:'Brick Bash',icon:'🧱',step:50,def:300,min:50,max:2000,mk:()=>Bricks()},
-};
-me.chal=null;   // my posted challenge {id,g,tg,bet,taker,st,t}
-me.take=null;   // a challenge I'm taking {cid,owner,t,res}
-function chalOwner(id){if(me.chal&&me.chal.id===id)return {peer:myPeer,e:null,c:me.chal};for(const [pid,e] of peers)if(e.cg&&e.cg.id===id)return {peer:pid,e,c:e.cg};return null;}
-function allChallenges(){const out=[];if(me.chal)out.push({owner:myPeer,name:(me.name||'You')+' (you)',c:me.chal,mine:true});
-  for(const [pid,e] of peers)if(e.lv===0&&e.cg&&e.cg.st!=='done')out.push({owner:pid,name:e.nm||names.get(e.by)||'Player',c:e.cg,mine:false});return out;}
-function challengeTick(){
-  // as the owner: let the first player who asked take it, and collect when they lose
-  if(me.chal){
-    const c=me.chal;
-    if(c.st==='open'){let best=null;for(const [pid,e] of peers)if(e.ct&&e.ct.cid===c.id&&e.ct.owner===myPeer&&!e.ct.res&&(!best||e.ct.t<best.t))best={pid,t:e.ct.t};
-      if(best){c.taker=best.pid;c.st='taken';sendPresence(true);const e=peers.get(best.pid);toast('🎯 '+((e&&e.nm)||'Someone')+' took your '+CH_GAMES[c.g].name+' challenge!');}}
-    else if(c.st==='taken'){const e=peers.get(c.taker);
-      if(!e){c.st='open';c.taker=null;sendPresence(true);}           // they left before finishing: open again
-      else if(e.ct&&e.ct.cid===c.id&&e.ct.res){const r=e.ct.res;
-        if(r.win)toast('😮 '+(e.nm||'They')+' beat your challenge with '+r.score+'! You lost 🪙 '+c.bet);
-        else{me.score+=c.bet*2;updInv();toast('🏆 '+(e.nm||'They')+' only got '+r.score+' — you win the pot: 🪙 '+(c.bet*2)+'!');}
-        me.chal=null;sendPresence(true);}}
-  }
-  // as the taker: wait for the owner to say yes, then play
-  if(me.take&&!me.take.started&&!me.take.res){
-    const o=chalOwner(me.take.cid);
-    if(!o||o.peer!==me.take.owner){toast('😕 That challenge is gone');me.take=null;sendPresence(true);}
-    else if(o.c.st==='taken'&&o.c.taker===myPeer){
-      if(me.score<o.c.bet){toast('🪙 Not enough coins!');me.take=null;sendPresence(true);}
-      else{me.score-=o.c.bet;updInv();me.take.started=true;me.take.g=o.c.g;me.take.tg=o.c.tg;me.take.bet=o.c.bet;sendPresence(true);
-        const g=CH_GAMES[o.c.g].mk();g.chal=true;startGame(g);toast('💰 Challenge on! Get '+o.c.tg+' or more in '+CH_GAMES[o.c.g].name+' to win 🪙 '+(o.c.bet*2));}}
-    else if(o.c.st==='taken'&&o.c.taker!==myPeer){toast('⏱ Someone else took that challenge first');me.take=null;sendPresence(true);}
-  }
-  // the challenge game finished?
-  if(me.take&&me.take.started&&!me.take.res&&game&&game.chal&&game.result){const r=game.result();
-    if(r.done){const win=r.score>=me.take.tg;me.take.res={win,score:r.score};game.chal=false;
-      if(win){me.score+=me.take.bet*2;updInv();toast('🏆 You beat the challenge! You win 🪙 '+(me.take.bet*2)+'!');}
-      else toast('😢 '+r.score+' — not enough. You lost 🪙 '+me.take.bet);
-      sendPresence(true);setTimeout(()=>{if(me.take&&me.take.res){me.take=null;sendPresence(true);}},20000);}}
-  // left the challenge game early = you lose it
-  if(me.take&&me.take.started&&!me.take.res&&!(game&&game.chal)){me.take.res={win:false,score:0};toast('🚪 You left the challenge — you lost 🪙 '+me.take.bet);sendPresence(true);
-    setTimeout(()=>{if(me.take&&me.take.res){me.take=null;sendPresence(true);}},20000);}
-}
-function ChallengeBoard(){
-  let gk='skee',tg=CH_GAMES.skee.def,bet=2,btns=[];
-  const B=(x,y,w,h,label,col,fn,dis)=>{btns.push({x,y,w,h,fn:dis?null:fn});ctx.fillStyle=dis?'#2a2f4a':col;ctx.fillRect(x,y,w,h);txt(label,x+w/2,y+h/2+6,15,dis?'#7a80a0':'#111','center');};
-  return{
-    init(){},
-    update(){
-      if(mouse.clicked){for(const b of btns)if(b.fn&&mouse.x>b.x&&mouse.x<b.x+b.w&&mouse.y>b.y&&mouse.y<b.y+b.h){b.fn();break;}}
-    },
-    draw(){
-      btns=[];
-      gbg('💰 CHALLENGE BOARD','Post a challenge with coins on it — or take one! Winner gets ALL the coins','#ffd36e');
-      txt('You have 🪙 '+me.score,W-30,40,18,'#ffd36e','right');
-      // ---- the list ----
-      ctx.fillStyle='#141c3d';ctx.fillRect(30,80,560,520);txt('OPEN CHALLENGES',50,110,16,'#9fb0e0');
-      const list=allChallenges();
-      if(!list.length)txt('No challenges yet — make the first one! →',50,150,15,'#9fb0e0',undefined,false);
-      list.slice(0,7).forEach((it,k)=>{const y=130+k*66,c=it.c,G=CH_GAMES[c.g];if(!G)return;
-        ctx.fillStyle='#1f2a55';ctx.fillRect(45,y,530,58);
-        txt(G.icon+' '+it.name,60,y+22,15,'#fff');
-        txt('Get '+c.tg+'+ in '+G.name+' · 🪙 '+c.bet+' each (pot 🪙 '+(c.bet*2)+')',60,y+45,13,'#cfd6ff',undefined,false);
-        if(it.mine){
-          if(c.st==='open')B(470,y+14,90,30,'Cancel','#ff9f43',()=>{me.score+=c.bet;updInv();me.chal=null;sendPresence(true);toast('↩ Challenge cancelled — 🪙 '+c.bet+' back');});
-          else txt('being played…',560,y+34,13,'#3ddc84','right');
-        }else if(c.st==='taken'){txt(c.taker===myPeer?'starting…':'taken',560,y+34,13,'#ff9f43','right');}
-        else{const waiting=me.take&&me.take.cid===c.id;
-          B(470,y+14,90,30,waiting?'Waiting…':'Take it!','#3ddc84',()=>{
-            if(me.chal){toast('🙃 You can\'t take challenges while yours is posted');return;}
-            if(me.take){toast('⏱ You\'re already taking one');return;}
-            if(me.score<c.bet){toast('🪙 You need '+c.bet+' coins to take this');return;}
-            me.take={cid:c.id,owner:it.owner,t:Date.now(),res:null};sendPresence(true);toast('⏳ Asking '+it.name+'…');},waiting||me.score<c.bet);}
-      });
-      // ---- make a new one ----
-      ctx.fillStyle='#141c3d';ctx.fillRect(610,80,320,520);txt('MAKE A CHALLENGE',630,110,16,'#9fb0e0');
-      if(me.chal){txt('Your challenge is posted!',630,150,15,'#3ddc84');txt('Wait for someone to take it.',630,175,13,'#cfd6ff',undefined,false);}
-      else{
-        txt('Game',630,145,14,'#fff');
-        Object.entries(CH_GAMES).forEach(([k,G],i)=>B(630+i*98,155,92,34,G.icon+' '+G.name.split(' ')[0],k===gk?'#ffd36e':'#8a90b8',()=>{gk=k;tg=G.def;}));
-        const G=CH_GAMES[gk];
-        txt('Target score',630,225,14,'#fff');
-        B(630,235,44,40,'−','#8a90b8',()=>{tg=Math.max(G.min,tg-G.step);});txt(String(tg),770,263,26,'#ffd36e','center');B(866,235,44,40,'+','#8a90b8',()=>{tg=Math.min(G.max,tg+G.step);});
-        txt('Coins to bet',630,310,14,'#fff');
-        B(630,320,44,40,'−','#8a90b8',()=>{bet=Math.max(1,bet-1);});txt('🪙 '+bet,770,348,26,'#ffd36e','center');B(866,320,44,40,'+','#8a90b8',()=>{bet=Math.min(50,bet+1);});
-        txt('The other player puts in 🪙 '+bet+' too.',630,392,13,'#cfd6ff',undefined,false);
-        txt('If they get '+tg+'+ they win 🪙 '+(bet*2)+',',630,412,13,'#cfd6ff',undefined,false);
-        txt('if not, YOU win 🪙 '+(bet*2)+'!',630,432,13,'#cfd6ff',undefined,false);
-        B(630,455,280,44,'💰 Post challenge (🪙 '+bet+')','#3ddc84',()=>{
-          if(me.take){toast('⏱ Finish the challenge you took first');return;}
-          if(me.score<bet){toast('🪙 Not enough coins!');return;}
-          me.score-=bet;updInv();me.chal={id:Math.random().toString(36).slice(2,10),g:gk,tg,bet,taker:null,st:'open',t:Date.now()};sendPresence(true);toast('📌 Challenge posted!');},me.score<bet);
-      }
-      B(630,540,280,40,'ℹ Info screen','#46f3ff',()=>{closeGame();startGame(Info());});
-    }
-  };
-}
-// ======================================================================
 // VENDING MACHINE in the main room — push it aside to find a tiny hiding spot behind it
 // ======================================================================
 const VEND={home:6.8,slid:8.35,light:null,x:6.8,open:false,t:0,g:null,col:null,said:false};
@@ -3051,7 +2975,7 @@ function updateVend(){
   const target=VEND.open?VEND.slid:VEND.home;
   VEND.x+=(target-VEND.x)*.08;if(Math.abs(target-VEND.x)<.002)VEND.x=target;
   VEND.g.position.x=VEND.x;VEND.light.intensity=Math.min(1,Math.abs(VEND.x-VEND.home)/1.2)*.35;VEND.col.x=VEND.x;VEND.buy.x=VEND.x;
-  const hid=level===0&&me.z>11.8;
+  const hid=level===0&&(me.z>11.8||(inSecret(me.x,me.z)&&!SECRETS[me.z>0?0:1].open&&Math.abs(SECRETS[me.z>0?0:1].ang)<.1));
   me.hiding=hid?'box':'';
   if(hid&&!VEND.said){VEND.said=true;toast('🤫 Shh… you\'re hiding behind the vending machine!');}
   if(!hid)VEND.said=false;
@@ -3175,7 +3099,6 @@ function loop(){
   requestAnimationFrame(loop); // keep going even if something below goes wrong
   const dt=Math.min(clock.getDelta(),.05);T++;
   if(started&&!game&&!linkOpen&&!chatting&&!noteOpen&&P.has('KeyV')){thirdPerson=!thirdPerson;toast(thirdPerson?'📷 Third person view':'👀 First person view');}
-  if(started)challengeTick();
   if(game){
     if(P.has('Escape'))closeGame();else{game.update();if(game)game.draw();}
   }else if(linkOpen){
@@ -3230,7 +3153,7 @@ function loop(){
   updateSpray(dt);
   updateTools(dt);
   updateHelp();
-  updateVend();updateVoiceVolumes();updateJuke();updateHockey3D();
+  updateVend();updateSecrets();updateVoiceVolumes();updateJuke();updateHockey3D();
   updateTV();
   sendPresence(false);
   renderer.render(scene,camera);
