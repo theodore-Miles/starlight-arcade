@@ -1182,7 +1182,7 @@ function blocked(x,z){
   for(const c of (level===0?houseCols:skyCols)){
     if(c.off)continue;
     if(c.under&&me.crouch&&me.y<.1)continue; // crawl under it
-    if(c.leg&&!me.crouch)continue; // legs only matter when you're underneath
+    if(c.leg&&(!me.crouch||me.y>.3))continue; // legs only matter when you're underneath
     if(c.top!==undefined&&c.top<=me.y+.3)continue; // low enough to step/jump onto
     if(c.r!==undefined){if(Math.hypot(x-c.x,z-c.z)<c.r+R)return true;}
     else if(Math.abs(x-c.x)<c.hw+R&&Math.abs(z-c.z)<c.hd+R)return true;
@@ -1223,7 +1223,7 @@ function updateWorld(dt){
   if(me.inVent){updateVent(dt);return;}
   const underSomething=level===0&&me.y<.5&&houseCols.some(c=>c.under&&Math.abs(me.x-c.x)<c.hw+.45&&Math.abs(me.z-c.z)<c.hd+.45);
   const wasCrouch=me.crouch;
-  me.crouch=(!!K.KeyC&&me.y<.1)||(wasCrouch&&underSomething);
+  me.crouch=(!!K.KeyC&&(me.y<.1||me.vy===0))||(wasCrouch&&underSomething);   // crouch on the floor or on top of things
   if(wasCrouch&&!K.KeyC&&underSomething&&!me.bumpTip){me.bumpTip=1;toast("🙃 Ouch! You can't stand up under the table");}
   if(!underSomething)me.bumpTip=0;
   const run=(K.ShiftLeft||K.ShiftRight)&&!me.crouch,sp=(me.crouch?2.4:run?8.5:5)*dt*(performance.now()<(me.boostUntil||0)?1.6:1);
