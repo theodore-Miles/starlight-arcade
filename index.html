@@ -1238,7 +1238,7 @@ function updateWorld(dt){
   me.crouch=(!!K.KeyC&&(me.y<.1||me.vy===0))||(wasCrouch&&underSomething);   // crouch on the floor or on top of things
   if(wasCrouch&&!K.KeyC&&underSomething&&!me.bumpTip){me.bumpTip=1;toast("🙃 Ouch! You can't stand up under the table");}
   if(!underSomething)me.bumpTip=0;
-  const run=(K.ShiftLeft||K.ShiftRight)&&!me.crouch,sp=(me.crouch?2.4:run?8.5:5)*dt*(performance.now()<(me.boostUntil||0)?1.6:1);
+  const run=(K.ShiftLeft||K.ShiftRight)&&!me.crouch,sp=(me.crouch?2.4:run?8.5:5)*dt*(performance.now()<(me.boostUntil||0)?1.6:1)*(performance.now()<(me.matStart||0)+MAT_MS*.8?0:1);
   const turn=(K.ArrowLeft?1:0)-(K.ArrowRight?1:0);
   me.ry+=turn*2.7*dt;
   const mv=((K.KeyW||K.ArrowUp)?1:0)-((K.KeyS||K.ArrowDown)?1:0);
@@ -1309,6 +1309,8 @@ function updateCamera(dt){
   hand.visible=!tp;
   if(meAv.userData.shown!==tp){meAv.userData.shown=tp;setMeVisible(tp);}
   meAv.scale.y=(me.inVent||me.crouch)?.5:1;
+  {const f=(performance.now()-(me.matStart||0))/MAT_MS;
+   if(f<1){const q=Math.max(.03,f*f);meAv.scale.y*=q;meAv.scale.x=meAv.scale.z=.5+.5*q;}else meAv.scale.x=meAv.scale.z=1;}
   // your hand + held item swing a little while walking
   hand.position.set(.32,-.3+Math.abs(Math.sin(me.bob))*(me.moving?.03:0),-.55);
 }
@@ -1324,7 +1326,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,gs:me.lastSoda||null,hk:me.lastHackSend||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sr:[STORE.open?1:0,STORE.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,gs:me.lastSoda||null,hk:me.lastHackSend||null,tp:me.tpAt||0,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sr:[STORE.open?1:0,STORE.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1390,6 +1392,10 @@ function upsertPeer(p){
         toast('🥤 '+who+' gave you a '+sd.name+' '+sd.emo+'!');addSys('🥤 '+who+' gave you a '+sd.name+' soda '+sd.emo+' — *gulp*');
         gulp();setTimeout(()=>sd.go(),1600);}}
   }else if(e.gsT===undefined)e.gsT=0;
+  if(typeof pr.tp==='number'&&isFinite(pr.tp)){
+    if(e.tpT===undefined)e.tpT=pr.tp;
+    else if(pr.tp!==e.tpT){e.tpT=pr.tp;if(e.lv===level&&e.av){tpBeam(e.av.position.x,e.av.position.y,e.av.position.z,true);
+      e.av.position.set(e.tx,e.ty,e.tz);e.matStart=performance.now();tpBeam(e.tx,e.ty,e.tz,false);}}}
   if(Array.isArray(pr.hk)&&pr.hk.length===3&&typeof pr.hk[0]==='string'&&Number.isInteger(pr.hk[1])&&pr.hk[1]>=0&&pr.hk[1]<6&&typeof pr.hk[2]==='number'){
     if(e.hkT===undefined)e.hkT=pr.hk[2];
     else if(pr.hk[2]!==e.hkT){e.hkT=pr.hk[2];if(myPeer&&pr.hk[0]===myPeer)getHacked(pr.hk[1],e.nm||names.get(e.by)||'Someone');}
@@ -2569,12 +2575,46 @@ function Password(){
         txt(m[0],W/2,280,46,state==='lose'?'#ff3b3b':'#3ddc84','center');txt(m[1],W/2,330,22,'#ffd36e','center');
         txt('Press Enter to try a new password',W/2,400,18,'#c9a8ff','center');}}};
 }
+// ----- TELEPORT EFFECT: a shimmering beam, sparkles, and you slowly materialize -----
+const MAT_MS=2600,tpFx=[];
+const tpOv=document.createElement('div');
+tpOv.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:40;display:none;background:radial-gradient(circle,rgba(230,208,255,.95) 0%,rgba(176,107,255,.85) 45%,rgba(40,10,90,.95) 100%);';
+tpOv.innerHTML='<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:bold 34px monospace;color:#fff;text-shadow:0 0 18px #46f3ff;letter-spacing:4px">✨ MATERIALIZING ✨</div>';
+document.body.appendChild(tpOv);
+function tpBeam(x,y,z,leaving){
+  const g=new THREE.Group();g.position.set(x,y,z);scene.add(g);
+  const mat=new THREE.MeshBasicMaterial({color:leaving?0xb06bff:0x46f3ff,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false});
+  const c=new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,3.2,24,1,true),mat);c.position.y=1.6;g.add(c);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.4,.7,32),mat);ring.rotation.x=-Math.PI/2;ring.position.y=.03;g.add(ring);
+  const sp=[];const sm=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false});
+  for(let i=0;i<26;i++){const m=new THREE.Mesh(new THREE.OctahedronGeometry(.04+Math.random()*.03),sm);const a=Math.random()*6.28,r=.15+Math.random()*.45;
+    m.position.set(Math.cos(a)*r,Math.random()*3,Math.sin(a)*r);m.userData={a,r,v:.4+Math.random()*1.2};g.add(m);sp.push(m);}
+  tpFx.push({g,mat,sm,sp,t0:performance.now(),leaving});
+}
+function tickTpFx(now){
+  for(let i=tpFx.length-1;i>=0;i--){const f=tpFx[i],k=(now-f.t0)/MAT_MS;
+    if(k>=1){scene.remove(f.g);f.g.traverse(o=>{if(o.geometry)o.geometry.dispose();});f.mat.dispose();f.sm.dispose();tpFx.splice(i,1);continue;}
+    f.mat.opacity=.55*(f.leaving?1-k:Math.sin(k*Math.PI));f.sm.opacity=1-k;
+    for(const m of f.sp){const u=m.userData;u.a+=.06;m.position.x=Math.cos(u.a)*u.r;m.position.z=Math.sin(u.a)*u.r;m.position.y=(m.position.y+u.v*.02)%3.2;}}
+  // my own screen: bright glow that slowly clears as you materialize
+  const k=(now-(me.matStart||0))/MAT_MS;
+  if(k<1){tpOv.style.display='block';tpOv.style.opacity=String(Math.min(1,(1-k)*1.4));}else if(tpOv.style.display!=='none')tpOv.style.display='none';
+}
+function shimmer(){try{const ac=window._ac||(window._ac=new (window.AudioContext||window.webkitAudioContext)());
+  for(let n=0;n<3;n++){const o=ac.createOscillator(),g=ac.createGain(),t0=ac.currentTime;o.type='sine';
+    o.frequency.setValueAtTime(300+n*220,t0);o.frequency.exponentialRampToValueAtTime(1200+n*500,t0+2.4);
+    g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.08,t0+.3);g.gain.exponentialRampToValueAtTime(.0001,t0+2.6);o.connect(g);g.connect(ac.destination);o.start(t0);o.stop(t0+2.7);}}catch(e){}}
+function materializeAt(x,z,ry,label){
+  tpBeam(me.x,me.y,me.z,true);
+  me.x=x;me.z=z;me.ry=ry;me.y=0;me.vy=0;me.pitch=-.08;snapCam=true;
+  me.matStart=performance.now();me.tpAt=Date.now();tpBeam(x,0,z,false);shimmer();sendPresence(true);
+  setTimeout(()=>toast('🌐 You materialized at the '+label+'! (type /hackerlounge to come back)'),MAT_MS*.8);
+}
 function Teleporter(){
   const SPOTS=[['🕹 Main Room',0,-8,0],['🎮 Game Room',-18.6,0,-Math.PI/2],['🥤 Vending Machine',6.8,8.8,0],['🎱 Pool Table',0,4.2,Math.PI]];
   return{init(){},update(){},
     draw(){termBg('🌐 HOLOGRAM TELEPORTER');txt('Where do you want to go?',W/2,120,20,'#c9a8ff','center');
-      SPOTS.forEach(([n,x,z,ry],i)=>{if(btn(W/2-200,160+i*80,400,62,n,false,'#46f3ff')){closeGame();
-        me.x=x;me.z=z;me.ry=ry;me.y=0;me.vy=0;me.pitch=-.08;snapCam=true;sendPresence(true);toast('🌐 Zap! You teleported to the '+n.slice(2)+'! (type /hackerlounge to come back)');}});}};
+      SPOTS.forEach(([n,x,z,ry],i)=>{if(btn(W/2-200,160+i*80,400,62,n,false,'#46f3ff')){closeGame();materializeAt(x,z,ry,n.slice(2).trim());}});}};
 }
 function runCommand(cmd){
   const parts=cmd.trim().split(/\s+/);const c=parts[0].toLowerCase();
@@ -3573,11 +3613,15 @@ function loop(){
     e.av.position.x+=(e.tx-e.av.position.x)*k;e.av.position.y+=(e.ty-(e.hid==='pit'?.62:0)-e.av.position.y)*k;e.av.position.z+=(e.tz-e.av.position.z)*k;
     let d=e.try-e.av.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));e.av.rotation.y+=d*k;
     e.av.scale.y=(e.v||e.cr)?.5:1;
+    if(e.matStart){const f=(now-e.matStart)/MAT_MS;
+      if(f<1){const q=Math.max(.03,f*f);e.av.scale.y*=q;e.av.scale.x=e.av.scale.z=.5+.5*q+Math.sin(now/25)*.08*(1-f);}
+      else{e.matStart=0;e.av.scale.x=e.av.scale.z=1;}}
     e.av.userData.label.visible=!e.hid&&!e.cr;
     animAvatar(e.av,e.mv,dt);
   }
   for(const av of [meAv,...[...peers.values()].map(e=>e.av)])if(av.userData.bubble.visible&&now>av.userData.bubbleUntil)av.userData.bubble.visible=false;
   // animations
+  tickTpFx(now);
   for(const t of portals)t.rotation+=dt*1.5;
   for(const s of starMeshes){s.rotation.y+=dt*2.5;s.position.y=1.1+Math.sin(now/300+s.position.x)*.2;}
   if(house.userData.headsets)house.userData.headsets.forEach((h,i)=>{h.position.y=1.55+Math.sin(now/500+i)*.08;h.rotation.y=Math.sin(now/900+i)*.4;});
