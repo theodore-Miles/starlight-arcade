@@ -2566,7 +2566,7 @@ function updateSecrets(){
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(OW,OD),fm);fl.rotation.x=-Math.PI/2;fl.position.set(OX,.003,OZ);fl.receiveShadow=true;house.add(fl);
   const wallPiece=house.children.find(o=>o.isMesh&&Math.abs(o.position.z+11.75)<.01);
   const wm=wallPiece?wallPiece.material:std(0x1a1238);
-  for(const zz of [7.15,-7.15]){noShadow(box(7.55,OH,.3,wm,-29.525,OH/2,zz,house));noShadow(box(7.55,OH,.3,wm,-20.475,OH/2,zz,house));noShadow(box(1.5,OH-3.7,.3,wm,-25,3.7+(OH-3.7)/2,zz,house));
+  for(const zz of [7.15,-7.15]){noShadow(box(7.55,OH,.3,wm,-29.525,OH/2,zz,house));noShadow(box(7.55,OH,.3,wm,-20.475,OH/2,zz,house));noShadow(box(1.5,OH-2.2,.3,wm,-25,2.2+(OH-2.2)/2,zz,house));
     // the tiny secret room behind it
     const sd=zz>0?1:-1,nk=std(0x0d0820,{roughness:1});
     box(1.7,3.7,.12,nk,-25,1.85,zz+sd*1.8,house);box(.12,3.7,1.8,nk,-25.85,1.85,zz+sd*.9,house);box(.12,3.7,1.8,nk,-24.15,1.85,zz+sd*.9,house);box(1.7,.12,1.8,nk,-25,3.76,zz+sd*.9,house);
@@ -2579,7 +2579,7 @@ function updateSecrets(){
   neonSign('GAME ROOM','#3ddc84',5,-32.96,4.4,0,Math.PI/2);
   const poster=(title,sub,c1,c2,draw,x,z,ry)=>{const t=canvasTex(256,360,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,c1);gr.addColorStop(1,c2);g.fillStyle=gr;g.fillRect(0,0,w,h);
       draw(g,w,h);g.fillStyle='rgba(0,0,0,.45)';g.fillRect(0,h-90,w,90);g.fillStyle='#fff';g.textAlign='center';g.font='900 34px system-ui';g.fillText(title,w/2,h-50,w-20);g.font='bold 15px system-ui';g.fillStyle='#ffd36e';g.fillText(sub,w/2,h-20,w-20);});
-    const p=new THREE.Mesh(new THREE.PlaneGeometry(1.5,2.1),new THREE.MeshBasicMaterial({map:t,color:0xdddddd}));p.position.set(x,2.6,z);p.rotation.y=ry;house.add(p);
+    const p=new THREE.Mesh(new THREE.PlaneGeometry(1.5,2.1),new THREE.MeshBasicMaterial({map:t,color:0xdddddd}));p.position.set(x,1.15,z);p.rotation.y=ry;house.add(p);
     const fr=new THREE.Mesh(new THREE.PlaneGeometry(1.64,2.24),new THREE.MeshBasicMaterial({color:new THREE.Color(c1)}));fr.position.copy(p.position);fr.rotation.y=ry;fr.translateZ(-.01);house.add(fr);return {p,fr};};
   poster('BLOCK RAIDERS','space · ships · blocks','#1d1650','#0b0920',g=>{const cs=['#ff5470','#7d8cff','#3ddc84','#c86bff'];for(let i=-2;i<=2;i++)for(let j=-2;j<=1;j++)if(Math.abs(i)+Math.abs(j)<4){g.fillStyle=cs[(i+j+8)%4];g.fillRect(128+i*26-12,110+j*26-12,24,24);}g.fillStyle='#ffd23f';g.fillRect(116,98,24,24);g.fillStyle='#46f3ff';g.beginPath();g.moveTo(128,200);g.lineTo(108,240);g.lineTo(148,240);g.fill();},-29,6.97,Math.PI);
   const posterN=poster('SKY BOUND','fly to the Moon!','#2a7fff','#bfe8ff',g=>{g.fillStyle='#fff';for(const [x,y] of [[60,90],[190,140],[90,200]]){g.beginPath();g.arc(x,y,22,0,7);g.arc(x+24,y,18,0,7);g.fill();}g.fillStyle='#ff5d73';g.fillRect(100,150,70,16);g.fillRect(126,126,16,64);g.fillStyle='#ffd36e';g.beginPath();g.arc(210,50,22,0,7);g.fill();},-25,6.97,Math.PI);
@@ -2603,8 +2603,7 @@ function updateSecrets(){
     m.position.set(x,4.3,z);m.rotation.y=ry;house.add(m);};
   [[posterN,7.0,1.4,0],[posterS,-7.0,-1.4,1]].forEach(([ps,zz,openA,k])=>{
     const h=new THREE.Group();h.position.set(-25.75,0,zz);house.add(h);
-    const door=box(1.5,3.7,.08,wm,.75,1.85,0,h);
-    for(const m of [ps.p,ps.fr]){house.remove(m);m.position.set(m.position.x+25.75,m.position.y,m.position.z-zz-(zz>0?.05:-.05));h.add(m);}
+    for(const m of [ps.p,ps.fr]){house.remove(m);m.position.set(m.position.x+25.75,m.position.y,m.position.z-zz);h.add(m);}
     h.rotation.z=0;ps.p.rotation.z=.035;ps.fr.rotation.z=.035;     // just a little crooked…
     SECRETS[k].door=h;SECRETS[k].openA=openA;
     const sd=zz>0?1:-1;
@@ -2615,6 +2614,35 @@ function updateSecrets(){
   });
   [['joystick','#ff3df2',-31],['star','#46f3ff',-27],['coin','#ffd36e',-23],['bolt','#3ddc84',-19]].forEach(([n,c,x])=>neonIcon(n,c,x,6.96,Math.PI));
   [['trophy','#ffd36e',-31],['heart','#ff5d73',-27],['rocket','#46f3ff',-23],['pad','#ff3df2',-19]].forEach(([n,c,x])=>neonIcon(n,c,x,-6.96,0));
+})();
+
+// ======================================================================
+// THINGS TO CROUCH BEHIND (crates, barrels, boxes, big plants)
+// ======================================================================
+(function buildHidingProps(){
+  const woodM=std(0xa8743c,{roughness:.8}),woodD=std(0x6b4423,{roughness:.8}),card=std(0xc9a26b,{roughness:.95}),tape=std(0xe8d9b0,{roughness:.6});
+  const crate=(x,y,z,sz,ry)=>{const g=new THREE.Group();box(sz,sz,sz,woodM,0,sz/2,0,g);
+    for(const sx of [-1,1])for(const sz2 of [-1,1]){box(.08,sz,.08,woodD,sx*(sz/2-.02),sz/2,sz2*(sz/2-.02),g);}
+    for(const yy of [.04,sz-.04])for(const r of [0,1]){const b=box(r?sz:.08,.08,r?.08:sz,woodD,0,yy,0,g);if(r){b.position.z=sz/2-.02;const b2=b.clone();b2.position.z=-(sz/2-.02);g.add(b2);}else{b.position.x=sz/2-.02;const b2=b.clone();b2.position.x=-(sz/2-.02);g.add(b2);}}
+    const x1=box(sz*1.3,.07,.06,woodD,0,sz/2,sz/2+.01,g);x1.rotation.z=.75;const x2=x1.clone();x2.rotation.z=-.75;g.add(x2);
+    g.position.set(x,y,z);g.rotation.y=ry||0;g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);};
+  const crates=(x,z,ry)=>{crate(x-.55,0,z,1.05,ry);crate(x+.55,0,z,1.05,ry);crate(x,1.05,z,.85,ry+.3);
+    houseCols.push({x,z,hw:1.1,hd:.55,top:1.05});};
+  const barrel=(x,z,c)=>{const g=new THREE.Group();const b=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,1.1,18),std(c,{roughness:.5,metalness:.3}));b.position.y=.55;g.add(b);
+    for(const y of [.15,.55,.95]){const r=new THREE.Mesh(new THREE.TorusGeometry(.43,.025,6,24),std(0x333333,{metalness:.7}));r.rotation.x=Math.PI/2;r.position.y=y;g.add(r);}
+    g.position.set(x,0,z);g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);houseCols.push({x,z,r:.45,top:1.1});};
+  const boxes=(x,z)=>{[[0,0,.9,.7,.7,0],[.85,0,.7,.6,.6,.3],[.3,.7,.7,.55,.6,-.2]].forEach(([dx,dy,w,h,d,r])=>{const b=box(w,h,d,card,x+dx-.4,dy+h/2,z,house);b.rotation.y=r;const t=box(w+.01,.02,.12,tape,x+dx-.4,dy+h+.005,z,house);t.rotation.y=r;});
+    houseCols.push({x,z,hw:.85,hd:.4,top:.7});};
+  const bigPlant=(x,z)=>{const pot=new THREE.Mesh(new THREE.CylinderGeometry(.45,.35,.7,16),std(0xd4733a));pot.position.set(x,.35,z);house.add(pot);
+    for(let k=0;k<12;k++){const a=k/12*Math.PI*2,lf=new THREE.Mesh(new THREE.SphereGeometry(.35,10,8),std(0x2fa84f,{roughness:.8}));lf.scale.set(.5,1.6,.5);lf.position.set(x+Math.cos(a)*.3,1.2+(k%3)*.35,z+Math.sin(a)*.3);lf.rotation.z=Math.cos(a)*.5;lf.rotation.x=Math.sin(a)*.5;house.add(lf);}
+    houseCols.push({x,z,r:.5});};
+  // main arcade
+  crates(14.6,-6.5,0);               // right wall, by the info desk
+  boxes(-6.3,-10.6);                 // back wall, between the dartboard and the claw machine
+  barrel(-6.7,10.6,0x2b6bd6);        // front, between the RACER machine and the couch
+  bigPlant(15.2,10.8);               // front-right corner by the VR zone
+  // game room
+  crates(-18.6,6.1,0);barrel(-32.4,6.4,0xd62b6b);barrel(-32.4,-6.4,0x2bd6a0);boxes(-18.3,-6.3);
 })();
 // ======================================================================
 // JUKEBOX: original arcade songs made with the computer's synthesizer
