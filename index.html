@@ -2736,7 +2736,7 @@ function updateStore(){
         flap.position.set(fx?Math.sign(fx)*d*.22:0,0,fz?Math.sign(fz)*d*.22:0);fl.rotation.x=rx?-Math.sign(fz)*.9:0;fl.rotation.z=rz?Math.sign(fx)*.9:0;}}
     // the thing you found, sitting inside
     const c=document.createElement('canvas');c.width=c.height=96;const tex=new THREE.CanvasTexture(c);
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));sp.scale.set(.32,.32,1);sp.position.y=.12;g.add(sp);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));sp.scale.set(.3,.3,1);sp.position.y=.03;g.add(sp);   // half sunk into the opening, like it's sitting down inside
     LOOT_VIS[i]={g,c,tex};
   });
   barrel(18.6,3.2,0x2b6bd6);barrel(19.6,3.2,0xd62b6b);barrel(18.6,4.15,0x2bd6a0);
