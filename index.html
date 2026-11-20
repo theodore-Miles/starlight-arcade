@@ -2729,7 +2729,7 @@ function SkeeBall(){
     init(){balls=9;score=0;aim=0;charging=false;power=0;pdir=1;roll=null;over=false;last=null;paid=false;},
     update(){
       if(over){if(P.has('Space')||P.has('Enter'))this.init();return;}
-      if(roll){roll.t+=1/55;if(roll.t>=1){const s=ringScore(roll.lx,roll.ly);score+=s;last={s,x:roll.lx,y:roll.ly,t:60};roll=null;
+      if(roll){roll.t+=roll.spd;if(roll.t>=1){const s=ringScore(roll.lx,roll.ly);score+=s;last={s,x:roll.lx,y:roll.ly,t:60};roll=null;
           if(balls<=0){over=true;const n=Math.floor(score/100);if(n>0&&!paid){paid=true;me.score+=n;updInv();sendPresence(true);}}}return;}
       if(last&&last.t>0)last.t--;
       if(K.KeyA||K.ArrowLeft)aim=Math.max(-1,aim-.025);if(K.KeyD||K.ArrowRight)aim=Math.min(1,aim+.025);
@@ -2739,7 +2739,7 @@ function SkeeBall(){
       else if(charging){charging=false;balls--;
         const wob=(Math.random()-.5)*28,lx=CX+aim*170+wob;
         const ly=power>.97?40:CY+130-power*175+(Math.random()-.5)*18;   // too hard flies to the top
-        roll={t:0,sx:CX+aim*120,lx,ly};}
+        roll={t:0,sx:CX+aim*120,lx,ly,spd:(.45+power*1.35)/55};}   // harder throw = faster ball
     },
     draw(){
       gbg('🎳 SKEE-BALL','A/D or mouse to aim · hold Space (or the mouse) for power, let go to roll','#46f3ff');
