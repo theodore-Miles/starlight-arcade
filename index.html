@@ -1165,8 +1165,8 @@ function groundAt(x,z){let gy=0,b=false;if(level!==0)return{gy,b};
     const on=c.r!==undefined?Math.hypot(x-c.x,z-c.z)<c.r+.15:(Math.abs(x-c.x)<c.hw+.2&&Math.abs(z-c.z)<c.hd+.2);
     if(on&&c.top<=me.y+.31&&c.top>gy){gy=c.top;b=c.bouncy||0;}}
   return{gy,b};}
-function blocked(x,z){
-  const R=.45;
+function blocked(x,z,small){
+  const tiny=small||mySize()<1,R=tiny?.2:.45;   // tiny players have a smaller hit box
   if(level===0&&me.z<-40){if(x<-6+R||x>6-R||z<-66+R||z>-54-R)return true;}   // inside the CODE CAVE
   else if(level===0){
     if(x<-17-R){
@@ -1193,8 +1193,8 @@ function blocked(x,z){
   else if(Math.hypot(x,z)>16.6)return true;
   for(const c of (level===0?houseCols:skyCols)){
     if(c.off)continue;
-    if(c.under&&me.crouch&&me.y<.1)continue; // crawl under it
-    if(c.leg&&(!me.crouch||me.y>.3))continue; // legs only matter when you're underneath
+    if(c.under&&(me.crouch||tiny)&&me.y<.1)continue; // crawl under it (tiny players just walk under)
+    if(c.leg&&(!(me.crouch||tiny)||me.y>.3))continue; // legs only matter when you're underneath
     if(c.top!==undefined&&c.top<=me.y+.3)continue; // low enough to step/jump onto
     if(c.r!==undefined){if(Math.hypot(x-c.x,z-c.z)<c.r+R)return true;}
     else if(Math.abs(x-c.x)<c.hw+R&&Math.abs(z-c.z)<c.hd+R)return true;
@@ -1233,7 +1233,7 @@ function showBubble(av,s){setLabel(av.userData.bubble,s);av.userData.bubble.visi
 const promptEl=document.getElementById('prompt');let near=null;
 function updateWorld(dt){
   if(me.inVent){updateVent(dt);return;}
-  const underSomething=level===0&&me.y<.5&&houseCols.some(c=>c.under&&Math.abs(me.x-c.x)<c.hw+.45&&Math.abs(me.z-c.z)<c.hd+.45);
+  const underSomething=level===0&&me.y<.5&&mySize()>=1&&houseCols.some(c=>c.under&&Math.abs(me.x-c.x)<c.hw+.45&&Math.abs(me.z-c.z)<c.hd+.45);
   const wasCrouch=me.crouch;
   me.crouch=(!!K.KeyC&&(me.y<.1||me.vy===0))||(wasCrouch&&underSomething);   // crouch on the floor or on top of things
   if(wasCrouch&&!K.KeyC&&underSomething&&!me.bumpTip){me.bumpTip=1;toast("🙃 Ouch! You can't stand up under the table");}
@@ -1246,7 +1246,8 @@ function updateWorld(dt){
   const bk=performance.now()<(me.backUntil||0)?-1:1;let dx=(Math.sin(me.ry)*mv-Math.cos(me.ry)*st)*bk,dz=(Math.cos(me.ry)*mv+Math.sin(me.ry)*st)*bk;
   const len=Math.hypot(dx,dz);
   if(len){dx/=len;dz/=len;const nx=me.x+dx*sp,nz=me.z+dz*sp;
-    if(!blocked(nx,me.z))me.x=nx;if(!blocked(me.x,nz))me.z=nz;me.bob+=dt*(run?14:10);}
+    const stuck=blocked(me.x,me.z);   // e.g. you grew back to normal size inside something: let you walk out
+    if(!blocked(nx,me.z,stuck))me.x=nx;if(!blocked(me.x,nz,stuck))me.z=nz;me.bob+=dt*(run?14:10);}
   me.moving=!!len;
   me.push=0;
   if(level===0&&me.y<.5&&len&&Math.abs(me.x+15.5)<1.25){const rel=me.z-pushArc.col.z;
@@ -1257,7 +1258,7 @@ function updateWorld(dt){
   me.vy-=(performance.now()<(me.floatUntil||0)?8:22)*dt;me.y+=me.vy*dt;if(me.y<=gr.gy){me.y=gr.gy;me.vy=0;}
   me.onGround=me.y<=gr.gy+.001;
   // head reaches the ceiling: go up into a vent if you're under one, otherwise bonk
-  {const hh=1.75,ceil=me.z<-40?4.2:me.z>11.6&&me.x>-17?2.2:inSecret(me.x,me.z)?3.7:5.35;if(level===0&&me.y+hh>ceil){me.y=ceil-hh;if(me.vy>0)me.vy=0;}}
+  {const hh=1.75*Math.min(1,mySize()),ceil=me.z<-40?4.2:me.z>11.6&&me.x>-17?2.2:inSecret(me.x,me.z)?3.7:5.35;if(level===0&&me.y+hh>ceil){me.y=ceil-hh;if(me.vy>0)me.vy=0;}}
   if(level===0&&me.x>16.2&&me.y+1.75>(me.z>1?3.95:3.2)){me.y=(me.z>1?3.95:3.2)-1.75;if(me.vy>0)me.vy=0;}
   if(level===0&&Math.abs(me.x)<1.6&&Math.abs(me.z)<.55&&me.y<3.6&&me.y+1.75>3.55){me.y=3.55-1.75;if(me.vy>0)me.vy=0;}
   // stars
