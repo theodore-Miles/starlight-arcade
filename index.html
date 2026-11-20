@@ -1396,9 +1396,9 @@ function upsertPeer(p){
     if(e.tpT===undefined)e.tpT=pr.tp;
     else if(pr.tp!==e.tpT){e.tpT=pr.tp;if(e.lv===level&&e.av){tpBeam(e.av.position.x,e.av.position.y,e.av.position.z,true);
       e.av.position.set(e.tx,e.ty,e.tz);e.matStart=performance.now();tpBeam(e.tx,e.ty,e.tz,false);}}}
-  if(Array.isArray(pr.hk)&&pr.hk.length===3&&typeof pr.hk[0]==='string'&&Number.isInteger(pr.hk[1])&&pr.hk[1]>=0&&pr.hk[1]<6&&typeof pr.hk[2]==='number'){
+  if(Array.isArray(pr.hk)&&(pr.hk.length===3||pr.hk.length===4)&&typeof pr.hk[0]==='string'&&Number.isInteger(pr.hk[1])&&pr.hk[1]>=0&&pr.hk[1]<HACKS.length&&typeof pr.hk[2]==='number'){
     if(e.hkT===undefined)e.hkT=pr.hk[2];
-    else if(pr.hk[2]!==e.hkT){e.hkT=pr.hk[2];if(myPeer&&pr.hk[0]===myPeer)getHacked(pr.hk[1],e.nm||names.get(e.by)||'Someone');}
+    else if(pr.hk[2]!==e.hkT){e.hkT=pr.hk[2];if(myPeer&&pr.hk[0]===myPeer&&(pr.hk[1]!==6||cleanSilly(pr.hk[3])))getHacked(pr.hk[1],e.nm||names.get(e.by)||'Someone',pr.hk[3]);}
   }else if(e.hkT===undefined)e.hkT=0;
   {const nm=typeof pr.nm==='string'?cleanName(pr.nm):'';if(nm!==e.nm){e.nm=nm;setLabel(e.av.userData.label,(nm||names.get(e.by)||'Player').slice(0,18));}}
   if(Array.isArray(pr.dr)&&pr.dr.length===7&&pr.dr.every(n=>typeof n==='number'&&isFinite(n))){
@@ -2487,9 +2487,8 @@ function teleportLounge(into){
   if(game)closeGame();
   if(level!==0)goLevel(0);
   me.inVent=false;me.hiding=null;me.crouch=false;me.vy=0;me.y=0;
-  if(into){me.x=0;me.z=-55.6;me.ry=Math.PI;toast('🌀 Teleported to the secret HACKER LOUNGE! 💻 (type /hackerlounge again to go back)');}
-  else{me.x=0;me.z=-8;me.ry=0;toast('🌀 Teleported back to the arcade!');}
-  me.pitch=-.08;snapCam=true;sendPresence(true);
+  if(into)materializeAt(0,-55.6,Math.PI,'','💻 You materialized in the secret HACKER LOUNGE! (type /hackerlounge again to go back)');
+  else materializeAt(0,-8,0,'','🕹 You materialized back in the arcade!');
 }
 // ----- HACKER LOUNGE computers -----
 const SILLY=['I LOVE PICKLES 🥒','I am a chicken. BAWK BAWK 🐔','My socks smell like cheese 🧀','I can\'t stop dancing 💃','Beep boop, I am a robot 🤖','Who stole my pants?! 👖','I think I am a banana 🍌'];
@@ -2500,8 +2499,15 @@ const HACKS=[
   {n:'Giant burp',e:'🍇',go:()=>SODAS[3].go()},
   {n:'Silly talk',e:'🤪',go:()=>{const t=SILLY[Math.random()*SILLY.length|0];me.say=t;me.sayAt=Date.now();addChat(me.name||'You',me.color,t);sendPresence(true);toast('🤪 You got hacked into saying something silly!');}},
   {n:'Mystery',e:'❓',go:()=>HACKS[Math.random()*5|0].go()},
+  {n:'CUSTOM silly talk (🪙 10)',e:'✏️',go:(t)=>{t=cleanSilly(t);if(!t)return;me.say=t;me.sayAt=Date.now();addChat(me.name||'You',me.color,t+'  💻(hacked!)');sendPresence(true);toast('🤪 You got hacked into saying: '+t);}},
 ];
-function getHacked(k,who){const h=HACKS[k];toast('💻 HACKED! '+who+' gave you '+h.n+' '+h.e);addSys('💻 '+who+' hacked you: '+h.n+' '+h.e);setTimeout(()=>h.go(),1300);}
+function cleanSilly(t){return typeof t==='string'?t.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu,'').trim().slice(0,60):'';}
+// a text box for typing the custom silly thing
+const sillyIn=document.createElement('input');sillyIn.maxLength=60;sillyIn.placeholder='Type what they will say…';
+sillyIn.style.cssText='position:fixed;display:none;z-index:60;font:bold 18px monospace;padding:6px 10px;border:2px solid #ff3df2;border-radius:6px;background:#1a1040;color:#fff;outline:none;box-sizing:border-box';
+sillyIn.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){sillyIn.blur();closeGame();}if(e.key==='Enter')sillyIn.blur();});
+document.body.appendChild(sillyIn);
+function getHacked(k,who,t){const h=HACKS[k],n=k===6?'custom silly talk':h.n;toast('💻 HACKED! '+who+' gave you '+n+' '+h.e);addSys('💻 '+who+' hacked you: '+n+' '+h.e);setTimeout(()=>h.go(t),1300);}
 const btn=(x,y,w,h,label,on,col)=>{ctx.fillStyle=on?(col||'#b06bff'):'#1a1040';ctx.fillRect(x,y,w,h);ctx.strokeStyle=col||'#b06bff';ctx.lineWidth=2;ctx.strokeRect(x,y,w,h);
   txt(label,x+w/2,y+h/2+7,18,on?'#fff':'#e6d0ff','center');return mouse.clicked&&mouse.x>x&&mouse.x<x+w&&mouse.y>y&&mouse.y<y+h;};
 const termBg=(title)=>{ctx.fillStyle='#06021a';ctx.fillRect(0,0,W,H);ctx.fillStyle='rgba(176,107,255,.05)';for(let l=(T*2)%8;l<H;l+=8)ctx.fillRect(0,l,W,2);
@@ -2510,18 +2516,25 @@ const termBg=(title)=>{ctx.fillStyle='#06021a';ctx.fillRect(0,0,W,H);ctx.fillSty
 function HackPlayer(){
   let who=0,pw=0,msg='';
   const list=()=>{const L=[{id:null,nm:'Me ('+(me.name||'You')+')'}];for(const [id,e] of peers)L.push({id,nm:(e.nm||names.get(e.by)||'Player')});return L.slice(0,8);};
-  return{init(){},update(){},
+  return{init(){sillyIn.value='';},onClose(){sillyIn.style.display='none';sillyIn.blur();},update(){},
     draw(){termBg('💻 HACK A PLAYER');const L=list();if(who>=L.length)who=0;
+      if(pw===6){const r=mini.getBoundingClientRect(),sx=r.width/W,sy=r.height/H;
+        Object.assign(sillyIn.style,{display:'block',left:(r.left+60*sx)+'px',top:(r.top+478*sy)+'px',width:(840*sx)+'px',height:(40*sy)+'px'});
+        txt('✏️ What should they say?',60,472,15,'#ff9df7');}
+      else if(sillyIn.style.display!=='none'){sillyIn.style.display='none';sillyIn.blur();}
       txt('1. PICK A PLAYER',60,105,18,'#c9a8ff');txt('2. PICK A POWER',520,105,18,'#c9a8ff');
       L.forEach((p,i)=>{if(btn(60,120+i*50,380,42,p.nm.slice(0,22),i===who))who=i;});
       HACKS.forEach((h,i)=>{if(btn(520,120+i*50,380,42,h.e+'  '+h.n,i===pw,'#46f3ff'))pw=i;});
       const left=Math.ceil((LOUNGE.lastHackP+20000-Date.now())/1000);
-      if(btn(330,530,300,52,left>0?'⏳ Recharging '+left+'s':'🚀 HACK!  (🪙 2)',left<=0,'#ff3df2')&&left<=0){
-        const t=L[who];
-        pay(2,()=>{LOUNGE.lastHackP=Date.now();
-          if(!t.id){getHacked(pw,'You');msg='You hacked yourself 😄';}
-          else{me.lastHackSend=[t.id,pw,Date.now()];sendPresence(true);msg='✅ ACCESS GRANTED — '+t.nm+' got '+HACKS[pw].n+' '+HACKS[pw].e;}});}
-      if(msg)txt(msg,W/2,505,17,'#7fffd4','center');}};
+      const cost=pw===6?10:2;
+      if(btn(330,530,300,52,left>0?'⏳ Recharging '+left+'s':'🚀 HACK!  (🪙 '+cost+')',left<=0,'#ff3df2')&&left<=0){
+        const t=L[who],said=pw===6?cleanSilly(sillyIn.value):'';
+        if(pw===6&&!said){msg='✏️ Type what they should say first!';sillyIn.focus();}
+        else pay(cost,()=>{LOUNGE.lastHackP=Date.now();const nm=pw===6?'saying "'+said+'"':HACKS[pw].n+' '+HACKS[pw].e;
+          if(!t.id){getHacked(pw,'You',said);msg='You hacked yourself 😄';}
+          else{me.lastHackSend=pw===6?[t.id,pw,Date.now(),said]:[t.id,pw,Date.now()];sendPresence(true);msg='✅ ACCESS GRANTED — '+t.nm+' got '+nm;}
+          if(pw===6)sillyIn.value='';});}
+      if(msg)txt(msg.slice(0,70),W/2,612,17,'#7fffd4','center');}};
 }
 function Mainframe(){
   const CH='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const mk=()=>Array.from({length:6},()=>CH[Math.random()*CH.length|0]).join('');
@@ -2604,11 +2617,11 @@ function shimmer(){try{const ac=window._ac||(window._ac=new (window.AudioContext
   for(let n=0;n<3;n++){const o=ac.createOscillator(),g=ac.createGain(),t0=ac.currentTime;o.type='sine';
     o.frequency.setValueAtTime(300+n*220,t0);o.frequency.exponentialRampToValueAtTime(1200+n*500,t0+2.4);
     g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.08,t0+.3);g.gain.exponentialRampToValueAtTime(.0001,t0+2.6);o.connect(g);g.connect(ac.destination);o.start(t0);o.stop(t0+2.7);}}catch(e){}}
-function materializeAt(x,z,ry,label){
+function materializeAt(x,z,ry,label,msg){
   tpBeam(me.x,me.y,me.z,true);
   me.x=x;me.z=z;me.ry=ry;me.y=0;me.vy=0;me.pitch=-.08;snapCam=true;
   me.matStart=performance.now();me.tpAt=Date.now();tpBeam(x,0,z,false);shimmer();sendPresence(true);
-  setTimeout(()=>toast('🌐 You materialized at the '+label+'! (type /hackerlounge to come back)'),MAT_MS*.8);
+  setTimeout(()=>toast(msg||('🌐 You materialized at the '+label+'! (type /hackerlounge to come back)')),MAT_MS*.8);
 }
 function Teleporter(){
   const SPOTS=[['🕹 Main Room',0,-8,0],['🎮 Game Room',-18.6,0,-Math.PI/2],['🥤 Vending Machine',6.8,8.8,0],['🎱 Pool Table',0,4.2,Math.PI]];
