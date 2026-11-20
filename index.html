@@ -2675,7 +2675,8 @@ function setStore(open){STORE.open=open;STORE.t=Date.now();sendPresence(true);to
   houseInter.push({x:-24.8,z:8.4,cond:()=>!me.hasBadge&&inSecret(me.x,me.z),verb:'Take the STAFF badge 🪪',act:()=>{me.hasBadge=true;toast('🪪 You found a STAFF badge! Now you can open the STAFF ONLY door.');}});
 })();
 // what's inside the storage boxes (each one refills after 3 minutes)
-const LOOT_OPENED={};
+const LOOT_OPENED={},LOOT_VIS={};
+function showLoot(i,emo){const v=LOOT_VIS[i];if(!v)return;const q=v.c.getContext('2d');q.clearRect(0,0,96,96);q.font='64px system-ui';q.textAlign='center';q.textBaseline='middle';q.fillText(emo,48,52);v.tex.needsUpdate=true;v.g.visible=true;}
 function crackSound(){try{const ac=getAC();const b=ac.createBuffer(1,ac.sampleRate*.25,ac.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
   const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=b;f.type='lowpass';f.frequency.value=1800;g.gain.value=.5;s.connect(f);f.connect(g);g.connect(ac.destination);s.start();}catch(e){}}
 function lootBox(i,k){
@@ -2683,14 +2684,15 @@ function lootBox(i,k){
   if(LOOT_OPENED[i]&&now-LOOT_OPENED[i]<180000){toast({crate:'🪵 This crate is empty — you already looked!',box:'📦 Nothing left in this box…',barrel:'🛢 The barrel is empty'}[k]+' (try again later)');return;}
   LOOT_OPENED[i]=now;crackSound();
   const r=Math.random();
-  const give=(n,t)=>{me.score+=n;updInv();sendPresence(true);toast(t+'  +🪙 '+n);};
+  const give=(n,t)=>{me.score+=n;updInv();sendPresence(true);toast(t+'  +🪙 '+n);showLoot(i,[...t][0]==='🎟'?'🎟':'🪙');};
   if(r<.05)give(15,'🎟 WOW! A GOLDEN TICKET!');
   else if(r<.2)give(5,'💰 A little bag of coins!');
   else if(r<.55)give(2,'🪙 A couple of coins at the bottom!');
-  else if(r<.75)toast(['🕸 Just cobwebs and dust…','🧽 Packing peanuts. Lots of them.','🐭 A mouse ran out! Eek!'][Math.random()*3|0]);
-  else toast(['🧦 An old stinky sock 🤢','🦆 A tiny rubber duck!','🧸 A spare teddy bear from the claw machine','🔦 A flashlight (with no batteries)','🎈 A deflated balloon','🕹 A broken joystick','🍕 A VERY old slice of pizza…','📼 A mystery video tape'][Math.random()*8|0]);
+  else if(r<.75){const t=['🕸 Just cobwebs and dust…','🧽 Packing peanuts. Lots of them.','🐭 A mouse ran out! Eek!'][Math.random()*3|0];toast(t);showLoot(i,t.startsWith('🐭')?'💨':[...t][0]);}
+  else{const t=['🧦 An old stinky sock 🤢','🦆 A tiny rubber duck!','🧸 A spare teddy bear from the claw machine','🔦 A flashlight (with no batteries)','🎈 A deflated balloon','🕹 A broken joystick','🍕 A VERY old slice of pizza…','📼 A mystery video tape'][Math.random()*8|0];toast(t);showLoot(i,[...t][0]);}
 }
 function updateStore(){
+  for(const i in LOOT_VIS)if(LOOT_VIS[i].g.visible&&(!LOOT_OPENED[i]||Date.now()-LOOT_OPENED[i]>=180000))LOOT_VIS[i].g.visible=false;
   STORE.ang+=((STORE.open?1.45:0)-STORE.ang)*.12;STORE.hinge.rotation.y=STORE.ang;
   if(STORE.badge)STORE.badge.visible=!me.hasBadge;
 }
@@ -2720,6 +2722,23 @@ function updateStore(){
   // you can open them up and dig around inside!
   [[23.8,9.45,'crate'],[19.4,9.45,'crate'],[23.9,3.95,'box'],[18.6,3.2,'barrel'],[19.6,3.2,'barrel'],[18.6,4.15,'barrel']].forEach(([x,z,k],i)=>
     houseInter.push({x,z,cond:()=>inStore(me.x,me.z),get verb(){return {crate:'Crack open the crate 🔨',box:'Rip open the box 📦',barrel:'Pop the barrel lid 🛢'}[k];},act:()=>lootBox(i,k)}));
+  // what each one looks like once it's open (top centre, size, turn)
+  const woodM2=std(0xa8743c,{roughness:.8}),cardM2=std(0xc9a26b,{roughness:.95}),hole=new THREE.MeshBasicMaterial({color:0x1a0f08}),straw=std(0xd9b860,{roughness:1});
+  [[23.8,1.9,10.2,.3,.85,.85,'crate'],[19.4,1.9,10.2,.4,.85,.85,'crate'],[23.8,1.25,3.3,-.2,.7,.6,'box'],[18.6,1.1,3.2,0,.84,.84,'barrel'],[19.6,1.1,3.2,0,.84,.84,'barrel'],[18.6,1.1,4.15,0,.84,.84,'barrel']].forEach(([x,y,z,ry,w,d,k],i)=>{
+    const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=ry;g.visible=false;house.add(g);
+    if(k==='barrel'){const inn=new THREE.Mesh(new THREE.CircleGeometry(.39,20),hole);inn.rotation.x=-Math.PI/2;inn.position.y=.006;g.add(inn);
+      const lid=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.04,20),std(0x555a66,{metalness:.5}));lid.position.set(.5,-.55,.15);lid.rotation.z=1.35;g.add(lid);}
+    else{const inn=new THREE.Mesh(new THREE.PlaneGeometry(w-.1,d-.1),hole);inn.rotation.x=-Math.PI/2;inn.position.y=.006;g.add(inn);
+      if(k==='crate'){const st=new THREE.Mesh(new THREE.PlaneGeometry(w-.14,d-.14),straw);st.rotation.x=-Math.PI/2;st.position.y=-.12;g.add(st);
+        const lid=box(w,.05,d,woodM2,0,0,0,g);lid.position.set(w*.55,.18,-d*.3);lid.rotation.set(.2,0,-.9);}
+      else for(const [fx,fz,rx,rz] of [[0,d/2,1.9,0],[0,-d/2,-1.9,0],[w/2,0,0,-1.9],[-w/2,0,0,1.9]]){const f=box(fx?.02:w,.02,fz?.02:d,cardM2,0,0,0,g);f.geometry.translate(fx?.0:0,0,0);
+        const fl=new THREE.Group();fl.position.set(fx,0,fz);g.add(fl);g.remove(f);const flap=box(fx?d*.45:w,.015,fx?w:d*.45,cardM2,0,0,0,fl);if(fx)flap.rotation.y=Math.PI/2;
+        flap.position.set(fx?Math.sign(fx)*d*.22:0,0,fz?Math.sign(fz)*d*.22:0);fl.rotation.x=rx?-Math.sign(fz)*.9:0;fl.rotation.z=rz?Math.sign(fx)*.9:0;}}
+    // the thing you found, sitting inside
+    const c=document.createElement('canvas');c.width=c.height=96;const tex=new THREE.CanvasTexture(c);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));sp.scale.set(.32,.32,1);sp.position.y=.12;g.add(sp);
+    LOOT_VIS[i]={g,c,tex};
+  });
   barrel(18.6,3.2,0x2b6bd6);barrel(19.6,3.2,0xd62b6b);barrel(18.6,4.15,0x2bd6a0);
 })();
 // ======================================================================
