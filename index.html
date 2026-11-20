@@ -2781,14 +2781,16 @@ AH_TABLES.forEach((AH,tid)=>{(function buildHockey(){
   box(2.5,.75,1.4,dark,0,.375,0,g);
   const top=canvasTex(512,300,(q,w,h)=>{q.fillStyle='#eef4ff';q.fillRect(0,0,w,h);q.fillStyle='rgba(120,140,200,.25)';for(let x=8;x<w;x+=16)for(let y=8;y<h;y+=16){q.beginPath();q.arc(x,y,1.5,0,7);q.fill();}
     q.strokeStyle='#ff3b3b';q.lineWidth=5;q.beginPath();q.moveTo(w/2,0);q.lineTo(w/2,h);q.stroke();q.beginPath();q.arc(w/2,h/2,50,0,7);q.stroke();
-    q.strokeStyle='#3b6bff';q.beginPath();q.arc(0,h/2,70,-Math.PI/2,Math.PI/2);q.stroke();q.beginPath();q.arc(w,h/2,70,Math.PI/2,Math.PI*1.5);q.stroke();});
+    q.strokeStyle='#3b6bff';q.beginPath();q.arc(0,h/2,70,-Math.PI/2,Math.PI/2);q.stroke();q.beginPath();q.arc(w,h/2,70,Math.PI/2,Math.PI*1.5);q.stroke();
+    // AIR HOCKEY lettering frozen in the ice, one for each player to read
+    q.font='900 40px system-ui';q.textAlign='center';q.textBaseline='middle';q.fillStyle='rgba(59,107,255,.28)';
+    for(const [x,r] of [[w*.3,Math.PI/2],[w*.7,-Math.PI/2]]){q.save();q.translate(x,h/2);q.rotate(r);q.fillText('AIR HOCKEY',0,0);q.restore();}});
   const surf=new THREE.Mesh(new THREE.PlaneGeometry(2.3,1.2),new THREE.MeshStandardMaterial({map:top,roughness:.2,metalness:.05}));surf.rotation.x=-Math.PI/2;surf.position.y=.76;g.add(surf);
   box(2.5,.1,.08,rail,0,.8,.66,g);box(2.5,.1,.08,rail,0,.8,-.66,g);
   for(const sx of [-1,1]){box(.08,.1,.4,rail,sx*1.21,.8,.45,g);box(.08,.1,.4,rail,sx*1.21,.8,-.45,g);box(.06,.05,.5,dark,sx*1.2,.77,0,g);}
   for(const [lx,lz] of [[-1.1,-.55],[1.1,-.55],[-1.1,.55],[1.1,.55]])box(.12,.75,.12,std(0x333344),lx,.375,lz,g);
   // scoreboard on a post
   const mq=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.36),new THREE.MeshBasicMaterial({map:canvasTex(256,80,(c)=>{c.fillStyle='#000';c.fillRect(0,0,256,80);c.shadowColor='#46f3ff';c.shadowBlur=16;c.fillStyle='#46f3ff';c.font='900 34px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText('AIR HOCKEY',128,42,240);c.fillText('AIR HOCKEY',128,42,240);})}));
-  mq.position.set(0,1.75,-.75);g.add(mq);box(.06,1.2,.06,dark,0,1.15,-.75,g);
   // puck + paddles that show what's happening (everyone can watch)
   const puck=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.02,16),std(0x111111));puck.position.y=.775;puck.visible=false;g.add(puck);AH.puck=puck;
   for(const c of [0xff3b3b,0x3b6bff]){const p=new THREE.Group();const b=new THREE.Mesh(new THREE.CylinderGeometry(.085,.085,.03,18),std(c,{roughness:.4}));b.position.y=.79;p.add(b);
