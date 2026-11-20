@@ -2499,7 +2499,7 @@ const HACKS=[
   {n:'Giant burp',e:'🍇',go:()=>SODAS[3].go()},
   {n:'Silly talk',e:'🤪',go:()=>{const t=SILLY[Math.random()*SILLY.length|0];me.say=t;me.sayAt=Date.now();addChat(me.name||'You',me.color,t);sendPresence(true);toast('🤪 You got hacked into saying something silly!');}},
   {n:'Mystery',e:'❓',go:()=>HACKS[Math.random()*5|0].go()},
-  {n:'CUSTOM silly talk (🪙 10)',e:'✏️',go:(t)=>{t=cleanSilly(t);if(!t)return;me.say=t;me.sayAt=Date.now();addChat(me.name||'You',me.color,t+'  💻(hacked!)');sendPresence(true);toast('🤪 You got hacked into saying: '+t);}},
+  {n:'CUSTOM silly talk (🪙 10)',e:'✏️',go:(t)=>{t=cleanSilly(t);if(!t)return;me.say=t;me.sayAt=Date.now();addChat(me.name||'You',me.color,t);sendPresence(true);toast('🤪 You got hacked into saying: '+t);}},
 ];
 function cleanSilly(t){return typeof t==='string'?t.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu,'').trim().slice(0,60):'';}
 // a text box for typing the custom silly thing
