@@ -238,6 +238,7 @@ function Snake(){
   let s,d,nd,f,t,over,score;const C=30,CW=32,CH=19,OY=58;
   const rf=()=>{let p;do{p={x:Math.random()*CW|0,y:Math.random()*CH|0};}while(s.some(q=>q.x===p.x&&q.y===p.y));return p;};
   return{
+    result(){return{done:!!over,score};},
     init(){s=[{x:10,y:9},{x:9,y:9},{x:8,y:9}];d={x:1,y:0};nd=d;f=rf();t=0;over=false;score=0;},
     update(){
       if(over){if(P.has('Space'))this.init();return;}
@@ -289,6 +290,7 @@ function Pong(){
 function Bricks(){
   let px,ball,br,lives,score,stuck,msg;
   return{
+    result(){return{done:!!msg,score};},
     init(){px=W/2-60;lives=3;score=0;msg=null;br=[];
       for(let r=0;r<6;r++)for(let c=0;c<12;c++)br.push({x:20+c*77,y:80+r*28,a:1,col:`hsl(${r*50},85%,60%)`});
       this.serve();},
@@ -906,7 +908,7 @@ function makeClaw(x,col){
   // stand on top of it; crouch into the knee space from behind
   houseCols.push({x:12,z:-8.3,hw:1.75,hd:.65,top:1.1,surf:1.1,under:1});
   houseCols.push({x:10.625,z:-8.3,hw:.375,hd:.65,leg:1},{x:13.075,z:-8.3,hw:.675,hd:.65,leg:1},{x:11.7,z:-7.69,hw:.7,hd:.05,leg:1});
-  houseInter.push({x:11.2,z:-9.8,cond:()=>me.z<-9.05,verb:'Use the Info Computer 💻',act:()=>startGame(Info())});
+  houseInter.push({x:11.2,z:-9.8,cond:()=>me.z<-9.05,verb:'Use the computer 💻 (💰 challenges + info)',act:()=>startGame(ChallengeBoard())});
   houseInter.push({x:11.2,z:-6.9,cond:()=>me.z>-8,verb:'Take a sheet of paper 📄',act:()=>takePaper()});
 
   // ---- VR zone (front right) ----
@@ -1311,7 +1313,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],cg:me.chal?{id:me.chal.id,g:me.chal.g,tg:me.chal.tg,bet:me.chal.bet,taker:me.chal.taker,st:me.chal.st}:null,ct:me.take?{cid:me.take.cid,owner:me.take.owner,t:me.take.t,res:me.take.res}:null,ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1345,6 +1347,10 @@ function upsertPeer(p){
   {const a=pr.ah,ok=v=>Array.isArray(v)&&v.every(n=>typeof n==='number'&&isFinite(n));
    e.ah=(a&&typeof a==='object'&&(a.seat===0||a.seat===1)&&ok(a.pad)&&a.pad.length===2)?{tb:a.tb===1?1:0,seat:a.seat,opp:typeof a.opp==='string'?a.opp:null,pad:a.pad,
      k:ok(a.k)&&a.k.length===4?a.k:null,op:ok(a.op)&&a.op.length===2?a.op:null,sc:ok(a.sc)&&a.sc.length===2?a.sc.map(n=>clamp(n|0,0,99)):null,over:a.over===1}:null;}
+  {const c=pr.cg;e.cg=(c&&typeof c==='object'&&typeof c.id==='string'&&c.id.length<=20&&CH_GAMES[c.g]&&Number.isInteger(c.tg)&&Number.isInteger(c.bet)&&c.bet>=1&&c.bet<=50&&(c.st==='open'||c.st==='taken'))?
+     {id:c.id,g:c.g,tg:clamp(c.tg,1,5000),bet:c.bet,taker:typeof c.taker==='string'?c.taker:null,st:c.st}:null;
+   const t=pr.ct;e.ct=(t&&typeof t==='object'&&typeof t.cid==='string'&&typeof t.owner==='string'&&typeof t.t==='number')?
+     {cid:t.cid,owner:t.owner,t:t.t,res:(t.res&&typeof t.res==='object')?{win:t.res.win===true,score:Number.isFinite(t.res.score)?t.res.score|0:0}:null}:null;}
   if(Array.isArray(pr.vm)&&pr.vm.length===2&&typeof pr.vm[1]==='number'&&isFinite(pr.vm[1])&&pr.vm[1]>VEND.t){VEND.t=pr.vm[1];VEND.open=!!pr.vm[0];}
   if(Array.isArray(pr.bb)&&pr.bb.length===2&&typeof pr.bb[1]==='number'&&isFinite(pr.bb[1])&&pr.bb[1]>bbState.t){bbState.t=pr.bb[1];bbState.open=!!pr.bb[0];}
   if(Array.isArray(pr.sf)&&pr.sf.length===2&&typeof pr.sf[1]==='number'&&isFinite(pr.sf[1])&&pr.sf[1]>safe.t){safe.t=pr.sf[1];safe.open=!!pr.sf[0];}
@@ -2726,6 +2732,7 @@ function SkeeBall(){
   let balls,score,aim,charging,power,pdir,roll,over,last,paid;
   const ringScore=(x,y)=>{for(const [hx,hy] of HOLES)if(Math.hypot(x-hx,y-hy)<16)return 100;const d=Math.hypot(x-CX,y-CY);for(const [r,s] of RINGS)if(d<r)return s;return 0;};
   return{
+    result(){return{done:!!over,score};},
     init(){balls=9;score=0;aim=0;charging=false;power=0;pdir=1;roll=null;over=false;last=null;paid=false;},
     update(){
       if(over){if(P.has('Space')||P.has('Enter'))this.init();return;}
@@ -2908,6 +2915,108 @@ function AirHockey(tid){tid=tid|0;
   };
 }
 // ======================================================================
+// CHALLENGE BOARD (on the info desk computer): bet coins on a challenge!
+// Post a challenge with coins on it. Someone takes it and puts in the same coins.
+// If they reach the target score they win ALL the coins; if not, you do.
+// ======================================================================
+const CH_GAMES={
+  skee:{name:'Skee-Ball',icon:'🎳',step:50,def:200,min:50,max:900,mk:()=>SkeeBall()},
+  snake:{name:'Snake',icon:'🐍',step:5,def:15,min:5,max:200,mk:()=>Snake()},
+  bricks:{name:'Brick Bash',icon:'🧱',step:50,def:300,min:50,max:2000,mk:()=>Bricks()},
+};
+me.chal=null;   // my posted challenge {id,g,tg,bet,taker,st,t}
+me.take=null;   // a challenge I'm taking {cid,owner,t,res}
+function chalOwner(id){if(me.chal&&me.chal.id===id)return {peer:myPeer,e:null,c:me.chal};for(const [pid,e] of peers)if(e.cg&&e.cg.id===id)return {peer:pid,e,c:e.cg};return null;}
+function allChallenges(){const out=[];if(me.chal)out.push({owner:myPeer,name:(me.name||'You')+' (you)',c:me.chal,mine:true});
+  for(const [pid,e] of peers)if(e.lv===0&&e.cg&&e.cg.st!=='done')out.push({owner:pid,name:e.nm||names.get(e.by)||'Player',c:e.cg,mine:false});return out;}
+function challengeTick(){
+  // as the owner: let the first player who asked take it, and collect when they lose
+  if(me.chal){
+    const c=me.chal;
+    if(c.st==='open'){let best=null;for(const [pid,e] of peers)if(e.ct&&e.ct.cid===c.id&&e.ct.owner===myPeer&&!e.ct.res&&(!best||e.ct.t<best.t))best={pid,t:e.ct.t};
+      if(best){c.taker=best.pid;c.st='taken';sendPresence(true);const e=peers.get(best.pid);toast('🎯 '+((e&&e.nm)||'Someone')+' took your '+CH_GAMES[c.g].name+' challenge!');}}
+    else if(c.st==='taken'){const e=peers.get(c.taker);
+      if(!e){c.st='open';c.taker=null;sendPresence(true);}           // they left before finishing: open again
+      else if(e.ct&&e.ct.cid===c.id&&e.ct.res){const r=e.ct.res;
+        if(r.win)toast('😮 '+(e.nm||'They')+' beat your challenge with '+r.score+'! You lost 🪙 '+c.bet);
+        else{me.score+=c.bet*2;updInv();toast('🏆 '+(e.nm||'They')+' only got '+r.score+' — you win the pot: 🪙 '+(c.bet*2)+'!');}
+        me.chal=null;sendPresence(true);}}
+  }
+  // as the taker: wait for the owner to say yes, then play
+  if(me.take&&!me.take.started&&!me.take.res){
+    const o=chalOwner(me.take.cid);
+    if(!o||o.peer!==me.take.owner){toast('😕 That challenge is gone');me.take=null;sendPresence(true);}
+    else if(o.c.st==='taken'&&o.c.taker===myPeer){
+      if(me.score<o.c.bet){toast('🪙 Not enough coins!');me.take=null;sendPresence(true);}
+      else{me.score-=o.c.bet;updInv();me.take.started=true;me.take.g=o.c.g;me.take.tg=o.c.tg;me.take.bet=o.c.bet;sendPresence(true);
+        const g=CH_GAMES[o.c.g].mk();g.chal=true;startGame(g);toast('💰 Challenge on! Get '+o.c.tg+' or more in '+CH_GAMES[o.c.g].name+' to win 🪙 '+(o.c.bet*2));}}
+    else if(o.c.st==='taken'&&o.c.taker!==myPeer){toast('⏱ Someone else took that challenge first');me.take=null;sendPresence(true);}
+  }
+  // the challenge game finished?
+  if(me.take&&me.take.started&&!me.take.res&&game&&game.chal&&game.result){const r=game.result();
+    if(r.done){const win=r.score>=me.take.tg;me.take.res={win,score:r.score};game.chal=false;
+      if(win){me.score+=me.take.bet*2;updInv();toast('🏆 You beat the challenge! You win 🪙 '+(me.take.bet*2)+'!');}
+      else toast('😢 '+r.score+' — not enough. You lost 🪙 '+me.take.bet);
+      sendPresence(true);setTimeout(()=>{if(me.take&&me.take.res){me.take=null;sendPresence(true);}},20000);}}
+  // left the challenge game early = you lose it
+  if(me.take&&me.take.started&&!me.take.res&&!(game&&game.chal)){me.take.res={win:false,score:0};toast('🚪 You left the challenge — you lost 🪙 '+me.take.bet);sendPresence(true);
+    setTimeout(()=>{if(me.take&&me.take.res){me.take=null;sendPresence(true);}},20000);}
+}
+function ChallengeBoard(){
+  let gk='skee',tg=CH_GAMES.skee.def,bet=2,btns=[];
+  const B=(x,y,w,h,label,col,fn,dis)=>{btns.push({x,y,w,h,fn:dis?null:fn});ctx.fillStyle=dis?'#2a2f4a':col;ctx.fillRect(x,y,w,h);txt(label,x+w/2,y+h/2+6,15,dis?'#7a80a0':'#111','center');};
+  return{
+    init(){},
+    update(){
+      if(mouse.clicked){for(const b of btns)if(b.fn&&mouse.x>b.x&&mouse.x<b.x+b.w&&mouse.y>b.y&&mouse.y<b.y+b.h){b.fn();break;}}
+    },
+    draw(){
+      btns=[];
+      gbg('💰 CHALLENGE BOARD','Post a challenge with coins on it — or take one! Winner gets ALL the coins','#ffd36e');
+      txt('You have 🪙 '+me.score,W-30,40,18,'#ffd36e','right');
+      // ---- the list ----
+      ctx.fillStyle='#141c3d';ctx.fillRect(30,80,560,520);txt('OPEN CHALLENGES',50,110,16,'#9fb0e0');
+      const list=allChallenges();
+      if(!list.length)txt('No challenges yet — make the first one! →',50,150,15,'#9fb0e0',undefined,false);
+      list.slice(0,7).forEach((it,k)=>{const y=130+k*66,c=it.c,G=CH_GAMES[c.g];if(!G)return;
+        ctx.fillStyle='#1f2a55';ctx.fillRect(45,y,530,58);
+        txt(G.icon+' '+it.name,60,y+22,15,'#fff');
+        txt('Get '+c.tg+'+ in '+G.name+' · 🪙 '+c.bet+' each (pot 🪙 '+(c.bet*2)+')',60,y+45,13,'#cfd6ff',undefined,false);
+        if(it.mine){
+          if(c.st==='open')B(470,y+14,90,30,'Cancel','#ff9f43',()=>{me.score+=c.bet;updInv();me.chal=null;sendPresence(true);toast('↩ Challenge cancelled — 🪙 '+c.bet+' back');});
+          else txt('being played…',560,y+34,13,'#3ddc84','right');
+        }else if(c.st==='taken'){txt(c.taker===myPeer?'starting…':'taken',560,y+34,13,'#ff9f43','right');}
+        else{const waiting=me.take&&me.take.cid===c.id;
+          B(470,y+14,90,30,waiting?'Waiting…':'Take it!','#3ddc84',()=>{
+            if(me.chal){toast('🙃 You can\'t take challenges while yours is posted');return;}
+            if(me.take){toast('⏱ You\'re already taking one');return;}
+            if(me.score<c.bet){toast('🪙 You need '+c.bet+' coins to take this');return;}
+            me.take={cid:c.id,owner:it.owner,t:Date.now(),res:null};sendPresence(true);toast('⏳ Asking '+it.name+'…');},waiting||me.score<c.bet);}
+      });
+      // ---- make a new one ----
+      ctx.fillStyle='#141c3d';ctx.fillRect(610,80,320,520);txt('MAKE A CHALLENGE',630,110,16,'#9fb0e0');
+      if(me.chal){txt('Your challenge is posted!',630,150,15,'#3ddc84');txt('Wait for someone to take it.',630,175,13,'#cfd6ff',undefined,false);}
+      else{
+        txt('Game',630,145,14,'#fff');
+        Object.entries(CH_GAMES).forEach(([k,G],i)=>B(630+i*98,155,92,34,G.icon+' '+G.name.split(' ')[0],k===gk?'#ffd36e':'#8a90b8',()=>{gk=k;tg=G.def;}));
+        const G=CH_GAMES[gk];
+        txt('Target score',630,225,14,'#fff');
+        B(630,235,44,40,'−','#8a90b8',()=>{tg=Math.max(G.min,tg-G.step);});txt(String(tg),770,263,26,'#ffd36e','center');B(866,235,44,40,'+','#8a90b8',()=>{tg=Math.min(G.max,tg+G.step);});
+        txt('Coins to bet',630,310,14,'#fff');
+        B(630,320,44,40,'−','#8a90b8',()=>{bet=Math.max(1,bet-1);});txt('🪙 '+bet,770,348,26,'#ffd36e','center');B(866,320,44,40,'+','#8a90b8',()=>{bet=Math.min(50,bet+1);});
+        txt('The other player puts in 🪙 '+bet+' too.',630,392,13,'#cfd6ff',undefined,false);
+        txt('If they get '+tg+'+ they win 🪙 '+(bet*2)+',',630,412,13,'#cfd6ff',undefined,false);
+        txt('if not, YOU win 🪙 '+(bet*2)+'!',630,432,13,'#cfd6ff',undefined,false);
+        B(630,455,280,44,'💰 Post challenge (🪙 '+bet+')','#3ddc84',()=>{
+          if(me.take){toast('⏱ Finish the challenge you took first');return;}
+          if(me.score<bet){toast('🪙 Not enough coins!');return;}
+          me.score-=bet;updInv();me.chal={id:Math.random().toString(36).slice(2,10),g:gk,tg,bet,taker:null,st:'open',t:Date.now()};sendPresence(true);toast('📌 Challenge posted!');},me.score<bet);
+      }
+      B(630,540,280,40,'ℹ Info screen','#46f3ff',()=>{closeGame();startGame(Info());});
+    }
+  };
+}
+// ======================================================================
 // VENDING MACHINE in the main room — push it aside to find a tiny hiding spot behind it
 // ======================================================================
 const VEND={home:6.8,slid:8.35,light:null,x:6.8,open:false,t:0,g:null,col:null,said:false};
@@ -3066,6 +3175,7 @@ function loop(){
   requestAnimationFrame(loop); // keep going even if something below goes wrong
   const dt=Math.min(clock.getDelta(),.05);T++;
   if(started&&!game&&!linkOpen&&!chatting&&!noteOpen&&P.has('KeyV')){thirdPerson=!thirdPerson;toast(thirdPerson?'📷 Third person view':'👀 First person view');}
+  if(started)challengeTick();
   if(game){
     if(P.has('Escape'))closeGame();else{game.update();if(game)game.draw();}
   }else if(linkOpen){
