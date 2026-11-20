@@ -21,11 +21,12 @@
   function loadSb(){
     if(sbP)return sbP;
     sbP=new Promise(function(res){
-      var s=document.createElement('script');
-      s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
-      s.onload=function(){try{res(window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false},realtime:{params:{eventsPerSecond:20}}}));}catch(e){res(null);}};
-      s.onerror=function(){res(null);};
-      document.head.appendChild(s);
+      function load(ver,next){var s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@'+ver+'/dist/umd/supabase.js';
+        s.onload=function(){try{res(window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false},realtime:{params:{eventsPerSecond:20}}}));}catch(e){res(null);}};
+        s.onerror=function(){if(next)next();else res(null);};
+        document.head.appendChild(s);}
+      load('2.106.2',function(){load('2');});
     });
     return sbP;
   }
@@ -38,7 +39,7 @@
   // ---------- room: who's here + where they are ----------
   function makeRoom(sb){
     var me=Math.random().toString(36).slice(2,12);
-    var mine={},dirty=true,lastSend=0,handlers=[],peers=new Map(),connected=false;
+    var mine={},dirty=true,lastSend=0,lastTrack=0,handlers=[],peers=new Map(),connected=false;
     var ch=sb.channel('starlight-arcade-room',{config:{broadcast:{self:false},presence:{key:me}}});
     function list(){var self={peer:me,by:uid,isMe:true,sameTab:true,kind:'viewer',guest:false,presence:mine,updatedAt:Date.now()};return [self].concat(Array.from(peers.values()));}
     function emitChange(joined,left,updated){var ps=list();handlers.forEach(function(h){try{h({peers:ps,joined:joined||[],left:left||[],updated:updated||[]});}catch(e){}});}
@@ -47,11 +48,18 @@
       var was=peers.has(p.peer);var e={peer:String(p.peer),by:typeof p.by==='string'?p.by:null,isMe:false,sameTab:false,kind:'viewer',guest:false,presence:p.s,updatedAt:Date.now()};
       peers.set(e.peer,e);emitChange(was?[]:[e],[],was?[e]:[]);});
     ch.on('presence',{event:'join'},function(){dirty=true;});
+    ch.on('presence',{event:'sync'},function(){var st;try{st=ch.presenceState();}catch(e){return;}var now=Date.now(),j=[],u=[];
+      for(var key in st){if(key===me)continue;var arr=st[key]||[],last=arr[arr.length-1];if(!last||typeof last.s!=='object'||!last.s)continue;
+        var cur=peers.get(key);if(cur&&now-cur.updatedAt<1500)continue;   // broadcasts are newer: keep them
+        var e={peer:String(key),by:typeof last.by==='string'?last.by:null,isMe:false,sameTab:false,kind:'viewer',guest:false,presence:last.s,updatedAt:now};
+        peers.set(e.peer,e);(cur?u:j).push(e);}
+      if(j.length||u.length)emitChange(j,[],u);});
     ch.on('presence',{event:'leave'},function(m){var gone=[];(m.leftPresences||[]).forEach(function(lp){});var k=m.key;if(k&&peers.has(k)){gone.push(peers.get(k));peers.delete(k);}if(gone.length)emitChange([],gone,[]);});
-    ch.subscribe(function(status){if(status==='SUBSCRIBED'){connected=true;ch.track({t:Date.now()});dirty=true;send();}else if(status==='CLOSED'||status==='CHANNEL_ERROR'||status==='TIMED_OUT'){connected=false;}});
+    ch.subscribe(function(status){if(status==='SUBSCRIBED'){connected=true;lastTrack=Date.now();ch.track({by:uid,s:mine,t:Date.now()});dirty=true;send();}else if(status==='CLOSED'||status==='CHANNEL_ERROR'||status==='TIMED_OUT'){connected=false;}});
     setInterval(function(){
       var now=Date.now();
       if(dirty&&now-lastSend>100)send();else if(now-lastSend>2500)send();
+      if(connected&&now-lastTrack>1000){lastTrack=now;try{ch.track({by:uid,s:mine,t:now});}catch(e){}}
       var gone=[];peers.forEach(function(e,k){if(now-e.updatedAt>9000){gone.push(e);peers.delete(k);}});if(gone.length)emitChange([],gone,[]);
     },100);
     return{
@@ -1447,7 +1455,7 @@ async function connectOnline(){
   try{room=await window.claude.use('room');}catch(e){room=null;}
   if(!room){renderOnline();return;}
   room.onPeers(ch=>{
-    for(const p of ch.peers){if(p.isMe&&p.sameTab)myPeer=p.peer;if(p.sameTab||p.kind!=='viewer')continue;upsertPeer(p);}
+    for(const p of ch.peers){if(p.isMe&&p.sameTab)myPeer=p.peer;if(p.sameTab||p.kind!=='viewer')continue;try{upsertPeer(p);}catch(err){console.warn('player update failed',err);}}
     for(const p of ch.left)removePeer(p.peer);
     renderOnline();
   },()=>{room=null;for(const id of [...peers.keys()])removePeer(id);renderOnline();});
@@ -3730,7 +3738,7 @@ function loop(){
   meAv.position.set(me.x,me.y,me.z);meAv.rotation.y=me.ry;animAvatar(meAv,me.moving,dt);
   // other players
   const now=performance.now();
-  for(const e of peers.values()){
+  for(const e of peers.values()){try{
     e.av.visible=e.lv===level;
     const k=1-Math.exp(-dt*12);
     e.av.position.x+=(e.tx-e.av.position.x)*k;e.av.position.y+=(e.ty-(e.hid==='pit'?.62:0)-e.av.position.y)*k;e.av.position.z+=(e.tz-e.av.position.z)*k;
@@ -3745,7 +3753,7 @@ function loop(){
       else{e.matStart=0;e.av.scale.x=e.av.scale.z=e.fx?e.fx[2]:1;}}
     e.av.userData.label.visible=!e.hid&&!e.cr;
     animAvatar(e.av,e.mv,dt);
-  }
+  }catch(err){}}
   for(const av of [meAv,...[...peers.values()].map(e=>e.av)])if(av.userData.bubble.visible&&now>av.userData.bubbleUntil)av.userData.bubble.visible=false;
   // animations
   tickTpFx(now);
