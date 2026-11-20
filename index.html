@@ -2674,6 +2674,22 @@ function setStore(open){STORE.open=open;STORE.t=Date.now();sendPresence(true);to
   badge.position.set(-24.8,1.56,8.4);badge.rotation.y=.4;house.add(badge);STORE.badge=badge;
   houseInter.push({x:-24.8,z:8.4,cond:()=>!me.hasBadge&&inSecret(me.x,me.z),verb:'Take the STAFF badge 🪪',act:()=>{me.hasBadge=true;toast('🪪 You found a STAFF badge! Now you can open the STAFF ONLY door.');}});
 })();
+// what's inside the storage boxes (each one refills after 3 minutes)
+const LOOT_OPENED={};
+function crackSound(){try{const ac=getAC();const b=ac.createBuffer(1,ac.sampleRate*.25,ac.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
+  const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=b;f.type='lowpass';f.frequency.value=1800;g.gain.value=.5;s.connect(f);f.connect(g);g.connect(ac.destination);s.start();}catch(e){}}
+function lootBox(i,k){
+  const now=Date.now();
+  if(LOOT_OPENED[i]&&now-LOOT_OPENED[i]<180000){toast({crate:'🪵 This crate is empty — you already looked!',box:'📦 Nothing left in this box…',barrel:'🛢 The barrel is empty'}[k]+' (try again later)');return;}
+  LOOT_OPENED[i]=now;crackSound();
+  const r=Math.random();
+  const give=(n,t)=>{me.score+=n;updInv();sendPresence(true);toast(t+'  +🪙 '+n);};
+  if(r<.05)give(15,'🎟 WOW! A GOLDEN TICKET!');
+  else if(r<.2)give(5,'💰 A little bag of coins!');
+  else if(r<.55)give(2,'🪙 A couple of coins at the bottom!');
+  else if(r<.75)toast(['🕸 Just cobwebs and dust…','🧽 Packing peanuts. Lots of them.','🐭 A mouse ran out! Eek!'][Math.random()*3|0]);
+  else toast(['🧦 An old stinky sock 🤢','🦆 A tiny rubber duck!','🧸 A spare teddy bear from the claw machine','🔦 A flashlight (with no batteries)','🎈 A deflated balloon','🕹 A broken joystick','🍕 A VERY old slice of pizza…','📼 A mystery video tape'][Math.random()*8|0]);
+}
 function updateStore(){
   STORE.ang+=((STORE.open?1.45:0)-STORE.ang)*.12;STORE.hinge.rotation.y=STORE.ang;
   if(STORE.badge)STORE.badge.visible=!me.hasBadge;
@@ -2701,6 +2717,9 @@ function updateStore(){
   bigPlant(15.2,10.8);               // front-right corner by the VR zone
   // everything else lives in the STAFF ONLY storage room
   crates(23.8,10.2,0);crates(19.4,10.2,.1);boxes(23.9,3.3);
+  // you can open them up and dig around inside!
+  [[23.8,9.45,'crate'],[19.4,9.45,'crate'],[23.9,3.95,'box'],[18.6,3.2,'barrel'],[19.6,3.2,'barrel'],[18.6,4.15,'barrel']].forEach(([x,z,k],i)=>
+    houseInter.push({x,z,cond:()=>inStore(me.x,me.z),get verb(){return {crate:'Crack open the crate 🔨',box:'Rip open the box 📦',barrel:'Pop the barrel lid 🛢'}[k];},act:()=>lootBox(i,k)}));
   barrel(18.6,3.2,0x2b6bd6);barrel(19.6,3.2,0xd62b6b);barrel(18.6,4.15,0x2bd6a0);
 })();
 // ======================================================================
