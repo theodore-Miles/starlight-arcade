@@ -818,7 +818,7 @@ function makeClaw(x,col){
   const wallM=std(0xffffff,{map:wallTex,roughness:.85});
   box(33.5,5.4,.5,wallM,0,2.7,-11.75,house);
   box(18.3,5.4,.5,wallM,-7.6,2.7,11.75,house);box(3.55,5.4,.5,wallM,4.225,2.7,11.75,house);box(1.6,3.2,.5,wallM,6.8,3.8,11.75,house);box(.27,2.2,.5,wallM,6.135,1.1,11.75,house);box(.27,2.2,.5,wallM,7.465,1.1,11.75,house);box(9.15,5.4,.5,wallM,12.175,2.7,11.75,house);box(.9,1.75,.5,wallM,2,.875,11.75,house);box(.9,2.75,.5,wallM,2,4.025,11.75,house);
-  box(.5,5.4,20.2,wallM,-16.75,2.7,-1.9,house);box(.5,2.8,1.6,wallM,-16.75,4.0,9,house);box(.5,5.4,2.2,wallM,-16.75,2.7,10.9,house);
+  box(.5,5.4,11.2,wallM,-16.75,2.7,-6.4,house);box(.5,2.8,1.6,wallM,-16.75,4.0,0,house);box(.5,5.4,11.2,wallM,-16.75,2.7,6.4,house);
   box(.5,5.4,8.2,wallM,16.75,2.7,-7.9,house);box(.5,5.4,14.2,wallM,16.75,2.7,4.9,house);box(.5,3,1.6,wallM,16.75,3.9,-3,house);
   const ceil=new THREE.Mesh(new THREE.PlaneGeometry(33.5,24),new THREE.MeshBasicMaterial({color:0xbbbbbb,map:(()=>{const t=canvasTex(512,512,(g,w,h)=>{g.fillStyle='#0a0618';g.fillRect(0,0,w,h);let sd=3;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;for(let k=0;k<160;k++){const c=['#fff6c8','#9fe8ff','#ffb3f5'][k%3];g.fillStyle=c;g.globalAlpha=.4+r()*.6;g.beginPath();g.arc(r()*w,r()*h,r()*1.8+.4,0,7);g.fill();}g.globalAlpha=1;});t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(4,2);return t;})()}));ceil.rotation.x=Math.PI/2;ceil.position.y=5.4;house.add(ceil);
   // neon strips along the walls
@@ -830,7 +830,7 @@ function makeClaw(x,col){
   [pink,cyan,yel,pink,cyan].forEach((m,i)=>{const t=new THREE.Mesh(new THREE.BoxGeometry(26,.1,.1),m);t.position.set(0,5.32,-8+i*4);house.add(t);ceilTubes.push(t);});
   // neon signs
   neonSign('STARLIGHT ARCADE','#ff3df2',14,0,4.05,-11.46,0,120);
-  neonSign('★ HIGH SCORE ★','#46f3ff',8,-16.46,4.1,0,Math.PI/2);
+  neonSign('★ HIGH SCORE ★','#46f3ff',6,-16.46,4.1,-7.5,Math.PI/2);
   neonSign('INSERT COIN','#ffd36e',7,16.46,4.1,-1,-Math.PI/2);
   neonSign('GAME ON!','#3ddc84',6,-6,4.1,11.46,Math.PI);
   neonSign('🥽 VR ZONE','#46f3ff',6,11.5,4.1,11.46,Math.PI);
@@ -840,7 +840,7 @@ function makeClaw(x,col){
   const arcLight=new THREE.PointLight(0xb06bff,1,13);arcLight.position.set(-13,4,0);house.add(arcLight);
 
   // ---- 5 playable arcade machines on the left wall ----
-  ARC.forEach((a,i)=>{const z=-6+i*3;const cab=makeCabinet(a,-15.7,z,Math.PI/2);
+  ARC.forEach((a,i)=>{const z=[-6,-3,3,6,9][i];const cab=makeCabinet(a,-15.7,z,Math.PI/2);
     const col={x:-15.5,z,hw:.85,hd:.7,top:2.6},it={x:-14,z,verb:a.verb,act:a.act};
     houseCols.push(col);houseInter.push(it);if(i===0)Object.assign(pushArc,{cab,col,it});});
   // secret vent in the wall, hidden behind the SKY BOUND machine
@@ -983,8 +983,8 @@ function makeClaw(x,col){
     const ring=new THREE.Mesh(new THREE.TorusGeometry(.07,.022,8,18),gold);ring.position.x=-.1;key.add(ring);
     const shaft=new THREE.Mesh(new THREE.BoxGeometry(.2,.03,.03),gold);shaft.position.x=.05;key.add(shaft);
     for(const kx of [.1,.14]){const tooth=new THREE.Mesh(new THREE.BoxGeometry(.025,.06,.03),gold);tooth.position.set(kx,-.04,0);key.add(tooth);}
-    key.rotation.set(-Math.PI/2,0,.6);key.position.set(-15.55,2.62,0.1);house.add(key);closet.key=key;
-    houseInter.push({x:-15.5,z:0,cond:()=>!me.hasKey&&me.y>=2.4,verb:'Grab the key 🔑',act:()=>{me.hasKey=true;updInv();toast('🔑 You found a key! I wonder what it opens…');}});
+    key.rotation.set(-Math.PI/2,0,.6);key.position.set(-15.55,2.62,3.1);house.add(key);closet.key=key;
+    houseInter.push({x:-15.5,z:3,cond:()=>!me.hasKey&&me.y>=2.4,verb:'Grab the key 🔑',act:()=>{me.hasKey=true;updInv();toast('🔑 You found a key! I wonder what it opens…');}});
     // janitor things you can pick up
     const addItem=(kind,name,icon,x,z,y,r,build,top)=>{const i=PLANTS.length,g=new THREE.Group();build(g);g.position.set(x,y,z);house.add(g);
       const col=top?{x,z,r,top}:{x,z,r},it={x,z,verb:'Pick up the '+name+' '+icon,cond:()=>me.holding==null&&!PLANTS[i].held&&Math.abs(PLANTS[i].y-me.y)<2.2,act:()=>pickPlant(i)};
@@ -1168,8 +1168,8 @@ function groundAt(x,z){let gy=0,b=false;if(level!==0)return{gy,b};
 function blocked(x,z){
   const R=.45;
   if(level===0){
-    if(x<-17-R){if(x<-33+R||z<2+R||z>16-R)return true;}            // inside the GAME ROOM
-    else if(x<-16+R){if(!(z>8.2+R&&z<9.8-R))return true;}          // the doorway to the GAME ROOM
+    if(x<-17-R){if(x<-33+R||z<-7+R||z>7-R)return true;}            // inside the GAME ROOM
+    else if(x<-16+R){if(!(z>-.8+R&&z<.8-R))return true;}          // the doorway to the GAME ROOM
     if(x>-17&&z<-11+R)return true;
     if(x>-17&&z>11-R){if(!(x>6.25+R&&x<7.35-R&&z<13.4-R))return true;}   // the little nook behind the vending machine
     if(x>16-R){
@@ -1286,7 +1286,7 @@ function updateCamera(dt){
     // third person: camera floats behind you
     const tx=me.x,ty=me.y+me.eye*.85,tz=me.z;
     let cx=tx-fx*4.2,cy=ty-fy*4.2+.7,cz=tz-fz*4.2;
-    if(level===0){if(me.x<-16.8){cx=clamp(cx,-32.7,-17.3);cz=clamp(cz,2.3,15.7);cy=clamp(cy,.3,5.1);}else if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
+    if(level===0){if(me.x<-16.8){cx=clamp(cx,-32.7,-17.3);cz=clamp(cz,-6.7,6.7);cy=clamp(cy,.3,5.1);}else if(me.z>11.6){cx=clamp(cx,6.4,7.2);cz=clamp(cz,11.8,13.2);cy=clamp(cy,.3,2.1);}else if(me.x>16.3){cx=clamp(cx,16.7,19.3);cz=clamp(cz,-4.8,-1.2);cy=clamp(cy,.3,3.05);}else{cx=clamp(cx,-15.8,15.8);cz=clamp(cz,-10.8,10.8);cy=clamp(cy,.3,5.2);}}else cy=Math.max(cy,.3);
     camPos.set(cx,cy,cz);camLook.set(tx+fx*3,ty+fy*3,tz+fz*3);
   }else{
     camPos.set(me.x,me.y+me.eye+bob,me.z);
@@ -2538,10 +2538,10 @@ function squeak(force){
 // ======================================================================
 // GAME ROOM: a new room through the doorway in the left wall
 // ======================================================================
-const inGameRoom=(x,z)=>x<-17&&x>-33&&z>2&&z<16;
+const inGameRoom=(x,z)=>x<-17&&x>-33&&z>-7&&z<7;
 (function buildGameRoom(){
   const noShadow=m=>{m.castShadow=false;return m;};
-  const OX=-25,OZ=9,OW=16,OD=14,OH=5.4;
+  const OX=-25,OZ=0,OW=16,OD=14,OH=5.4;
   const byW=w=>house.children.find(o=>o.isMesh&&o.geometry&&o.geometry.parameters&&o.geometry.parameters.width===w);
   const mainFloor=byW(33);
   const ft=mainFloor.material.map.clone();ft.needsUpdate=true;ft.repeat.set(OW/33*5,OD/23*4);
@@ -2549,24 +2549,23 @@ const inGameRoom=(x,z)=>x<-17&&x>-33&&z>2&&z<16;
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(OW,OD),fm);fl.rotation.x=-Math.PI/2;fl.position.set(OX,.003,OZ);fl.receiveShadow=true;house.add(fl);
   const wallPiece=house.children.find(o=>o.isMesh&&Math.abs(o.position.z+11.75)<.01);
   const wm=wallPiece?wallPiece.material:std(0x1a1238);
-  noShadow(box(OW+.6,OH,.3,wm,OX,OH/2,16.15,house));noShadow(box(OW+.6,OH,.3,wm,OX,OH/2,1.85,house));noShadow(box(.3,OH,OD+.6,wm,-33.15,OH/2,OZ,house));
-  noShadow(box(.5,OH,4.3,wm,-16.75,OH/2,14.15,house));
+  noShadow(box(OW+.6,OH,.3,wm,OX,OH/2,7.15,house));noShadow(box(OW+.6,OH,.3,wm,OX,OH/2,-7.15,house));noShadow(box(.3,OH,OD+.6,wm,-33.15,OH/2,OZ,house));
   const ceil=new THREE.Mesh(new THREE.PlaneGeometry(OW+.6,OD+.6),byW(33.5).material);ceil.rotation.x=Math.PI/2;ceil.position.set(OX,OH,OZ);house.add(ceil);
   const strip=(m,w,d,x,y,z)=>{const s=new THREE.Mesh(new THREE.BoxGeometry(w,.06,d),m);s.position.set(x,y,z);house.add(s);};
-  [[new THREE.MeshBasicMaterial({color:0x46f3ff}),.14],[new THREE.MeshBasicMaterial({color:0xff3df2}),5.1]].forEach(([m,y])=>{strip(m,OW,.06,OX,y,15.97);strip(m,OW,.06,OX,y,2.03);strip(m,.06,OD,-32.97,y,OZ);});
-  for(const [c,x,z] of [[0xff3df2,-29,5],[0x46f3ff,-21,13],[0xffd36e,-25,9]]){const l=new THREE.PointLight(c,.9,14);l.position.set(x,4.5,z);house.add(l);}
-  neonSign('GAME ROOM','#3ddc84',4,-16.46,3.4,9,Math.PI/2);
-  neonSign('GAME ROOM','#3ddc84',5,-32.96,4.4,9,Math.PI/2);
+  [[new THREE.MeshBasicMaterial({color:0x46f3ff}),.14],[new THREE.MeshBasicMaterial({color:0xff3df2}),5.1]].forEach(([m,y])=>{strip(m,OW,.06,OX,y,6.97);strip(m,OW,.06,OX,y,-6.97);strip(m,.06,OD,-32.97,y,OZ);});
+  for(const [c,x,z] of [[0xff3df2,-29,-4],[0x46f3ff,-21,4],[0xffd36e,-25,0]]){const l=new THREE.PointLight(c,.9,14);l.position.set(x,4.5,z);house.add(l);}
+  neonSign('GAME ROOM','#3ddc84',4,-16.46,3.4,0,Math.PI/2);
+  neonSign('GAME ROOM','#3ddc84',5,-32.96,4.4,0,Math.PI/2);
   const poster=(title,sub,c1,c2,draw,x,z,ry)=>{const t=canvasTex(256,360,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,c1);gr.addColorStop(1,c2);g.fillStyle=gr;g.fillRect(0,0,w,h);
       draw(g,w,h);g.fillStyle='rgba(0,0,0,.45)';g.fillRect(0,h-90,w,90);g.fillStyle='#fff';g.textAlign='center';g.font='900 34px system-ui';g.fillText(title,w/2,h-50,w-20);g.font='bold 15px system-ui';g.fillStyle='#ffd36e';g.fillText(sub,w/2,h-20,w-20);});
     const p=new THREE.Mesh(new THREE.PlaneGeometry(1.5,2.1),new THREE.MeshBasicMaterial({map:t,color:0xdddddd}));p.position.set(x,2.6,z);p.rotation.y=ry;house.add(p);
     const fr=new THREE.Mesh(new THREE.PlaneGeometry(1.64,2.24),new THREE.MeshBasicMaterial({color:new THREE.Color(c1)}));fr.position.copy(p.position);fr.rotation.y=ry;fr.translateZ(-.01);house.add(fr);};
-  poster('BLOCK RAIDERS','space · ships · blocks','#1d1650','#0b0920',g=>{const cs=['#ff5470','#7d8cff','#3ddc84','#c86bff'];for(let i=-2;i<=2;i++)for(let j=-2;j<=1;j++)if(Math.abs(i)+Math.abs(j)<4){g.fillStyle=cs[(i+j+8)%4];g.fillRect(128+i*26-12,110+j*26-12,24,24);}g.fillStyle='#ffd23f';g.fillRect(116,98,24,24);g.fillStyle='#46f3ff';g.beginPath();g.moveTo(128,200);g.lineTo(108,240);g.lineTo(148,240);g.fill();},-29,15.97,Math.PI);
-  poster('SKY BOUND','fly to the Moon!','#2a7fff','#bfe8ff',g=>{g.fillStyle='#fff';for(const [x,y] of [[60,90],[190,140],[90,200]]){g.beginPath();g.arc(x,y,22,0,7);g.arc(x+24,y,18,0,7);g.fill();}g.fillStyle='#ff5d73';g.fillRect(100,150,70,16);g.fillRect(126,126,16,64);g.fillStyle='#ffd36e';g.beginPath();g.arc(210,50,22,0,7);g.fill();},-25,15.97,Math.PI);
-  poster('TINY ME','in the Big House','#ffcf8a','#c97a3a',g=>{g.fillStyle='#8a3a2a';g.beginPath();g.moveTo(40,140);g.lineTo(128,60);g.lineTo(216,140);g.fill();g.fillStyle='#e8b070';g.fillRect(56,140,144,110);g.fillStyle='#ffd36e';g.beginPath();g.arc(128,232,5,0,7);g.fill();g.fillStyle='#4fc3ff';g.fillRect(124,237,8,12);},-21,15.97,Math.PI);
-  poster('RED DUST','Mars mining colony','#ff7a4a','#4a1a10',g=>{g.fillStyle='#ffb07a';g.beginPath();g.arc(170,90,40,0,7);g.fill();g.fillStyle='#8a3a20';g.beginPath();g.moveTo(0,250);g.lineTo(70,180);g.lineTo(130,230);g.lineTo(200,170);g.lineTo(256,240);g.lineTo(256,270);g.lineTo(0,270);g.fill();g.fillStyle='#ddd';g.fillRect(60,200,40,26);g.beginPath();g.arc(80,200,20,Math.PI,0);g.fill();},-29,2.03,0);
-  poster('BLOCK HAVEN','dig · craft · build','#3ddc84','#1a6a3a',g=>{for(let i=0;i<8;i++)for(let j=0;j<4;j++){g.fillStyle=j===0?'#3ddc84':j<2?'#8a5a2a':'#777';g.fillRect(i*32,160+j*26,31,25);}g.fillStyle='#5a3a1a';g.fillRect(170,80,16,80);g.fillStyle='#2a9a4a';g.fillRect(146,50,64,50);},-25,2.03,0);
-  poster('ISLAND SETTLERS','build · trade · explore','#7fd8ff','#1e6cff',g=>{g.fillStyle='#ffe08a';g.beginPath();g.ellipse(128,180,90,40,0,0,7);g.fill();g.fillStyle='#3ddc84';g.beginPath();g.ellipse(128,170,60,26,0,0,7);g.fill();g.fillStyle='#8a5a2a';g.fillRect(150,110,8,50);g.fillStyle='#2a9a4a';g.beginPath();g.arc(154,108,24,0,7);g.fill();},-21,2.03,0);
+  poster('BLOCK RAIDERS','space · ships · blocks','#1d1650','#0b0920',g=>{const cs=['#ff5470','#7d8cff','#3ddc84','#c86bff'];for(let i=-2;i<=2;i++)for(let j=-2;j<=1;j++)if(Math.abs(i)+Math.abs(j)<4){g.fillStyle=cs[(i+j+8)%4];g.fillRect(128+i*26-12,110+j*26-12,24,24);}g.fillStyle='#ffd23f';g.fillRect(116,98,24,24);g.fillStyle='#46f3ff';g.beginPath();g.moveTo(128,200);g.lineTo(108,240);g.lineTo(148,240);g.fill();},-29,6.97,Math.PI);
+  poster('SKY BOUND','fly to the Moon!','#2a7fff','#bfe8ff',g=>{g.fillStyle='#fff';for(const [x,y] of [[60,90],[190,140],[90,200]]){g.beginPath();g.arc(x,y,22,0,7);g.arc(x+24,y,18,0,7);g.fill();}g.fillStyle='#ff5d73';g.fillRect(100,150,70,16);g.fillRect(126,126,16,64);g.fillStyle='#ffd36e';g.beginPath();g.arc(210,50,22,0,7);g.fill();},-25,6.97,Math.PI);
+  poster('TINY ME','in the Big House','#ffcf8a','#c97a3a',g=>{g.fillStyle='#8a3a2a';g.beginPath();g.moveTo(40,140);g.lineTo(128,60);g.lineTo(216,140);g.fill();g.fillStyle='#e8b070';g.fillRect(56,140,144,110);g.fillStyle='#ffd36e';g.beginPath();g.arc(128,232,5,0,7);g.fill();g.fillStyle='#4fc3ff';g.fillRect(124,237,8,12);},-21,6.97,Math.PI);
+  poster('RED DUST','Mars mining colony','#ff7a4a','#4a1a10',g=>{g.fillStyle='#ffb07a';g.beginPath();g.arc(170,90,40,0,7);g.fill();g.fillStyle='#8a3a20';g.beginPath();g.moveTo(0,250);g.lineTo(70,180);g.lineTo(130,230);g.lineTo(200,170);g.lineTo(256,240);g.lineTo(256,270);g.lineTo(0,270);g.fill();g.fillStyle='#ddd';g.fillRect(60,200,40,26);g.beginPath();g.arc(80,200,20,Math.PI,0);g.fill();},-29,-6.97,0);
+  poster('BLOCK HAVEN','dig · craft · build','#3ddc84','#1a6a3a',g=>{for(let i=0;i<8;i++)for(let j=0;j<4;j++){g.fillStyle=j===0?'#3ddc84':j<2?'#8a5a2a':'#777';g.fillRect(i*32,160+j*26,31,25);}g.fillStyle='#5a3a1a';g.fillRect(170,80,16,80);g.fillStyle='#2a9a4a';g.fillRect(146,50,64,50);},-25,-6.97,0);
+  poster('ISLAND SETTLERS','build · trade · explore','#7fd8ff','#1e6cff',g=>{g.fillStyle='#ffe08a';g.beginPath();g.ellipse(128,180,90,40,0,0,7);g.fill();g.fillStyle='#3ddc84';g.beginPath();g.ellipse(128,170,60,26,0,0,7);g.fill();g.fillStyle='#8a5a2a';g.fillRect(150,110,8,50);g.fillStyle='#2a9a4a';g.beginPath();g.arc(154,108,24,0,7);g.fill();},-21,-6.97,0);
   const ICONS={
     joystick:g=>{g.beginPath();g.rect(-40,20,80,24);g.stroke();g.beginPath();g.moveTo(0,20);g.lineTo(-10,-20);g.stroke();g.beginPath();g.arc(-12,-30,12,0,7);g.stroke();g.beginPath();g.arc(26,30,5,0,7);g.stroke();},
     coin:g=>{g.beginPath();g.arc(0,0,38,0,7);g.stroke();g.beginPath();g.arc(0,0,28,0,7);g.stroke();g.font='bold 40px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText('$',0,2);},
@@ -2581,8 +2580,8 @@ const inGameRoom=(x,z)=>x<-17&&x>-33&&z>2&&z<16;
       g.shadowColor=col;g.shadowBlur=14;ICONS[name](g);ICONS[name](g);});
     const m=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.1),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
     m.position.set(x,4.3,z);m.rotation.y=ry;house.add(m);};
-  [['joystick','#ff3df2',-31],['star','#46f3ff',-27],['coin','#ffd36e',-23],['bolt','#3ddc84',-19]].forEach(([n,c,x])=>neonIcon(n,c,x,15.96,Math.PI));
-  [['trophy','#ffd36e',-31],['heart','#ff5d73',-27],['rocket','#46f3ff',-23],['pad','#ff3df2',-19]].forEach(([n,c,x])=>neonIcon(n,c,x,2.04,0));
+  [['joystick','#ff3df2',-31],['star','#46f3ff',-27],['coin','#ffd36e',-23],['bolt','#3ddc84',-19]].forEach(([n,c,x])=>neonIcon(n,c,x,6.96,Math.PI));
+  [['trophy','#ffd36e',-31],['heart','#ff5d73',-27],['rocket','#46f3ff',-23],['pad','#ff3df2',-19]].forEach(([n,c,x])=>neonIcon(n,c,x,-6.96,0));
 })();
 // ======================================================================
 // JUKEBOX: original arcade songs made with the computer's synthesizer
@@ -2609,7 +2608,7 @@ const SONGS=[
    lead:[77,0,0,81,0,0,84,0,82,0,0,79,0,0,0,0, 77,0,0,76,0,0,72,0,74,0,0,72,0,0,0,0],
    drums:'k...h...k...h...'},
 ];
-const JUKE={x:-32.55,z:9,song:-1,t:0,playing:-1,startT:0,step:0,next:0,master:null,noise:null,scr:null,scrTex:null,lights:[],drawn:''};
+const JUKE={x:-32.55,z:0,song:-1,t:0,playing:-1,startT:0,step:0,next:0,master:null,noise:null,scr:null,scrTex:null,lights:[],drawn:''};
 function getAC(){if(!window._ac)window._ac=new (window.AudioContext||window.webkitAudioContext)();return window._ac;}
 addEventListener('pointerdown',()=>{try{if(window._ac&&window._ac.state==='suspended')window._ac.resume();}catch(e){}});
 addEventListener('keydown',()=>{try{if(window._ac&&window._ac.state==='suspended')window._ac.resume();}catch(e){}});
@@ -2699,7 +2698,7 @@ function JukeboxPicker(){
 // ======================================================================
 // SKEE-BALL lane (right wall): roll balls up the ramp into the rings!
 // ======================================================================
-[[-30.75,4,Math.PI/2,-28.8,'x>'],[-30.75,14,Math.PI/2,-28.8,'x>']].forEach(([SX,SZ,SR,IX,SIDE])=>{(function buildSkee(){
+[[-30.75,-5,Math.PI/2,-28.8,'x>'],[-30.75,5,Math.PI/2,-28.8,'x>']].forEach(([SX,SZ,SR,IX,SIDE])=>{(function buildSkee(){
   const g=new THREE.Group(),wood=std(0xb07a3a,{roughness:.5}),dark=std(0x14101f),acc=std(0x46f3ff,{emissive:0x46f3ff,emissiveIntensity:.8}),glass=new THREE.MeshStandardMaterial({color:0x9fd8ff,transparent:true,opacity:.25,roughness:.1});
   // local: lane runs from +z (player end) to -z (targets); turned so the targets are at the wall
   const L=3.3;
@@ -2775,7 +2774,7 @@ function SkeeBall(){
 // ======================================================================
 // AIR HOCKEY (right side): play a friend on another computer, or the CPU
 // ======================================================================
-const AH_TABLES=[{x:-22.5,z:5.5,puck:null,pads:[]},{x:-22.5,z:12.5,puck:null,pads:[]}];
+const AH_TABLES=[{x:-22.5,z:-3.5,puck:null,pads:[]},{x:-22.5,z:3.5,puck:null,pads:[]}];
 const AH_W=360,AH_L=600,AH_GOAL=130,AH_PR=26,AH_KR=16,AH_WIN=7;
 AH_TABLES.forEach((AH,tid)=>{(function buildHockey(){
   const g=new THREE.Group(),dark=std(0x14101f),white=std(0xf2f6ff,{roughness:.25,metalness:.1}),rail=std(0x46f3ff,{emissive:0x46f3ff,emissiveIntensity:.8});
