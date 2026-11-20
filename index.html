@@ -2369,14 +2369,14 @@ const SECCAM={cams:[],viewing:false,sel:-1};
   const views=[['CAM 1 · MAIN ROOM',[14.5,4.9,-10.3],[0,0,1.5]],['CAM 2 · GAME ROOM',[-17.6,4.6,6.4],[-27,0,-1.5]],
                ['CAM 3 · STAFF STORAGE',[24.6,3.5,2.9],[19.5,0,9]],['CAM 4 · VENDING & POOL',[-15,4.9,10.5],[4,0,-2]]];
   views.forEach(([name,pos,look])=>{
-    const cam=new THREE.PerspectiveCamera(70,1.6,.1,60);cam.position.set(...pos);cam.lookAt(...look);
+    const cam=new THREE.PerspectiveCamera(70,1.6,.1,60);cam.rotation.order='YXZ';cam.position.set(...pos);cam.lookAt(...look);
     // a little camera on the wall of the room it watches
     const body=new THREE.Group();body.position.set(...pos);house.add(body);
     const bx=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.38),std(0xdddddd,{metalness:.4}));body.add(bx);
     const lens=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.06,12),std(0x111111));lens.rotation.x=Math.PI/2;lens.position.z=.21;body.add(lens);
     const red=new THREE.Mesh(new THREE.SphereGeometry(.025,8,6),new THREE.MeshBasicMaterial({color:0xff2020}));red.position.set(.06,.06,.2);body.add(red);
     body.lookAt(...look);
-    SECCAM.cams.push({name,cam,red,body});});
+    SECCAM.cams.push({name,cam,red,body,by:cam.rotation.y,bx:cam.rotation.x,yaw:0,pit:0});});
   // the SECURITY STATION on the left wall of the lounge
   const box=(w,h,d,col,x,y,z,o)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),std(col,o||{}));m.position.set(x,y,z);g.add(m);return m;};
   box(1.1,.1,2.6,0x161a1e,-5.3,.95,-60,{metalness:.6,roughness:.3});
@@ -2403,13 +2403,25 @@ function CamViewer(){
     update(){
       for(let i=0;i<4;i++)if(P.has('Digit'+(i+1)))SECCAM.sel=i;
       if(P.has('Digit0')||P.has('Space'))SECCAM.sel=-1;
-      if(mouse.clicked){if(SECCAM.sel>=0)SECCAM.sel=-1;else CAM_CELLS.forEach(([x,y,w,h],i)=>{if(mouse.x>x&&mouse.x<x+w&&mouse.y>y&&mouse.y<y+h)SECCAM.sel=i;});}
+      if(SECCAM.sel<0){
+        if(mouse.clicked)CAM_CELLS.forEach(([x,y,w,h],i)=>{if(mouse.x>x&&mouse.x<x+w&&mouse.y>y&&mouse.y<y+h)SECCAM.sel=i;});
+        this.drag=null;return;}
+      // big view: turn the camera with the arrow keys / WASD, or drag with the mouse
+      if(mouse.clicked&&mouse.x>790&&mouse.y<52){SECCAM.sel=-1;return;}
+      const c=SECCAM.cams[SECCAM.sel],sp=.025;
+      if(K.ArrowLeft||K.KeyA)c.yaw+=sp;if(K.ArrowRight||K.KeyD)c.yaw-=sp;
+      if(K.ArrowUp||K.KeyW)c.pit+=sp;if(K.ArrowDown||K.KeyS)c.pit-=sp;
+      if(mouse.down&&mouse.y>52){if(this.drag){c.yaw+=(mouse.x-this.drag[0])*.004;c.pit+=(mouse.y-this.drag[1])*.004;}this.drag=[mouse.x,mouse.y];}
+      else this.drag=null;
+      if(P.has('KeyR')){c.yaw=0;c.pit=0;}
+      c.yaw=Math.max(-1.4,Math.min(1.4,c.yaw));c.pit=Math.max(-.6,Math.min(.5,c.pit));
+      aimSecCam(c);
     },
     draw(){
       const W=960,H=640;ctx.fillStyle='#08041a';ctx.fillRect(0,0,W,H);
       ctx.font='bold 22px monospace';ctx.textAlign='left';ctx.fillStyle='#b06bff';ctx.fillText('📹 SECURITY CAMERAS',20,38);
-      if(T%60<30){ctx.fillStyle='#ff3b3b';ctx.beginPath();ctx.arc(W-90,31,7,0,7);ctx.fill();}
-      ctx.fillStyle='#ff3b3b';ctx.font='bold 18px monospace';ctx.fillText('REC',W-76,38);
+      const rx=SECCAM.sel>=0?W-250:W-90;if(T%60<30){ctx.fillStyle='#ff3b3b';ctx.beginPath();ctx.arc(rx,31,7,0,7);ctx.fill();}
+      ctx.fillStyle='#ff3b3b';ctx.font='bold 18px monospace';ctx.fillText('REC',rx+14,38);
       const cells=SECCAM.sel>=0?[[20,62,920,554]]:CAM_CELLS;
       cells.forEach(([x,y,w,h],k)=>{const i=SECCAM.sel>=0?SECCAM.sel:k;
         ctx.clearRect(x,y,w,h);ctx.strokeStyle='#b06bff';ctx.lineWidth=3;ctx.strokeRect(x-2,y-2,w+4,h+4);
@@ -2418,10 +2430,15 @@ function CamViewer(){
         // a bit of scan-line fuzz so it feels like a real camera
         ctx.fillStyle='rgba(176,107,255,.06)';for(let l=(T*2)%8;l<h;l+=8)ctx.fillRect(x,y+l,w,2);});
       ctx.font='14px monospace';ctx.fillStyle='#c9a8ff';ctx.textAlign='center';
-      ctx.fillText(SECCAM.sel>=0?'Click or press 0 = see all cameras · Esc = get up':'Click a camera or press 1-4 to make it big · Esc = get up',W/2,H-8);
+      if(SECCAM.sel>=0){ctx.fillStyle='#2a1a5e';ctx.fillRect(800,16,140,32);ctx.strokeStyle='#b06bff';ctx.lineWidth=2;ctx.strokeRect(800,16,140,32);
+        ctx.fillStyle='#fff';ctx.font='bold 15px monospace';ctx.fillText('◀ ALL CAMS',870,37);ctx.font='14px monospace';ctx.fillStyle='#c9a8ff';}
+      ctx.fillText(SECCAM.sel>=0?'Drag or use arrows / WASD to look around · R = reset · 0 = all cams · Esc = get up':'Click a camera or press 1-4 to make it big · Esc = get up',W/2,H-8);
     }
   };
 }
+const _sv=new THREE.Vector3();
+function aimSecCam(c){c.cam.rotation.set(c.bx+c.pit,c.by+c.yaw,0);
+  c.cam.getWorldDirection(_sv);c.body.lookAt(c.cam.position.x+_sv.x,c.cam.position.y+_sv.y,c.cam.position.z+_sv.z);}
 function secCamTick(){
   const blink=Math.floor(performance.now()/600)%2===0;for(const c of SECCAM.cams)c.red.visible=blink;
   if(LOUNGE.globe&&level===0&&me.z<-40){LOUNGE.globe.rotation.y+=.01;LOUNGE.globe.rotation.x=Math.sin(performance.now()/2000)*.2;}
