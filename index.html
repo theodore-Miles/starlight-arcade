@@ -1567,7 +1567,7 @@ function applyLights(announce){
 // ======================================================================
 // PAPER, PEN, PINS, BULLETIN BOARD, PAPER BALLS + TRASH CAN POINTS
 // ======================================================================
-function updInv(){const i=me.inv;document.getElementById('inv').textContent=(me.gem?'💎  ':'')+(me.hasKey?'🔑  ':'')+(me.darts?'🎯x'+me.darts+'  ':'')+'🎯 '+me.dartPts+' dart pts  '+'📄'+i.paper+'  🖊'+(i.pen?'✓':'✗')+'  📌'+i.pins+'  '+(me.ball?'🗞 ball  ':'')+'🪙 '+me.score+' pts';}
+function updInv(){const i=me.inv;document.getElementById('inv').textContent=(me.found&&me.found.length?'🎒'+me.found.join('')+'  ':'')+(me.gem?'💎  ':'')+(me.hasKey?'🔑  ':'')+(me.darts?'🎯x'+me.darts+'  ':'')+'🎯 '+me.dartPts+' dart pts  '+'📄'+i.paper+'  🖊'+(i.pen?'✓':'✗')+'  📌'+i.pins+'  '+(me.ball?'🗞 ball  ':'')+'🪙 '+me.score+' pts';}
 updInv();
 function takePaper(){const i=me.inv;if(i.paper>=5){toast('📄 You can only carry 5 sheets');return;}i.paper++;updInv();toast('📄 Took a sheet of paper! (R = scrunch it into a ball)');}
 function openDrawer(){const i=me.inv,got=[];if(!i.pen){i.pen=true;got.push('🖊 a pen');}
@@ -2675,24 +2675,32 @@ function setStore(open){STORE.open=open;STORE.t=Date.now();sendPresence(true);to
   houseInter.push({x:-24.8,z:8.4,cond:()=>!me.hasBadge&&inSecret(me.x,me.z),verb:'Take the STAFF badge 🪪',act:()=>{me.hasBadge=true;toast('🪪 You found a STAFF badge! Now you can open the STAFF ONLY door.');}});
 })();
 // what's inside the storage boxes (each one refills after 3 minutes)
-const LOOT_OPENED={},LOOT_VIS={};
+const LOOT_OPENED={},LOOT_VIS={},LOOT_ITEM={};
+me.found=[];
 function showLoot(i,emo){const v=LOOT_VIS[i];if(!v)return;const q=v.c.getContext('2d');q.clearRect(0,0,96,96);q.font='64px system-ui';q.textAlign='center';q.textBaseline='middle';q.fillText(emo,48,52);v.tex.needsUpdate=true;v.g.visible=true;(v.hide||[]).forEach(m=>m.visible=false);}
 function crackSound(){try{const ac=getAC();const b=ac.createBuffer(1,ac.sampleRate*.25,ac.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
   const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=b;f.type='lowpass';f.frequency.value=1800;g.gain.value=.5;s.connect(f);f.connect(g);g.connect(ac.destination);s.start();}catch(e){}}
 function lootBox(i,k){
-  const now=Date.now();
-  if(LOOT_OPENED[i]&&now-LOOT_OPENED[i]<180000){toast({crate:'🪵 This crate is empty — you already looked!',box:'📦 Nothing left in this box…',barrel:'🛢 The barrel is empty'}[k]+' (try again later)');return;}
+  const now=Date.now(),open=LOOT_OPENED[i]&&now-LOOT_OPENED[i]<180000;
+  if(open){const it=LOOT_ITEM[i];
+    if(!it){toast({crate:'🪵 This crate is empty — you already looked!',box:'📦 Nothing left in this box…',barrel:'🛢 The barrel is empty'}[k]+' (try again later)');return;}
+    // pick it up!
+    LOOT_ITEM[i]=null;showLoot(i,'');
+    if(it.coins){me.score+=it.coins;sendPresence(true);toast(it.emo+' You picked up '+it.name+'!  +🪙 '+it.coins);}
+    else{me.found.push(it.emo);if(me.found.length>12)me.found.shift();toast(it.emo+' You picked up '+it.name+'! (it\'s in your backpack 🎒)');}
+    updInv();return;}
   LOOT_OPENED[i]=now;crackSound();
   const r=Math.random();
-  const give=(n,t)=>{me.score+=n;updInv();sendPresence(true);toast(t+'  +🪙 '+n);showLoot(i,[...t][0]==='🎟'?'🎟':'🪙');};
-  if(r<.05)give(15,'🎟 WOW! A GOLDEN TICKET!');
-  else if(r<.2)give(5,'💰 A little bag of coins!');
-  else if(r<.55)give(2,'🪙 A couple of coins at the bottom!');
-  else if(r<.75){const t=['🕸 Just cobwebs and dust…','🧽 Packing peanuts. Lots of them.','🐭 A mouse ran out! Eek!'][Math.random()*3|0];toast(t);showLoot(i,t.startsWith('🐭')?'💨':[...t][0]);}
-  else{const t=['🧦 An old stinky sock 🤢','🦆 A tiny rubber duck!','🧸 A spare teddy bear from the claw machine','🔦 A flashlight (with no batteries)','🎈 A deflated balloon','🕹 A broken joystick','🍕 A VERY old slice of pizza…','📼 A mystery video tape'][Math.random()*8|0];toast(t);showLoot(i,[...t][0]);}
+  const put=(emo,name,coins,msg)=>{LOOT_ITEM[i]={emo,name,coins};showLoot(i,emo);toast(msg+' — look inside and press E to pick it up!');};
+  if(r<.05)put('🎟','the GOLDEN TICKET',15,'🎟 WOW! There\'s a GOLDEN TICKET in here');
+  else if(r<.2)put('💰','the bag of coins',5,'💰 There\'s a little bag of coins inside');
+  else if(r<.55)put('🪙','the coins',2,'🪙 You see a couple of coins at the bottom');
+  else if(r<.75){LOOT_ITEM[i]=null;const t=['🕸 Just cobwebs and dust…','🧽 Packing peanuts. Lots of them.','🐭 A mouse ran out! Eek!'][Math.random()*3|0];toast(t);showLoot(i,t.startsWith('🐭')?'💨':[...t][0]);}
+  else{const [emo,name]=[['🧦','the stinky sock'],['🦆','the rubber duck'],['🧸','the teddy bear'],['🔦','the flashlight'],['🎈','the deflated balloon'],['🕹','the broken joystick'],['🍕','the old pizza slice'],['📼','the mystery video tape']][Math.random()*8|0];
+    put(emo,name,0,emo+' There\'s '+name.replace(/^the /,'a ')+' in here');}
 }
 function updateStore(){
-  for(const i in LOOT_VIS)if(LOOT_VIS[i].g.visible&&(!LOOT_OPENED[i]||Date.now()-LOOT_OPENED[i]>=180000)){LOOT_VIS[i].g.visible=false;(LOOT_VIS[i].hide||[]).forEach(m=>m.visible=true);}
+  for(const i in LOOT_VIS)if(LOOT_VIS[i].g.visible&&(!LOOT_OPENED[i]||Date.now()-LOOT_OPENED[i]>=180000)){LOOT_VIS[i].g.visible=false;LOOT_ITEM[i]=null;(LOOT_VIS[i].hide||[]).forEach(m=>m.visible=true);}
   STORE.ang+=((STORE.open?1.45:0)-STORE.ang)*.12;STORE.hinge.rotation.y=STORE.ang;
   if(STORE.badge)STORE.badge.visible=!me.hasBadge;
 }
@@ -2721,7 +2729,7 @@ function updateStore(){
   const HIDE=[crates(23.8,10.2,0),crates(19.4,10.2,.1),boxes(23.9,3.3),barrel(18.6,3.2,0x2b6bd6),barrel(19.6,3.2,0xd62b6b),barrel(18.6,4.15,0x2bd6a0)];
   // you can open them up and dig around inside!
   [[23.8,9.45,'crate'],[19.4,9.45,'crate'],[23.9,3.95,'box'],[18.6,3.2,'barrel'],[19.6,3.2,'barrel'],[18.6,4.15,'barrel']].forEach(([x,z,k],i)=>
-    houseInter.push({x,z,cond:()=>inStore(me.x,me.z),get verb(){return {crate:'Crack open the crate 🔨',box:'Rip open the box 📦',barrel:'Pop the barrel lid 🛢'}[k];},act:()=>lootBox(i,k)}));
+    houseInter.push({x,z,cond:()=>inStore(me.x,me.z),get verb(){const it=LOOT_ITEM[i];if(LOOT_OPENED[i]&&Date.now()-LOOT_OPENED[i]<180000)return it?'Take the '+it.name+' '+it.emo:'It\'s empty (refills soon)';return {crate:'Crack open the crate 🔨',box:'Rip open the box 📦',barrel:'Pop the barrel lid 🛢'}[k];},act:()=>lootBox(i,k)}));
   // once opened, the solid box swaps for a HOLLOW one you can look down into
   const woodM2=std(0xa8743c,{roughness:.8}),woodIn=std(0x6b4423,{roughness:.9}),cardM2=std(0xc9a26b,{roughness:.95}),cardIn=std(0x9a7a4a,{roughness:1}),straw=std(0xd9b860,{roughness:1});
   [[23.8,1.9,10.2,.3,.85,.85,.85,'crate'],[19.4,1.9,10.2,.4,.85,.85,.85,'crate'],[23.8,1.25,3.3,-.2,.7,.55,.6,'box'],[18.6,1.1,3.2,0,.84,1.1,.84,'barrel'],[19.6,1.1,3.2,0,.84,1.1,.84,'barrel'],[18.6,1.1,4.15,0,.84,1.1,.84,'barrel']].forEach(([x,y,z,ry,w,h,d,k],i)=>{
