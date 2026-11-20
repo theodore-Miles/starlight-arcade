@@ -2570,7 +2570,9 @@ function updateSecrets(){
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(OW,OD),fm);fl.rotation.x=-Math.PI/2;fl.position.set(OX,.003,OZ);fl.receiveShadow=true;house.add(fl);
   const wallPiece=house.children.find(o=>o.isMesh&&Math.abs(o.position.z+11.75)<.01);
   const wm=wallPiece?wallPiece.material:std(0x1a1238);
-  for(const zz of [7.15,-7.15]){noShadow(box(7.55,OH,.3,wm,-29.525,OH/2,zz,house));noShadow(box(7.55,OH,.3,wm,-20.475,OH/2,zz,house));noShadow(box(1.5,OH-3.65,.3,wm,-25,3.65+(OH-3.65)/2,zz,house));noShadow(box(1.5,1.55,.3,wm,-25,.775,zz,house));
+  for(const zz of [7.15,-7.15]){noShadow(box(7.55,OH,.3,wm,-29.525,OH/2,zz,house));noShadow(box(7.55,OH,.3,wm,-20.475,OH/2,zz,house));{// match the wall pattern on the little pieces above and below the poster hole
+      const piece=(h,y0)=>{const m=wm.clone();if(wm.map){m.map=wm.map.clone();m.map.needsUpdate=true;m.map.repeat.set(4*1.5/7.55,h/OH);m.map.offset.set(0,y0/OH);}return m;};
+      noShadow(box(1.5,OH-3.65,.3,piece(OH-3.65,3.65),-25,3.65+(OH-3.65)/2,zz,house));noShadow(box(1.5,1.55,.3,piece(1.55,0),-25,.775,zz,house));}
     // the tiny secret room behind it
     const sd=zz>0?1:-1,nk=std(0x0d0820,{roughness:1});
     box(1.7,3.7,.12,nk,-25,1.85,zz+sd*1.8,house);box(.12,3.7,1.8,nk,-25.85,1.85,zz+sd*.9,house);box(.12,3.7,1.8,nk,-24.15,1.85,zz+sd*.9,house);box(1.7,.12,1.8,nk,-25,3.76,zz+sd*.9,house);
