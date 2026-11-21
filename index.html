@@ -23,7 +23,7 @@
     sbP=new Promise(function(res){
       function load(ver,next){var s=document.createElement('script');
         s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@'+ver+'/dist/umd/supabase.js';
-        s.onload=function(){try{res(window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false},realtime:{params:{eventsPerSecond:20}}}));}catch(e){res(null);}};
+        s.onload=function(){try{res(window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false},realtime:{params:{eventsPerSecond:20},worker:true}}));}catch(e){res(null);}};
         s.onerror=function(){if(next)next();else res(null);};
         document.head.appendChild(s);}
       load('2.106.2',function(){load('2');});
@@ -55,12 +55,15 @@
         peers.set(e.peer,e);(cur?u:j).push(e);}
       if(j.length||u.length)emitChange(j,[],u);});
     ch.on('presence',{event:'leave'},function(m){var gone=[];(m.leftPresences||[]).forEach(function(lp){});var k=m.key;if(k&&peers.has(k)){gone.push(peers.get(k));peers.delete(k);}if(gone.length)emitChange([],gone,[]);});
+    document.addEventListener('visibilitychange',function(){dirty=true;if(connected)send();});
     ch.subscribe(function(status){if(status==='SUBSCRIBED'){connected=true;lastTrack=Date.now();ch.track({by:uid,s:mine,t:Date.now()});dirty=true;send();}else if(status==='CLOSED'||status==='CHANNEL_ERROR'||status==='TIMED_OUT'){connected=false;}});
     setInterval(function(){
       var now=Date.now();
       if(dirty&&now-lastSend>100)send();else if(now-lastSend>2500)send();
       if(connected&&now-lastTrack>1000){lastTrack=now;try{ch.track({by:uid,s:mine,t:now});}catch(e){}}
-      var gone=[];peers.forEach(function(e,k){if(now-e.updatedAt>9000){gone.push(e);peers.delete(k);}});if(gone.length)emitChange([],gone,[]);
+      // a player in a background tab sends slowly (browsers slow down hidden tabs), so keep them while they're still connected
+      var ps={};try{ps=ch.presenceState()||{};}catch(e){}
+      var gone=[];peers.forEach(function(e,k){var age=now-e.updatedAt;if((age>9000&&!ps[k])||age>180000){gone.push(e);peers.delete(k);}});if(gone.length)emitChange([],gone,[]);
     },100);
     return{
       presence:async function(patch){for(var k in patch){if(patch[k]===null)delete mine[k];else mine[k]=patch[k];}dirty=true;},
