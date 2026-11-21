@@ -60,7 +60,8 @@
     setInterval(function(){
       var now=Date.now();
       if(dirty&&now-lastSend>100)send();else if(now-lastSend>2500)send();
-      if(connected&&now-lastTrack>1000){lastTrack=now;try{ch.track({by:uid,s:mine,t:now});}catch(e){}}
+      // presence is only a slow backup (the server kicks clients that update it too often)
+      if(connected&&now-lastTrack>30000){lastTrack=now;try{ch.track({by:uid,s:mine,t:now});}catch(e){}}
       // a player in a background tab sends slowly (browsers slow down hidden tabs), so keep them while they're still connected
       var ps={};try{ps=ch.presenceState()||{};}catch(e){}
       var gone=[];peers.forEach(function(e,k){var age=now-e.updatedAt;if((age>9000&&!ps[k])||age>180000){gone.push(e);peers.delete(k);}});if(gone.length)emitChange([],gone,[]);
