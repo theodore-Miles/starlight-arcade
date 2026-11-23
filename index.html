@@ -730,6 +730,12 @@ const SCREEN={
       g.fillStyle=c;g.beginPath();g.moveTo(x,158);g.lineTo(x+9,176);g.lineTo(x-9,176);g.fill();
       g.fillStyle='#ffd36e';g.fillRect(x-2,176,4,3+(t%4));}
   },
+  boxblast(g,t){
+    g.fillStyle='#070b1c';g.fillRect(0,0,256,200);
+    for(let k=0;k<6;k++){const x=(k*61+t*.6)%290-20,y=60+((k*47)%110),c=['#c98b4a','#9aa3b5','#ffd700','#e5383b'][k%4];g.fillStyle=c;g.fillRect(x,y,22,22);}
+    const a=t*.05;g.strokeStyle='#46f3ff';g.lineWidth=4;g.shadowColor='#46f3ff';g.shadowBlur=10;g.beginPath();g.moveTo(40,170);g.lineTo(216,170-60*Math.sin(a));g.stroke();g.shadowBlur=0;
+    g.fillStyle='#ff5d73';g.beginPath();g.arc(40,170,9,0,7);g.fill();g.fillStyle='#4fc3ff';g.beginPath();g.arc(216,170-60*Math.sin(a),9,0,7);g.fill();
+  },
   generic(g,t,s){
     g.fillStyle='#050816';g.fillRect(0,0,256,200);
     g.fillStyle='rgba(255,255,255,.5)';for(let i=0;i<14;i++)g.fillRect((i*37+s.seed*50)%256,(i*53+t*1.5)%200,2,2);
@@ -1345,7 +1351,7 @@ let lastSent='',lastSendT=0,beat=0;
 function sendPresence(force){
   if(!room)return;const now=performance.now();
   if(!force&&now-lastSendT<70)return;
-  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,gs:me.lastSoda||null,hk:me.lastHackSend||null,tp:me.tpAt||0,hc:me.hHeld==null?-1:me.hHeld,hd:me.hDrops.map(d=>[d.id,d.x,d.z,d.y,d.k]),hg:me.hGrab||null,fx:[performance.now()<(me.rainbowUntil||0)?1:0,performance.now()<(me.ghostUntil||0)?1:0,+mySize().toFixed(2)],sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sr:[STORE.open?1:0,STORE.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
+  const p={x:+me.x.toFixed(2),y:+me.y.toFixed(2),z:+me.z.toFixed(2),ry:+me.ry.toFixed(2),lv:level,c:me.color,mv:me.moving?1:0,v:me.inVent?1:0,cr:me.crouch?1:0,st:me.stars,say:me.say,sayAt:me.sayAt,pu:me.push||0,hp:me.holding??-1,pb:(game&&game.isPool)?game.balls().map(b=>[Math.round(b.x),Math.round(b.y),b.ci|0]):null,pp:PLANTS.map(p=>[+p.x.toFixed(2),+p.z.toFixed(2),p.t,+p.y.toFixed(2)]),lt:[lights.on?1:0,lights.t],cl:[closet.open?1:0,closet.t],dw:[DRAWERS.reduce((m,d,i)=>m|(d.open?1<<i:0),0),drawerT],bb:[bbState.open?1:0,bbState.t],hid:me.hiding||'',sf:[safe.open?1:0,safe.t],sp:me.spraying?1:0,hb:me.lastHit,dr:me.lastDart,ds:me.dartPts,nm:me.name||'',wh:me.lastWhisper||null,pg:(game&&game.isPool)?game.pg():null,tv:me.tv||null,gv:me.lastGive||null,gs:me.lastSoda||null,hk:me.lastHackSend||null,tp:me.tpAt||0,hc:me.hHeld==null?-1:me.hHeld,bx:me.bx||null,hd:me.hDrops.map(d=>[d.id,d.x,d.z,d.y,d.k]),hg:me.hGrab||null,fx:[performance.now()<(me.rainbowUntil||0)?1:0,performance.now()<(me.ghostUntil||0)?1:0,+mySize().toFixed(2)],sc:me.score,th:me.lastThrow,az:pushArc.synced?+pushArc.z.toFixed(3):null,vm:[VEND.open?1:0,VEND.t],sr:[STORE.open?1:0,STORE.t],sd:[SECRETS[0].open?1:0,SECRETS[1].open?1:0,secretsT],ah:(game&&game.isHockey)?game.net():null,jb:[JUKE.song,JUKE.t],vo:VOICE.on?1:0,vg:VOICE.gen,rt:VOICE.out,k:beat};
   const s=JSON.stringify(p);if(s===lastSent)return;lastSent=s;lastSendT=now;
   room.presence(p).catch(()=>{});
 }
@@ -1417,6 +1423,14 @@ function upsertPeer(p){
     if(e.hgT===undefined)e.hgT=pr.hg[2];
     else if(pr.hg[2]!==e.hgT){e.hgT=pr.hg[2];if(myPeer&&pr.hg[0]===myPeer){const n=me.hDrops.length;me.hDrops=me.hDrops.filter(d=>d.id!==pr.hg[1]);if(me.hDrops.length!==n)sendPresence(true);}}}
   else if(e.hgT===undefined)e.hgT=0;
+  e.bx=null;
+  if(pr.bx&&typeof pr.bx==='object'&&!Array.isArray(pr.bx)){const b=pr.bx,o={x:clamp(num(b.x,480),0,960),y:clamp(num(b.y,320),0,640),a:num(b.a,0),
+      g:Number.isInteger(b.g)&&b.g>=0&&b.g<4?b.g:0,f:b.f===1?1:0,go:Number.isInteger(b.go)?b.go:0};
+    if(Array.isArray(b.sh)&&b.sh.length===3&&Number.isInteger(b.sh[0]))o.sh=[b.sh[0],num(b.sh[1],0),Number.isInteger(b.sh[2])?clamp(b.sh[2],0,3):0];
+    o.h=Array.isArray(b.h)?b.h.slice(-25).filter(x=>Array.isArray(x)&&x.length===3&&x.every(Number.isInteger)):[];
+    if(b.s&&typeof b.s==='object'){const q=b.s;o.s={r:Number.isInteger(q.r)?q.r:0,st:['wait','play','over'].includes(q.st)?q.st:'wait',t:clamp(num(q.t,0),0,999),sc:Math.max(0,Math.floor(num(q.sc,0))),
+      b:Array.isArray(q.b)?q.b.slice(0,24).filter(x=>Array.isArray(x)&&x.length===5&&x.every(v=>typeof v==='number'&&isFinite(v))).map(x=>[x[0]|0,x[1],x[2],clamp(x[3]|0,0,3),x[4]|0]):[]};}
+    e.bx=o;}
   e.hc=(Number.isInteger(pr.hc)&&pr.hc>=0&&pr.hc<HSODAS.length)?pr.hc:-1;
   e.fx=(Array.isArray(pr.fx)&&pr.fx.length===3)?[pr.fx[0]===1,pr.fx[1]===1,clamp(num(pr.fx[2],1),.3,2.2)]:null;
   if(typeof pr.tp==='number'&&isFinite(pr.tp)){
@@ -2811,6 +2825,181 @@ function Teleporter(){
     draw(){termBg('🌐 HOLOGRAM TELEPORTER');txt('Where do you want to go?',W/2,120,20,'#c9a8ff','center');
       SPOTS.forEach(([n,x,z,ry],i)=>{if(btn(W/2-200,160+i*80,400,62,n,false,'#46f3ff')){closeGame();materializeAt(x,z,ry,n.slice(2).trim());}});}};
 }
+// ======================================================================
+// BOX BLASTERS: a co-op laser game on the arcade machine in the STAFF storage room.
+// Everyone at the machine plays together: blast as many boxes as you can in 90 seconds.
+// One player (the "host") runs the boxes; everyone else sends the hits they make.
+// ======================================================================
+function bbBeep(f,len,type,vol){try{const ac=window._ac||(window._ac=new (window.AudioContext||window.webkitAudioContext)());const o=ac.createOscillator(),g=ac.createGain(),t0=ac.currentTime;
+  o.type=type||'square';o.frequency.value=f;g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol||.08,t0+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+(len||.1));
+  o.connect(g);g.connect(ac.destination);o.start(t0);o.stop(t0+(len||.1)+.02);}catch(e){}}
+const BB_GUNS=[
+  {n:'Laser Blaster',e:'🔫',col:'#ff4b5c',rate:230,dmg:1,spd:900,r:5,shots:1},
+  {n:'Spread Shot',e:'🌟',col:'#ffd36e',rate:430,dmg:1,spd:780,r:5,shots:3},
+  {n:'Mega Cannon',e:'💣',col:'#c58bff',rate:850,dmg:3,spd:560,r:13,shots:1,pierce:true},
+  {n:'Link Beam',e:'⚡',col:'#46f3ff',beam:true},
+];
+const BB_KINDS=[{n:'Wood box',col:'#c98b4a',edge:'#7a4f22',hp:1,pts:10,sz:36},{n:'Metal box',col:'#9aa3b5',edge:'#5b6272',hp:3,pts:30,sz:42},
+  {n:'Gold box',col:'#ffd700',edge:'#b38f00',hp:1,pts:50,sz:28},{n:'TNT',col:'#e5383b',edge:'#7a1012',hp:1,pts:20,sz:36}];
+const BB_AX=[24,78,936,604];   // arena: left, top, right, bottom
+const BB={sim:[],view:new Map(),state:{r:0,st:'wait',t:0,sc:0,b:[]},nextId:1,spawnT:0,elapsed:0,lastSeq:{},wasHost:false,
+  bolts:[],fx:[],seenSh:{},hseq:0,shseq:0,lastShot:0,beamHit:{},best:0,paid:-1,prev:new Map(),droneA:0,lastHostSeen:0};
+try{BB.best=+localStorage.getItem('boxblast_best')||0;}catch(e){}
+function bbMyId(){return myPeer||'me';}
+function bbPlayers(){const L=[];
+  if(me.bx)L.push({id:bbMyId(),me:true,x:me.bx.x,y:me.bx.y,a:me.bx.a,g:me.bx.g,f:me.bx.f,h:me.bx.h,go:me.bx.go,nm:me.name||'You',col:me.color});
+  for(const [id,e] of peers)if(e.bx&&e.lv===0)L.push({id,x:e.bx.x,y:e.bx.y,a:e.bx.a,g:e.bx.g,f:e.bx.f,h:e.bx.h,go:e.bx.go,sh:e.bx.sh,s:e.bx.s,nm:e.nm||names.get(e.by)||'Player',col:e.color||'#fff'});
+  return L;}
+function bbHostId(L){let h=null;for(const p of L)if(h===null||p.id<h)h=p.id;return h;}
+function bbDamage(b,d){b.hp-=d;}
+function bbHostStep(L,dt){
+  let st=BB.state;
+  if(!BB.wasHost){   // just became the host: carry on from the last thing the old host said, and skip hits we already counted
+    BB.wasHost=true;BB.state={r:st.r,st:st.st,t:st.t,sc:st.sc,b:st.b.slice()};BB.sim=st.b.map(a=>({id:a[0],x:a[1],y:a[2],k:a[3],hp:a[4],vx:(Math.random()-.5)*120,vy:(Math.random()-.5)*120,in:true}));
+    BB.nextId=Math.max(BB.nextId,...BB.sim.map(b=>b.id+1),1);
+    for(const p of L)BB.lastSeq[p.id]=(p.h&&p.h.length)?Math.max(...p.h.map(h=>h[0])):0;st=BB.state;}
+  // start a round when someone asks
+  if(st.st!=='play'&&L.some(p=>p.go===st.r+1)){st.r++;st.st='play';st.t=90;st.sc=0;BB.sim=[];BB.elapsed=0;BB.spawnT=0;}
+  // everyone's hits
+  for(const p of L){const last=BB.lastSeq[p.id]||0;let mx=last;
+    for(const [seq,id,d] of (p.h||[]))if(seq>last){mx=Math.max(mx,seq);if(st.st==='play'){const b=BB.sim.find(b=>b.id===id);if(b)bbDamage(b,Math.min(3,Math.max(1,d)));}}
+    BB.lastSeq[p.id]=mx;}
+  if(st.st==='play'){
+    st.t=Math.max(0,st.t-dt);BB.elapsed+=dt;
+    BB.spawnT-=dt;
+    if(BB.spawnT<=0&&BB.sim.length<18){BB.spawnT=Math.max(.35,1.1-BB.elapsed*.009)/Math.max(1,Math.sqrt(L.length*.8));
+      const r=Math.random(),k=r<.5?0:r<.75?1:r<.85?2:3,side=Math.random()*4|0,sp=(k===2?150:55)+Math.random()*50;
+      const [x0,y0,x1,y1]=BB_AX;let x,y;
+      if(side===0){x=x0+Math.random()*(x1-x0);y=y0-30;}else if(side===1){x=x0+Math.random()*(x1-x0);y=y1+30;}else if(side===2){x=x0-30;y=y0+Math.random()*(y1-y0);}else{x=x1+30;y=y0+Math.random()*(y1-y0);}
+      const tx=480+(Math.random()-.5)*400,ty=340+(Math.random()-.5)*250,d=Math.hypot(tx-x,ty-y)||1;
+      BB.sim.push({id:BB.nextId++,x,y,k,hp:BB_KINDS[k].hp,vx:(tx-x)/d*sp,vy:(ty-y)/d*sp,in:false});}
+    for(const b of BB.sim){b.x+=b.vx*dt;b.y+=b.vy*dt;const s=BB_KINDS[b.k].sz/2,[x0,y0,x1,y1]=BB_AX;
+      if(!b.in&&b.x>x0+s&&b.x<x1-s&&b.y>y0+s&&b.y<y1-s)b.in=true;
+      if(b.in){if(b.x<x0+s||b.x>x1-s)b.vx*=-1;if(b.y<y0+s||b.y>y1-s)b.vy*=-1;b.x=clamp(b.x,x0+s,x1-s);b.y=clamp(b.y,y0+s,y1-s);}}
+    // boom: TNT hurts everything near it (chain reactions!)
+    let again=true;while(again){again=false;for(const b of BB.sim)if(b.hp<=0&&!b.dead){b.dead=true;st.sc+=BB_KINDS[b.k].pts;
+      if(b.k===3)for(const o of BB.sim)if(!o.dead&&o!==b&&Math.hypot(o.x-b.x,o.y-b.y)<130){o.hp-=3;again=true;}}}
+    BB.sim=BB.sim.filter(b=>!b.dead);
+    if(st.t<=0){st.st='over';BB.sim=[];}}
+  st.b=BB.sim.map(b=>[b.id,Math.round(b.x),Math.round(b.y),b.k,b.hp]);
+  me.bx.s={r:st.r,st:st.st,t:Math.round(st.t*10)/10,sc:st.sc,b:st.b};
+}
+function bbFire(now){const g=BB_GUNS[me.bx.g];if(g.beam||now-BB.lastShot<g.rate)return;BB.lastShot=now;
+  const a=me.bx.a,spread=g.shots===3?[-.22,0,.22]:[0];
+  for(const o of spread)BB.bolts.push({x:me.bx.x+Math.cos(a+o)*26,y:me.bx.y+Math.sin(a+o)*26,vx:Math.cos(a+o)*g.spd,vy:Math.sin(a+o)*g.spd,r:g.r,dmg:g.dmg,col:g.col,mine:true,pierce:!!g.pierce,hit:new Set(),life:1.4});
+  me.bx.sh=[++BB.shseq,+a.toFixed(2),me.bx.g];bbBeep(g.shots===3?700:g.pierce?180:900,.06,'square',.05);}
+function bbHit(id,d){me.bx.h.push([++BB.hseq,id,d]);if(me.bx.h.length>20)me.bx.h.shift();}
+function segDist(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy||1;let t=((px-ax)*dx+(py-ay)*dy)/l;t=clamp(t,0,1);return Math.hypot(px-(ax+dx*t),py-(ay+dy*t));}
+function bbPartner(p,L){let best=null,bd=1e9;for(const o of L)if(o.id!==p.id){const d=Math.hypot(o.x-p.x,o.y-p.y);if(d<bd){bd=d;best=o;}}
+  if(best)return best;const a=BB.droneA;return{x:480+Math.cos(a)*220,y:340+Math.sin(a)*150,drone:true};}
+function BoxBlasters(){
+  let last=performance.now();
+  return{
+    init(){me.bx={x:200+Math.random()*560,y:520,a:-Math.PI/2,g:0,f:0,h:[],go:0};BB.wasHost=false;BB.bolts=[];BB.fx=[];sendPresence(true);},
+    onClose(){me.bx=null;BB.wasHost=false;sendPresence(true);},
+    update(){
+      const now=performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;const b=me.bx;if(!b)return;
+      // move + aim + guns
+      const sp=320*dt;if(K.KeyW||K.ArrowUp)b.y-=sp;if(K.KeyS||K.ArrowDown)b.y+=sp;if(K.KeyA||K.ArrowLeft)b.x-=sp;if(K.KeyD||K.ArrowRight)b.x+=sp;
+      b.x=+clamp(b.x,BB_AX[0]+16,BB_AX[2]-16).toFixed(1);b.y=+clamp(b.y,BB_AX[1]+16,BB_AX[3]-16).toFixed(1);
+      b.a=+Math.atan2(mouse.y-b.y,mouse.x-b.x).toFixed(2);
+      for(let i=0;i<4;i++)if(P.has('Digit'+(i+1)))b.g=i;if(P.has('KeyQ'))b.g=(b.g+1)%4;
+      b.f=(mouse.down||K.Space)?1:0;
+      const L=bbPlayers(),host=bbHostId(L),amHost=host===bbMyId();
+      // who is in charge of the boxes?
+      if(amHost)bbHostStep(L,dt);
+      else{BB.wasHost=false;delete b.s;const hp=L.find(p=>p.id===host);if(hp&&hp.s){BB.state=hp.s;BB.lastHostSeen=now;}}
+      const st=BB.state;
+      if(st.st!=='play'&&(P.has('Enter')||(mouse.clicked&&mouse.y>430&&mouse.y<500&&mouse.x>330&&mouse.x<630))){b.go=st.r+1;}
+      // our picture of the boxes (smoothly following the host's)
+      const seen=new Set();
+      for(const [id,x,y,k,hp] of st.b){seen.add(id);let v=BB.view.get(id);
+        if(!v){v={id,x,y,k,hp,tx:x,ty:y,gone:0};BB.view.set(id,v);}
+        v.tx=x;v.ty=y;v.k=k;if(!v.pend||now-v.pend>700){v.hp=hp;v.pend=0;if(v.gone&&now-v.gone>700)v.gone=0;}
+        if(amHost){v.x=x;v.y=y;}else{v.x+=(v.tx-v.x)*Math.min(1,dt*12);v.y+=(v.ty-v.y)*Math.min(1,dt*12);}}
+      for(const [id,v] of BB.view)if(!seen.has(id)){BB.view.delete(id);
+        if(st.st==='play'){const K2=BB_KINDS[v.k];for(let i=0;i<(v.k===3?26:12);i++){const an=Math.random()*6.28,s2=60+Math.random()*(v.k===3?320:180);
+          BB.fx.push({x:v.x,y:v.y,vx:Math.cos(an)*s2,vy:Math.sin(an)*s2,life:.6+Math.random()*.4,col:v.k===3?(Math.random()<.5?'#ffb347':'#ff3b3b'):K2.col,sz:v.k===3?7:5});}
+          BB.fx.push({ring:1,x:v.x,y:v.y,life:.4,max:v.k===3?130:40,col:v.k===3?'#ffb347':'#ffffff'});bbBeep(v.k===3?70:220,.15,'sawtooth',.06);}}
+      // shooting
+      if(b.f&&st.st!=='over')bbFire(now);
+      for(const t of BB.bolts){t.x+=t.vx*dt;t.y+=t.vy*dt;t.life-=dt;
+        if(t.mine&&st.st==='play')for(const v of BB.view.values()){if(v.gone||t.hit.has(v.id))continue;const s=BB_KINDS[v.k].sz/2;
+          if(Math.abs(t.x-v.x)<s+t.r&&Math.abs(t.y-v.y)<s+t.r){t.hit.add(v.id);bbHit(v.id,t.dmg);v.hp-=t.dmg;v.pend=now;v.flash=now;if(v.hp<=0)v.gone=now;if(!t.pierce){t.life=0;break;}}}
+        if(t.x<0||t.x>960||t.y<60||t.y>620)t.life=0;}
+      BB.bolts=BB.bolts.filter(t=>t.life>0);
+      // other players' shots (just for show)
+      for(const p of L)if(!p.me&&p.sh){const ls=BB.seenSh[p.id];if(ls===undefined){BB.seenSh[p.id]=p.sh[0];continue;}
+        if(p.sh[0]>ls){const g=BB_GUNS[p.sh[2]];const n=Math.min(2,p.sh[0]-ls);BB.seenSh[p.id]=p.sh[0];
+          if(!g.beam)for(let k=0;k<n;k++)for(const o of (g.shots===3?[-.22,0,.22]:[0])){const a=p.sh[1]+o;BB.bolts.push({x:p.x+Math.cos(a)*26,y:p.y+Math.sin(a)*26,vx:Math.cos(a)*g.spd,vy:Math.sin(a)*g.spd,r:g.r,col:g.col,mine:false,hit:new Set(),life:1.4});}}}
+      // LINK BEAM: a laser between you and your teammate. Anything touching it breaks!
+      BB.droneA+=dt*.6;
+      if(b.g===3&&b.f&&st.st==='play'){const pt=bbPartner(L.find(p=>p.me),L);
+        for(const v of BB.view.values()){if(v.gone)continue;const s=BB_KINDS[v.k].sz/2;
+          if(segDist(v.x,v.y,b.x,b.y,pt.x,pt.y)<s+6&&now-(BB.beamHit[v.id]||0)>260){BB.beamHit[v.id]=now;bbHit(v.id,1);v.hp-=1;v.pend=now;v.flash=now;if(v.hp<=0)v.gone=now;}}}
+      for(const f of BB.fx){f.life-=dt;if(!f.ring){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.94;f.vy*=.94;}}
+      BB.fx=BB.fx.filter(f=>f.life>0);
+      // coins for the team when the round ends
+      if(st.st==='over'&&BB.paid!==st.r&&st.r>0){BB.paid=st.r;const c=Math.min(10,Math.floor(st.sc/100));
+        if(st.sc>BB.best){BB.best=st.sc;try{localStorage.setItem('boxblast_best',String(st.sc));}catch(e){}}
+        if(c>0){me.score+=c;updInv();toast('🔫 BOX BLASTERS! Your team scored '+st.sc+'  +🪙 '+c);}}
+    },
+    draw(){
+      const now=performance.now(),st=BB.state,L=bbPlayers(),b=me.bx;if(!b)return;
+      ctx.fillStyle='#070b1c';ctx.fillRect(0,0,W,H);
+      const [x0,y0,x1,y1]=BB_AX;ctx.strokeStyle='rgba(70,243,255,.08)';ctx.lineWidth=1;
+      for(let x=x0;x<=x1;x+=40){ctx.beginPath();ctx.moveTo(x,y0);ctx.lineTo(x,y1);ctx.stroke();}for(let y=y0;y<=y1;y+=40){ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();}
+      ctx.strokeStyle='#46f3ff';ctx.lineWidth=3;ctx.strokeRect(x0,y0,x1-x0,y1-y0);
+      // HUD
+      txt('🔫 BOX BLASTERS',24,40,26,'#46f3ff');
+      txt('TEAM SCORE: '+st.sc,480,40,24,'#ffd36e','center');
+      txt(st.st==='play'?'⏱ '+Math.ceil(st.t)+'s':st.st==='over'?'TIME\'S UP!':'',936,40,22,st.t<10&&st.st==='play'?'#ff4b5c':'#fff','right');
+      txt('👥 '+L.length+' blaster'+(L.length===1?'':'s')+'  ·  Best: '+BB.best,24,64,14,'#9fb3d9','left',false);
+      // boxes
+      for(const v of BB.view.values()){if(v.gone)continue;const K2=BB_KINDS[v.k],s=K2.sz,fl=now-(v.flash||0)<90;
+        ctx.save();ctx.translate(v.x,v.y);ctx.rotate(Math.sin(v.id*7.3)*.3);
+        ctx.fillStyle=fl?'#fff':K2.col;ctx.fillRect(-s/2,-s/2,s,s);ctx.strokeStyle=K2.edge;ctx.lineWidth=3;ctx.strokeRect(-s/2,-s/2,s,s);
+        if(v.k===0){ctx.beginPath();ctx.moveTo(-s/2,-s/2);ctx.lineTo(s/2,s/2);ctx.moveTo(s/2,-s/2);ctx.lineTo(-s/2,s/2);ctx.stroke();}
+        if(v.k===1){ctx.fillStyle=K2.edge;for(const [a2,b2] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ctx.beginPath();ctx.arc(a2*s*.33,b2*s*.33,2.5,0,7);ctx.fill();}
+          txt(String(Math.max(1,v.hp)),0,6,15,'#fff','center');}
+        if(v.k===2){ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillRect(-s/2+4,-s/2+4,5,s-8);}
+        if(v.k===3)txt('TNT',0,6,13,'#fff','center');
+        ctx.restore();}
+      // link beams
+      for(const p of L)if(p.g===3&&p.f&&st.st!=='over'){const pt=bbPartner(p,L);
+        const w=6+Math.sin(now/40)*2;ctx.save();ctx.shadowColor='#46f3ff';ctx.shadowBlur=18;ctx.strokeStyle='rgba(70,243,255,.85)';ctx.lineWidth=w;
+        ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(pt.x,pt.y);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.restore();}
+      // the helper drone (your beam partner when you're playing alone)
+      if(L.length===1){const pt=bbPartner(L[0],L);txt('🤖',pt.x,pt.y+10,28,'#fff','center',false);}
+      // bolts + sparks
+      for(const t of BB.bolts){ctx.save();ctx.shadowColor=t.col;ctx.shadowBlur=12;ctx.fillStyle=t.col;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,7);ctx.fill();ctx.restore();}
+      for(const f of BB.fx){ctx.globalAlpha=Math.max(0,Math.min(1,f.life*2));
+        if(f.ring){ctx.strokeStyle=f.col;ctx.lineWidth=4;ctx.beginPath();ctx.arc(f.x,f.y,f.max*(1-f.life/.4),0,7);ctx.stroke();}
+        else{ctx.fillStyle=f.col;ctx.fillRect(f.x-f.sz/2,f.y-f.sz/2,f.sz,f.sz);}}
+      ctx.globalAlpha=1;
+      // players
+      for(const p of L){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);
+        ctx.fillStyle='#222';ctx.fillRect(8,-4,22,8);ctx.fillStyle=BB_GUNS[p.g].col;ctx.fillRect(24,-3,8,6);ctx.restore();
+        ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,15,0,7);ctx.fill();ctx.strokeStyle=p.me?'#fff':'rgba(255,255,255,.5)';ctx.lineWidth=p.me?3:2;ctx.stroke();
+        txt((p.me?'⭐ ':'')+String(p.nm).slice(0,12),p.x,p.y-24,13,'#fff','center');txt(BB_GUNS[p.g].e,p.x,p.y+6,14,'#000','center',false);}
+      // gun bar
+      BB_GUNS.forEach((g,i)=>{const x=150+i*170,on=b.g===i;ctx.fillStyle=on?'rgba(70,243,255,.25)':'rgba(255,255,255,.06)';ctx.fillRect(x,608,160,28);
+        ctx.strokeStyle=on?g.col:'rgba(255,255,255,.2)';ctx.lineWidth=2;ctx.strokeRect(x,608,160,28);txt((i+1)+' '+g.e+' '+g.n,x+80,627,14,on?'#fff':'#9fb3d9','center',on);});
+      // lobby / round over screens
+      if(st.st!=='play'){ctx.fillStyle='rgba(7,11,28,.82)';ctx.fillRect(170,150,620,370);ctx.strokeStyle='#46f3ff';ctx.lineWidth=3;ctx.strokeRect(170,150,620,370);
+        if(st.st==='over'){txt('⏰ TIME\'S UP!',480,205,40,'#ffd36e','center');txt('Your team blasted '+st.sc+' points!',480,250,24,'#fff','center');
+          txt(st.sc>=BB.best&&st.sc>0?'🏆 NEW TEAM BEST!':'Best: '+BB.best,480,285,18,'#7fffd4','center');}
+        else{txt('🔫 BOX BLASTERS',480,200,40,'#46f3ff','center');txt('Team up and blast as many boxes as you can in 90 seconds!',480,238,17,'#fff','center',false);
+          txt('📦 Wood 10  ·  🔩 Metal 30 (3 hits)  ·  ✨ Gold 50  ·  🧨 TNT blows up boxes near it!',480,268,14,'#9fb3d9','center',false);}
+        txt('WASD move · mouse aim · click / Space shoot · 1-4 or Q switch guns',480,310,15,'#c9d6f2','center',false);
+        txt('⚡ LINK BEAM makes a laser between you and your teammate — boxes touching it break!',480,340,15,'#46f3ff','center',false);
+        txt('Players here: '+L.map(p=>p.nm).join(', '),480,380,15,'#ffd36e','center',false);
+        const waiting=L.some(p=>p.go===st.r+1);
+        ctx.fillStyle=waiting?'#2a7a4a':'#46f3ff';ctx.fillRect(330,430,300,62);txt(waiting?'Starting…':'▶ START (Enter)',480,470,24,'#07101f','center');
+        txt('Esc = leave the machine',480,505,13,'#9fb3d9','center',false);}
+    }
+  };
+}
 function runCommand(cmd){
   const parts=cmd.trim().split(/\s+/);const c=parts[0].toLowerCase();
   if(c==='/speak'||c==='/talk'||c==='/mic'){setVoice(!VOICE.on);return;}
@@ -3188,9 +3377,10 @@ function setStore(open){STORE.open=open;STORE.t=Date.now();sendPresence(true);to
         else box(.36,.3,.4,(k+j)%3===1?std(0xc9a26b,{roughness:.95}):std(c,{roughness:.6}),-.95+j*.48,y+.17,0,g);}}
     g.position.set(x,0,z);g.rotation.y=ry;g.traverse(o=>{if(o.isMesh)o.castShadow=true;});house.add(g);houseCols.push({x,z,hw:ry?.3:1.25,hd:ry?1.25:.3,top:2.2});};
   shelf(24.65,6.6,Math.PI/2);
-  // a broken arcade machine waiting to be fixed
-  const broken=makeCabinet({title:'OUT OF ORDER',kind:'soon',icon:'🔧',col:'#888888',sub:'BROKEN'},21.7,3.15,0);
+  // BOX BLASTERS: a co-op laser game (it used to be broken!)
+  makeCabinet({title:'BOX BLASTERS',kind:'boxblast',icon:'🔫',col:'#46f3ff',sub:'CO-OP!'},21.7,3.15,0);
   houseCols.push({x:21.7,z:3.15,hw:.7,hd:.55,top:2.6});
+  houseInter.push({x:21.7,z:4.25,cond:()=>inStore(me.x,me.z),get verb(){const n=[...peers.values()].filter(e=>e.bx&&e.lv===0).length;return 'Play BOX BLASTERS 🔫'+(n?' ('+n+' playing!)':' (co-op)');},act:()=>startGame(BoxBlasters())});
   // a ladder leaning on the wall
   const lad=new THREE.Group();for(const sx of [-.25,.25])box(.06,3,.06,std(0xd9a860),sx,1.5,0,lad);for(let k=0;k<8;k++)box(.5,.04,.04,std(0xd9a860),0,.3+k*.35,0,lad);
   lad.position.set(21.6,0,11.0);lad.rotation.x=-.18;house.add(lad);
