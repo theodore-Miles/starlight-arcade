@@ -2855,7 +2855,7 @@ function bbDamage(b,d){b.hp-=d;}
 function bbHostStep(L,dt){
   let st=BB.state;
   if(!BB.wasHost){   // just became the host: carry on from the last thing the old host said, and skip hits we already counted
-    BB.wasHost=true;BB.state={r:st.r,st:st.st,t:st.t,sc:st.sc,b:st.b.slice()};BB.sim=st.b.map(a=>({id:a[0],x:a[1],y:a[2],k:a[3],hp:a[4],vx:(Math.random()-.5)*120,vy:(Math.random()-.5)*120,in:true}));
+    BB.wasHost=true;BB.state={r:st.r,st:st.st,t:st.t,sc:st.sc,b:st.b.slice()};BB.sim=st.b.map(a=>({id:a[0],x:a[1],y:a[2],k:a[3],hp:a[4],vx:0,vy:0,in:true}));
     BB.nextId=Math.max(BB.nextId,...BB.sim.map(b=>b.id+1),1);
     for(const p of L)BB.lastSeq[p.id]=(p.h&&p.h.length)?Math.max(...p.h.map(h=>h[0])):0;st=BB.state;}
   // start a round when someone asks
@@ -2868,11 +2868,11 @@ function bbHostStep(L,dt){
     st.t=Math.max(0,st.t-dt);BB.elapsed+=dt;
     BB.spawnT-=dt;
     if(BB.spawnT<=0&&BB.sim.length<18){BB.spawnT=Math.max(.35,1.1-BB.elapsed*.009)/Math.max(1,Math.sqrt(L.length*.8));
-      const r=Math.random(),k=r<.5?0:r<.75?1:r<.85?2:3,side=Math.random()*4|0,sp=(k===2?150:55)+Math.random()*50;
-      const [x0,y0,x1,y1]=BB_AX;let x,y;
-      if(side===0){x=x0+Math.random()*(x1-x0);y=y0-30;}else if(side===1){x=x0+Math.random()*(x1-x0);y=y1+30;}else if(side===2){x=x0-30;y=y0+Math.random()*(y1-y0);}else{x=x1+30;y=y0+Math.random()*(y1-y0);}
-      const tx=480+(Math.random()-.5)*400,ty=340+(Math.random()-.5)*250,d=Math.hypot(tx-x,ty-y)||1;
-      BB.sim.push({id:BB.nextId++,x,y,k,hp:BB_KINDS[k].hp,vx:(tx-x)/d*sp,vy:(ty-y)/d*sp,in:false});}
+      const r=Math.random(),k=r<.5?0:r<.75?1:r<.85?2:3,[x0,y0,x1,y1]=BB_AX;
+      // boxes stand still: pop one up in an empty spot, not right on top of a player
+      for(let tries=0;tries<25;tries++){const x=x0+50+Math.random()*(x1-x0-100),y=y0+50+Math.random()*(y1-y0-100);
+        if(L.some(p=>Math.hypot(p.x-x,p.y-y)<110))continue;if(BB.sim.some(o=>Math.abs(o.x-x)<50&&Math.abs(o.y-y)<50))continue;
+        BB.sim.push({id:BB.nextId++,x,y,k,hp:BB_KINDS[k].hp,vx:0,vy:0,in:true});break;}}
     for(const b of BB.sim){b.x+=b.vx*dt;b.y+=b.vy*dt;const s=BB_KINDS[b.k].sz/2,[x0,y0,x1,y1]=BB_AX;
       if(!b.in&&b.x>x0+s&&b.x<x1-s&&b.y>y0+s&&b.y<y1-s)b.in=true;
       if(b.in){if(b.x<x0+s||b.x>x1-s)b.vx*=-1;if(b.y<y0+s||b.y>y1-s)b.vy*=-1;b.x=clamp(b.x,x0+s,x1-s);b.y=clamp(b.y,y0+s,y1-s);}}
@@ -2916,9 +2916,17 @@ const BB3=(function(){
   const geos=BB_KINDS.map(k=>new THREE.BoxGeometry(k.sz/40,k.sz/40,k.sz/40));
   const flashM=new THREE.MeshBasicMaterial({color:0xffffff});
   const fuseM=new THREE.MeshBasicMaterial({color:0xffd36e});
-  return{sc,cam,mats,geos,flashM,fuseM,boxes:new Map(),players:new Map(),bolts:new Map(),fx:new Map(),beams:new Map(),drone:null,ray:new THREE.Raycaster(),plane:new THREE.Plane(new THREE.Vector3(0,1,0),0),v:new THREE.Vector3()};
+  cam.fov=72;sc.add(cam);
+  const vm=new THREE.Group();vm.position.set(.3,-.3,-.6);cam.add(vm);
+  const vb=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,.6),new THREE.MeshStandardMaterial({color:0x2a2f3d,metalness:.7,roughness:.3}));vm.add(vb);
+  const vh=new THREE.Mesh(new THREE.BoxGeometry(.1,.22,.12),new THREE.MeshStandardMaterial({color:0x1a1d26}));vh.position.set(0,-.14,.18);vh.rotation.x=.3;vm.add(vh);
+  const vtip=new THREE.Mesh(new THREE.BoxGeometry(.14,.14,.12),new THREE.MeshBasicMaterial({color:0xff4b5c}));vtip.position.z=-.32;vm.add(vtip);
+  const vflash=new THREE.Mesh(new THREE.SphereGeometry(.1,10,8),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.9}));vflash.position.z=-.45;vflash.visible=false;vm.add(vflash);
+  const camLight=new THREE.PointLight(0xffffff,.35,6);cam.add(camLight);
+  return{vm,vtip,vflash,sc,cam,mats,geos,flashM,fuseM,boxes:new Map(),players:new Map(),bolts:new Map(),fx:new Map(),beams:new Map(),drone:null,ray:new THREE.Raycaster(),plane:new THREE.Plane(new THREE.Vector3(0,1,0),0),v:new THREE.Vector3()};
 })();
 const bbW=(x,y)=>[(x-480)/40,(y-341)/40];
+mini.addEventListener('mousemove',e=>{if(game&&game.bb3&&document.pointerLockElement===mini){BB.yaw+=(e.movementX||0)*.0026;BB.pitch=clamp(BB.pitch-(e.movementY||0)*.0026,-.9,.7);}});
 function bbMouseArena(){const n=new THREE.Vector2(mouse.x/W*2-1,-(mouse.y/H*2-1));BB3.ray.setFromCamera(n,BB3.cam);
   const hit=BB3.ray.ray.intersectPlane(BB3.plane,BB3.v);if(!hit)return null;return[hit.x*40+480,hit.z*40+341];}
 function bbLabel(text,col){const c=document.createElement('canvas');c.width=256;c.height=48;const g=c.getContext('2d');g.font='bold 28px system-ui';g.textAlign='center';
@@ -2941,9 +2949,9 @@ function bbSync3D(){
     if(!m){m=new THREE.Mesh(BB3.geos[v.k],BB3.mats[v.k]);m.userData.k=v.k;S.add(m);BB3.boxes.set(v.id,m);
       if(v.k===3){const f=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),BB3.fuseM);f.position.y=BB_KINDS[3].sz/80+.1;m.add(f);}}
     const [x,z]=bbW(v.x,v.y),h=BB_KINDS[v.k].sz/80;
-    m.position.set(x,h+Math.sin(now/400+v.id)*.06,z);m.rotation.y=v.id*1.7+now/2500*(v.k===2?3:1);
+    m.position.set(x,h,z);m.rotation.y=v.id*1.7+(v.k===2?now/800:0);
     m.material=now-(v.flash||0)<90?BB3.flashM:BB3.mats[v.k];
-    const sq=v.k===1?.85+.05*Math.max(1,v.hp):1;m.scale.setScalar(sq);}
+    const sq=(v.k===1?.85+.05*Math.max(1,v.hp):1)*Math.min(1,(now-(v.born||0))/300);m.scale.setScalar(Math.max(.01,sq));}
   for(const [id,m] of BB3.boxes)if(!seen.has(id)){S.remove(m);BB3.boxes.delete(id);}
   // players
   const ps=new Set();
@@ -2952,7 +2960,12 @@ function bbSync3D(){
       const lb=bbLabel((p.me?'⭐ ':'')+String(p.nm).slice(0,14),p.me?'#ffd36e':'#ffffff');lb.position.y=1.65;g.add(lb);S.add(g);BB3.players.set(p.id,g);}
     const [x,z]=bbW(p.x,p.y);g.position.x+=(x-g.position.x)*(p.me?1:.35);g.position.z+=(z-g.position.z)*(p.me?1:.35);
     g.userData.gun.rotation.y=-p.a;g.userData.face.rotation.y=-p.a;    // gun + visor face where they aim
-    g.userData.tip.material.color.set(BB_GUNS[p.g].col);}
+    g.userData.tip.material.color.set(BB_GUNS[p.g].col);g.visible=!p.me;}
+  // first-person camera
+  {const b=me.bx;if(b){const [x,z]=bbW(b.x,b.y),cp=Math.cos(BB.pitch);BB3.cam.position.set(x,1.05,z);
+    BB3.cam.lookAt(x+Math.cos(BB.yaw)*cp,1.05+Math.sin(BB.pitch),z+Math.sin(BB.yaw)*cp);
+    BB3.vtip.material.color.set(BB_GUNS[b.g].col);const kick=Math.max(0,1-(now-BB.lastShot)/120);BB3.vm.position.z=-.6+kick*.08;BB3.vflash.visible=kick>.5&&!BB_GUNS[b.g].beam;
+    BB3.vflash.material.color.set(BB_GUNS[b.g].col);}}
   for(const [id,g] of BB3.players)if(!ps.has(id)){S.remove(g);BB3.players.delete(id);}
   // laser bolts
   const bs=new Set();
@@ -2960,7 +2973,7 @@ function bbSync3D(){
     if(!m){m=new THREE.Mesh(new THREE.SphereGeometry(t.r/40*1.6,10,8),new THREE.MeshBasicMaterial({color:new THREE.Color(t.col)}));
       const glow=new THREE.Mesh(new THREE.SphereGeometry(t.r/40*3.2,10,8),new THREE.MeshBasicMaterial({color:new THREE.Color(t.col),transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false}));m.add(glow);
       S.add(m);BB3.bolts.set(t,m);}
-    const [x,z]=bbW(t.x,t.y);m.position.set(x,.62,z);}
+    const [x,z]=bbW(t.x,t.y);m.position.set(x,.8,z);}
   for(const [t,m] of BB3.bolts)if(!bs.has(t)){S.remove(m);m.geometry.dispose();BB3.bolts.delete(t);}
   // sparks + shockwaves
   const fs=new Set();
@@ -2979,7 +2992,7 @@ function bbSync3D(){
     if(!bm){bm=new THREE.Group();const o=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,1,12,1,true),new THREE.MeshBasicMaterial({color:0x46f3ff,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false}));
       const i=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,1,8),new THREE.MeshBasicMaterial({color:0xffffff}));o.rotation.z=i.rotation.z=Math.PI/2;bm.add(o);bm.add(i);S.add(bm);BB3.beams.set(p.id,bm);}
     const [ax,az]=bbW(p.x,p.y),[bx,bz]=bbW(pt.x,pt.y),len=Math.hypot(bx-ax,bz-az)||.01;
-    bm.position.set((ax+bx)/2,.62,(az+bz)/2);bm.rotation.y=-Math.atan2(bz-az,bx-ax);bm.scale.set(len,1+Math.sin(now/40)*.25,1+Math.sin(now/40)*.25);}
+    bm.position.set((ax+bx)/2,.8,(az+bz)/2);bm.rotation.y=-Math.atan2(bz-az,bx-ax);bm.scale.set(len,1+Math.sin(now/40)*.25,1+Math.sin(now/40)*.25);}
   for(const [id,bm] of BB3.beams)if(!lbs.has(id)){S.remove(bm);BB3.beams.delete(id);}
   // helper drone when you play alone
   if(L.length===1){if(!BB3.drone){BB3.drone=bbRobot('#cfd8e6');BB3.drone.scale.setScalar(.7);S.add(BB3.drone);}
@@ -2997,16 +3010,25 @@ function bbRender(){
 function BoxBlasters(){
   let last=performance.now();
   return{bb3:true,
-    init(){me.bx={x:200+Math.random()*560,y:520,a:-Math.PI/2,g:0,f:0,h:[],go:0};BB.wasHost=false;BB.bolts=[];BB.fx=[];sendPresence(true);},
-    onClose(){me.bx=null;BB.wasHost=false;sendPresence(true);},
+    init(){me.bx={x:200+Math.random()*560,y:520,a:-Math.PI/2,g:0,f:0,h:[],go:0};BB.yaw=-Math.PI/2;BB.pitch=0;BB.wasHost=false;BB.bolts=[];BB.fx=[];sendPresence(true);},
+    onClose(){me.bx=null;BB.wasHost=false;sendPresence(true);try{if(document.pointerLockElement===mini)document.exitPointerLock();}catch(e){}},
     update(){
       const now=performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;const b=me.bx;if(!b)return;
       // move + aim + guns
-      const sp=320*dt;if(K.KeyW||K.ArrowUp)b.y-=sp;if(K.KeyS||K.ArrowDown)b.y+=sp;if(K.KeyA||K.ArrowLeft)b.x-=sp;if(K.KeyD||K.ArrowRight)b.x+=sp;
+      // FIRST PERSON: mouse looks around (click to lock the mouse), WASD walks where you're looking
+      if(K.ArrowLeft)BB.yaw-=2.4*dt;if(K.ArrowRight)BB.yaw+=2.4*dt;
+      const fx=Math.cos(BB.yaw),fy=Math.sin(BB.yaw),sp=300*dt;let mx=0,my=0;
+      if(K.KeyW||K.ArrowUp){mx+=fx;my+=fy;}if(K.KeyS||K.ArrowDown){mx-=fx;my-=fy;}if(K.KeyD){mx-=fy;my+=fx;}if(K.KeyA){mx+=fy;my-=fx;}
+      const ml=Math.hypot(mx,my)||1;mx=mx/ml*sp;my=my/ml*sp;
+      const solid=(x,y)=>{for(const v of BB.view.values()){if(v.gone)continue;const s=BB_KINDS[v.k].sz/2+14;if(Math.abs(x-v.x)<s&&Math.abs(y-v.y)<s)return true;}return false;};
+      if(!solid(b.x+mx,b.y))b.x+=mx;if(!solid(b.x,b.y+my))b.y+=my;
       b.x=+clamp(b.x,BB_AX[0]+16,BB_AX[2]-16).toFixed(1);b.y=+clamp(b.y,BB_AX[1]+16,BB_AX[3]-16).toFixed(1);
-      {const m=bbMouseArena();if(m)b.a=+Math.atan2(m[1]-b.y,m[0]-b.x).toFixed(2);}
+      b.a=+(((BB.yaw%6.2832)+9.4248)%6.2832-3.1416).toFixed(2);
+      const lockedHere=document.pointerLockElement===mini;
+      if(lockedHere&&BB.state.st!=='play')try{document.exitPointerLock();}catch(e){}
+      if(!lockedHere&&mouse.clicked&&BB.state.st==='play')try{const q=mini.requestPointerLock();if(q&&q.catch)q.catch(()=>{});}catch(e){}
       for(let i=0;i<4;i++)if(P.has('Digit'+(i+1)))b.g=i;if(P.has('KeyQ'))b.g=(b.g+1)%4;
-      b.f=(mouse.down||K.Space)?1:0;
+      b.f=((mouse.down&&document.pointerLockElement===mini)||K.Space)?1:0;
       const L=bbPlayers(),host=bbHostId(L),amHost=host===bbMyId();
       // who is in charge of the boxes?
       if(amHost)bbHostStep(L,dt);
@@ -3016,7 +3038,7 @@ function BoxBlasters(){
       // our picture of the boxes (smoothly following the host's)
       const seen=new Set();
       for(const [id,x,y,k,hp] of st.b){seen.add(id);let v=BB.view.get(id);
-        if(!v){v={id,x,y,k,hp,tx:x,ty:y,gone:0};BB.view.set(id,v);}
+        if(!v){v={id,x,y,k,hp,tx:x,ty:y,gone:0,born:now};BB.view.set(id,v);}
         v.tx=x;v.ty=y;v.k=k;if(!v.pend||now-v.pend>700){v.hp=hp;v.pend=0;if(v.gone&&now-v.gone>700)v.gone=0;}
         if(amHost){v.x=x;v.y=y;}else{v.x+=(v.tx-v.x)*Math.min(1,dt*12);v.y+=(v.ty-v.y)*Math.min(1,dt*12);}}
       for(const [id,v] of BB.view)if(!seen.has(id)){BB.view.delete(id);
@@ -3056,7 +3078,8 @@ function BoxBlasters(){
       txt(st.st==='play'?'⏱ '+Math.ceil(st.t)+'s':st.st==='over'?'TIME\'S UP!':'',936,40,22,st.t<10&&st.st==='play'?'#ff4b5c':'#fff','right');
       txt('👥 '+L.length+' blaster'+(L.length===1?'':'s')+'  ·  Best: '+BB.best,24,62,14,'#9fb3d9','left',false);
       // aim marker under the mouse
-      ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(mouse.x,mouse.y,10,0,7);ctx.moveTo(mouse.x-15,mouse.y);ctx.lineTo(mouse.x-5,mouse.y);ctx.moveTo(mouse.x+5,mouse.y);ctx.lineTo(mouse.x+15,mouse.y);ctx.stroke();
+      ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(480,320,9,0,7);ctx.moveTo(468,320);ctx.lineTo(474,320);ctx.moveTo(486,320);ctx.lineTo(492,320);ctx.moveTo(480,308);ctx.lineTo(480,314);ctx.moveTo(480,326);ctx.lineTo(480,332);ctx.stroke();
+      if(st.st==='play'&&document.pointerLockElement!==mini)txt('🖱 Click to grab the mouse and look around',480,560,18,'#ffd36e','center');
       BB_GUNS.forEach((g,i)=>{const x=150+i*170,on=b.g===i;ctx.fillStyle=on?'rgba(20,60,80,.85)':'rgba(7,11,28,.7)';ctx.fillRect(x,604,160,30);
         ctx.strokeStyle=on?g.col:'rgba(255,255,255,.2)';ctx.lineWidth=2;ctx.strokeRect(x,604,160,30);txt((i+1)+' '+g.e+' '+g.n,x+80,624,14,on?'#fff':'#9fb3d9','center',on);});
       if(st.st!=='play'){ctx.fillStyle='rgba(7,11,28,.85)';ctx.fillRect(170,150,620,370);ctx.strokeStyle='#46f3ff';ctx.lineWidth=3;ctx.strokeRect(170,150,620,370);
@@ -3064,7 +3087,7 @@ function BoxBlasters(){
           txt(st.sc>=BB.best&&st.sc>0?'🏆 NEW TEAM BEST!':'Best: '+BB.best,480,285,18,'#7fffd4','center');}
         else{txt('🔫 BOX BLASTERS 3D',480,200,40,'#46f3ff','center');txt('Team up and blast as many boxes as you can in 90 seconds!',480,238,17,'#fff','center',false);
           txt('📦 Wood 10  ·  🔩 Metal 30 (3 hits)  ·  ✨ Gold 50  ·  🧨 TNT blows up boxes near it!',480,268,14,'#9fb3d9','center',false);}
-        txt('WASD move · mouse aim · click / Space shoot · 1-4 or Q switch guns',480,310,15,'#c9d6f2','center',false);
+        txt('WASD walk · mouse look (click to grab it) · click / Space shoot · 1-4 or Q guns',480,310,15,'#c9d6f2','center',false);
         txt('⚡ LINK BEAM makes a laser between you and your teammate — boxes touching it break!',480,340,15,'#46f3ff','center',false);
         txt('Players here: '+L.map(p=>p.nm).join(', '),480,380,15,'#ffd36e','center',false);
         const waiting=L.some(p=>p.go===st.r+1);
